@@ -9,6 +9,7 @@ import (
 	"github.com/joho/godotenv"
 
 	"golf-maintenance/backend/internal/db"
+	"golf-maintenance/backend/internal/handlers"
 )
 
 func main() {
@@ -27,6 +28,8 @@ func main() {
 		w.WriteHeader(http.StatusOK)
 		json.NewEncoder(w).Encode(map[string]string{"status": "ok", "message": "Hello from Go backend!"})
 	})
+
+	http.HandleFunc("/users", handlers.CreateUser)
 
 	port := os.Getenv("PORT")
 	if port == "" {

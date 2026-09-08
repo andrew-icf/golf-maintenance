@@ -71,3 +71,55 @@ func CreateUser(w http.ResponseWriter, r *http.Request) {
 		"message": "user created",
 	})
 }
+
+type loginRequest struct {
+	Email    string `json:"email"`
+	Password string `json:"password"`
+}
+
+func Login(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Access-Control-Allow-Origin", "http://localhost:5173")
+	w.Header().Set("Content-Type", "application/json")
+
+	if r.Method != http.MethodPost {
+		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	var req loginRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, "invalid request body", http.StatusBadRequest)
+		return
+	}
+
+	if req.Email == "" || req.Password == "" {
+		http.Error(w, "email and password are required", http.StatusBadRequest)
+		return
+	}
+
+	var id, passwordHash, fullName, role string
+	err := db.Pool.QueryRow(
+		r.Context(),
+		`SELECT id, password_hash, full_name, role FROM users WHERE email = $1`,
+		req.Email,
+	).Scan(&id, &passwordHash, &fullName, &role)
+
+	if err != nil {
+		// Deliberately vague — don't reveal whether the email exists or not
+		http.Error(w, "invalid email or password", http.StatusUnauthorized)
+		return
+	}
+
+	if err := bcrypt.CompareHashAndPassword([]byte(passwordHash), []byte(req.Password)); err != nil {
+		http.Error(w, "invalid email or password", http.StatusUnauthorized)
+		return
+	}
+
+	json.NewEncoder(w).Encode(map[string]string{
+		"id":        id,
+		"email":     req.Email,
+		"full_name": fullName,
+		"role":      role,
+		"message":   "login successful",
+	})
+}

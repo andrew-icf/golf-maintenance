@@ -30,6 +30,7 @@ func main() {
 	})
 
 	http.HandleFunc("/users", handlers.CreateUser)
+	http.HandleFunc("/login", handlers.Login)
 
 	port := os.Getenv("PORT")
 	if port == "" {

@@ -8,6 +8,7 @@ import (
 
 	"github.com/joho/godotenv"
 
+	"golf-maintenance/backend/internal/auth"
 	"golf-maintenance/backend/internal/db"
 	"golf-maintenance/backend/internal/handlers"
 )
@@ -31,8 +32,8 @@ func main() {
 
 	http.HandleFunc("/users", handlers.CreateUser)
 	http.HandleFunc("/login", handlers.Login)
-	http.HandleFunc("/clock-in", handlers.ClockIn)
-	http.HandleFunc("/clock-out", handlers.ClockOut)
+	http.HandleFunc("/clock-in", auth.RequireAuth(handlers.ClockIn))
+	http.HandleFunc("/clock-out", auth.RequireAuth(handlers.ClockOut))
 
 	port := os.Getenv("PORT")
 	if port == "" {

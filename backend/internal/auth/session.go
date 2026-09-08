@@ -4,6 +4,7 @@ import (
 	"context"
 	"crypto/rand"
 	"encoding/hex"
+	"net/http"
 	"time"
 
 	"golf-maintenance/backend/internal/db"
@@ -47,4 +48,32 @@ func GetUserIDFromToken(ctx context.Context, token string) (string, error) {
 		token,
 	).Scan(&userID)
 	return userID, err
+}
+
+type contextKey string
+
+const userIDKey contextKey = "userID"
+
+func RequireAuth(next http.HandlerFunc) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		cookie, err := r.Cookie("session_token")
+		if err != nil {
+			http.Error(w, "not authenticated", http.StatusUnauthorized)
+			return
+		}
+
+		userID, err := GetUserIDFromToken(r.Context(), cookie.Value)
+		if err != nil {
+			http.Error(w, "invalid or expired session", http.StatusUnauthorized)
+			return
+		}
+
+		ctx := context.WithValue(r.Context(), userIDKey, userID)
+		next(w, r.WithContext(ctx))
+	}
+}
+
+func UserIDFromContext(ctx context.Context) (string, bool) {
+	userID, ok := ctx.Value(userIDKey).(string)
+	return userID, ok
 }

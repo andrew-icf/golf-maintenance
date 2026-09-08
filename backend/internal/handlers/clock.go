@@ -8,12 +8,9 @@ import (
 
 	"github.com/jackc/pgx/v5"
 
+	"golf-maintenance/backend/internal/auth"
 	"golf-maintenance/backend/internal/db"
 )
-
-type clockRequest struct {
-	UserID string `json:"user_id"`
-}
 
 func ClockIn(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Access-Control-Allow-Origin", "http://localhost:5173")
@@ -24,14 +21,9 @@ func ClockIn(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var req clockRequest
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		http.Error(w, "invalid request body", http.StatusBadRequest)
-		return
-	}
-
-	if req.UserID == "" {
-		http.Error(w, "user_id is required", http.StatusBadRequest)
+	userID, ok := auth.UserIDFromContext(r.Context())
+	if !ok {
+		http.Error(w, "not authenticated", http.StatusUnauthorized)
 		return
 	}
 
@@ -40,7 +32,7 @@ func ClockIn(w http.ResponseWriter, r *http.Request) {
 	err := db.Pool.QueryRow(
 		r.Context(),
 		`SELECT id FROM clock_entries WHERE user_id = $1 AND clock_out IS NULL`,
-		req.UserID,
+		userID,
 	).Scan(&existingID)
 
 	if err == nil {
@@ -57,7 +49,7 @@ func ClockIn(w http.ResponseWriter, r *http.Request) {
 	err = db.Pool.QueryRow(
 		r.Context(),
 		`INSERT INTO clock_entries (user_id) VALUES ($1) RETURNING id`,
-		req.UserID,
+		userID,
 	).Scan(&id)
 
 	if err != nil {
@@ -82,14 +74,9 @@ func ClockOut(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var req clockRequest
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		http.Error(w, "invalid request body", http.StatusBadRequest)
-		return
-	}
-
-	if req.UserID == "" {
-		http.Error(w, "user_id is required", http.StatusBadRequest)
+	userID, ok := auth.UserIDFromContext(r.Context())
+	if !ok {
+		http.Error(w, "not authenticated", http.StatusUnauthorized)
 		return
 	}
 
@@ -100,7 +87,7 @@ func ClockOut(w http.ResponseWriter, r *http.Request) {
 		 SET clock_out = now()
 		 WHERE user_id = $1 AND clock_out IS NULL
 		 RETURNING id`,
-		req.UserID,
+		userID,
 	).Scan(&id)
 
 	if errors.Is(err, pgx.ErrNoRows) {

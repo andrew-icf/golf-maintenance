@@ -31,6 +31,8 @@ func main() {
 
 	http.HandleFunc("/users", handlers.CreateUser)
 	http.HandleFunc("/login", handlers.Login)
+	http.HandleFunc("/clock-in", handlers.ClockIn)
+	http.HandleFunc("/clock-out", handlers.ClockOut)
 
 	port := os.Getenv("PORT")
 	if port == "" {

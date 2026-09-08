@@ -7,6 +7,7 @@ import (
 
 	"golang.org/x/crypto/bcrypt"
 
+	"golf-maintenance/backend/internal/auth"
 	"golf-maintenance/backend/internal/db"
 )
 
@@ -114,6 +115,22 @@ func Login(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "invalid email or password", http.StatusUnauthorized)
 		return
 	}
+
+	token, expiresAt, err := auth.CreateSession(r.Context(), id)
+	if err != nil {
+		log.Printf("error creating session: %v", err)
+		http.Error(w, "internal server error", http.StatusInternalServerError)
+		return
+	}
+
+	http.SetCookie(w, &http.Cookie{
+		Name:     "session_token",
+		Value:    token,
+		Expires:  expiresAt,
+		HttpOnly: true,
+		SameSite: http.SameSiteLaxMode,
+		Path:     "/",
+	})
 
 	json.NewEncoder(w).Encode(map[string]string{
 		"id":        id,

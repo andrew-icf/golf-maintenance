@@ -34,6 +34,8 @@ func main() {
 	http.HandleFunc("/login", handlers.Login)
 	http.HandleFunc("/clock-in", auth.RequireAuth(handlers.ClockIn))
 	http.HandleFunc("/clock-out", auth.RequireAuth(handlers.ClockOut))
+	http.HandleFunc("/logout", handlers.Logout)
+	http.HandleFunc("/me", auth.RequireAuth(handlers.Me))
 
 	port := os.Getenv("PORT")
 	if port == "" {

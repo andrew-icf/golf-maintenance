@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"log"
 	"net/http"
+	"time"
 
 	"golang.org/x/crypto/bcrypt"
 
@@ -138,5 +139,61 @@ func Login(w http.ResponseWriter, r *http.Request) {
 		"full_name": fullName,
 		"role":      role,
 		"message":   "login successful",
+	})
+}
+
+func Logout(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Access-Control-Allow-Origin", "http://localhost:5173")
+	w.Header().Set("Content-Type", "application/json")
+
+	if r.Method != http.MethodPost {
+		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	cookie, err := r.Cookie("session_token")
+	if err == nil {
+		_, _ = db.Pool.Exec(r.Context(), `DELETE FROM sessions WHERE token = $1`, cookie.Value)
+	}
+
+	http.SetCookie(w, &http.Cookie{
+		Name:     "session_token",
+		Value:    "",
+		Path:     "/",
+		Expires:  time.Unix(0, 0),
+		HttpOnly: true,
+		SameSite: http.SameSiteLaxMode,
+	})
+
+	json.NewEncoder(w).Encode(map[string]string{"message": "logged out"})
+}
+func Me(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Access-Control-Allow-Origin", "http://localhost:5173")
+	w.Header().Set("Content-Type", "application/json")
+
+	userID, ok := auth.UserIDFromContext(r.Context())
+	if !ok {
+		http.Error(w, "not authenticated", http.StatusUnauthorized)
+		return
+	}
+
+	var email, fullName, role string
+	err := db.Pool.QueryRow(
+		r.Context(),
+		`SELECT email, full_name, role FROM users WHERE id = $1`,
+		userID,
+	).Scan(&email, &fullName, &role)
+
+	if err != nil {
+		log.Printf("error fetching user: %v", err)
+		http.Error(w, "internal server error", http.StatusInternalServerError)
+		return
+	}
+
+	json.NewEncoder(w).Encode(map[string]string{
+		"id":        userID,
+		"email":     email,
+		"full_name": fullName,
+		"role":      role,
 	})
 }

@@ -1,22 +1,26 @@
-import { useEffect, useState } from 'react'
 import './App.css'
+import { useAuth } from './AuthContext'
+import { LoginForm } from './components/LoginForm'
+import { ClockPanel } from './components/ClockPanel'
 
 function App() {
-  const [message, setMessage] = useState('Loading...')
+  const { user, loading } = useAuth()
 
-  useEffect(() => {
-    fetch('http://localhost:8080/health')
-      .then((response) => response.json())
-      .then((data) => setMessage(data.message))
-      .catch(() => setMessage('Backend unavailable'))
-  }, [])
+  if (loading) {
+    return (
+      <main className="app-shell">
+        <section className="card">
+          <p>Loading...</p>
+        </section>
+      </main>
+    )
+  }
 
   return (
     <main className="app-shell">
       <section className="card">
         <p className="eyebrow">Golf Maintenance</p>
-        <h1>Hello, world!</h1>
-        <p className="status">{message}</p>
+        {user ? <ClockPanel /> : <LoginForm />}
       </section>
     </main>
   )

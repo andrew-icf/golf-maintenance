@@ -11,8 +11,11 @@
   border: 1px solid #dce8d7;
   border-radius: 18px;
   box-shadow: 0 20px 45px rgba(22, 58, 31, 0.12);
-  padding: 48px 32px;
-  text-align: center;
+  padding: 56px 40px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 24px;
 }
 
 .eyebrow {
@@ -21,7 +24,7 @@
   font-size: 0.72rem;
   color: #4d7a55;
   font-weight: 700;
-  margin-bottom: 12px;
+  margin: 0;
 }
 
 h1 {
@@ -31,7 +34,7 @@ h1 {
 }
 
 .status {
-  margin-top: 18px;
+  margin: 0;
   font-size: 1.1rem;
   color: #2f4d38;
 }

@@ -11,6 +11,7 @@ import (
 	"golf-maintenance/backend/internal/auth"
 	"golf-maintenance/backend/internal/db"
 	"golf-maintenance/backend/internal/handlers"
+	"golf-maintenance/backend/internal/middleware"
 )
 
 func main() {
@@ -23,19 +24,18 @@ func main() {
 	}
 	defer db.Pool.Close()
 
-	http.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Access-Control-Allow-Origin", "http://localhost:5173")
+	http.HandleFunc("/health", middleware.CORS(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusOK)
 		json.NewEncoder(w).Encode(map[string]string{"status": "ok", "message": "Hello from Go backend!"})
-	})
+	}))
 
-	http.HandleFunc("/users", handlers.CreateUser)
-	http.HandleFunc("/login", handlers.Login)
-	http.HandleFunc("/clock-in", auth.RequireAuth(handlers.ClockIn))
-	http.HandleFunc("/clock-out", auth.RequireAuth(handlers.ClockOut))
-	http.HandleFunc("/logout", handlers.Logout)
-	http.HandleFunc("/me", auth.RequireAuth(handlers.Me))
+	http.HandleFunc("/users", middleware.CORS(handlers.CreateUser))
+	http.HandleFunc("/login", middleware.CORS(handlers.Login))
+	http.HandleFunc("/logout", middleware.CORS(handlers.Logout))
+	http.HandleFunc("/me", middleware.CORS(auth.RequireAuth(handlers.Me)))
+	http.HandleFunc("/clock-in", middleware.CORS(auth.RequireAuth(handlers.ClockIn)))
+	http.HandleFunc("/clock-out", middleware.CORS(auth.RequireAuth(handlers.ClockOut)))
 
 	port := os.Getenv("PORT")
 	if port == "" {

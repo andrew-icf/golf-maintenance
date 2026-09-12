@@ -20,7 +20,6 @@ type createUserRequest struct {
 }
 
 func CreateUser(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Access-Control-Allow-Origin", "http://localhost:5173")
 	w.Header().Set("Content-Type", "application/json")
 
 	if r.Method != http.MethodPost {
@@ -80,7 +79,6 @@ type loginRequest struct {
 }
 
 func Login(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Access-Control-Allow-Origin", "http://localhost:5173")
 	w.Header().Set("Content-Type", "application/json")
 
 	if r.Method != http.MethodPost {
@@ -143,7 +141,6 @@ func Login(w http.ResponseWriter, r *http.Request) {
 }
 
 func Logout(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Access-Control-Allow-Origin", "http://localhost:5173")
 	w.Header().Set("Content-Type", "application/json")
 
 	if r.Method != http.MethodPost {
@@ -168,9 +165,6 @@ func Logout(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(map[string]string{"message": "logged out"})
 }
 func Me(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Access-Control-Allow-Origin", "http://localhost:5173")
-	w.Header().Set("Content-Type", "application/json")
-
 	userID, ok := auth.UserIDFromContext(r.Context())
 	if !ok {
 		http.Error(w, "not authenticated", http.StatusUnauthorized)
@@ -190,10 +184,24 @@ func Me(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	json.NewEncoder(w).Encode(map[string]string{
-		"id":        userID,
-		"email":     email,
-		"full_name": fullName,
-		"role":      role,
+	var clockedIn bool
+	err = db.Pool.QueryRow(
+		r.Context(),
+		`SELECT EXISTS(SELECT 1 FROM clock_entries WHERE user_id = $1 AND clock_out IS NULL)`,
+		userID,
+	).Scan(&clockedIn)
+
+	if err != nil {
+		log.Printf("error checking clock status: %v", err)
+		http.Error(w, "internal server error", http.StatusInternalServerError)
+		return
+	}
+
+	json.NewEncoder(w).Encode(map[string]interface{}{
+		"id":         userID,
+		"email":      email,
+		"full_name":  fullName,
+		"role":       role,
+		"clocked_in": clockedIn,
 	})
 }

@@ -13,7 +13,6 @@ import (
 )
 
 func ClockIn(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Access-Control-Allow-Origin", "http://localhost:5173")
 	w.Header().Set("Content-Type", "application/json")
 
 	if r.Method != http.MethodPost {
@@ -66,7 +65,6 @@ func ClockIn(w http.ResponseWriter, r *http.Request) {
 }
 
 func ClockOut(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Access-Control-Allow-Origin", "http://localhost:5173")
 	w.Header().Set("Content-Type", "application/json")
 
 	if r.Method != http.MethodPost {
@@ -91,7 +89,7 @@ func ClockOut(w http.ResponseWriter, r *http.Request) {
 	).Scan(&id)
 
 	if errors.Is(err, pgx.ErrNoRows) {
-		http.Error(w, "no open clock-in found for this user", http.StatusConflict)
+		http.Error(w, "There is no open clock-in found for this user", http.StatusConflict)
 		return
 	}
 	if err != nil {

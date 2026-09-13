@@ -9,3 +9,8 @@ CREATE TABLE amenities (
 
 -- +goose Down
 DROP TABLE amenities;
+
+INSERT INTO amenities (course_id, name, type) VALUES
+('90314854-9f63-4080-bc9d-a040120019bf', 'Clubhouse', 'clubhouse'),
+('90314854-9f63-4080-bc9d-a040120019bf', 'Driving Range', 'driving_range'),
+('90314854-9f63-4080-bc9d-a040120019bf', 'Comfort Station 1', 'comfort_station');

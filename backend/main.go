@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"os"
 
+	"github.com/go-chi/chi/v5"
 	"github.com/joho/godotenv"
 
 	"golf-maintenance/backend/internal/auth"
@@ -24,18 +25,26 @@ func main() {
 	}
 	defer db.Pool.Close()
 
-	http.HandleFunc("/health", middleware.CORS(func(w http.ResponseWriter, r *http.Request) {
+	r := chi.NewRouter()
+	r.Use(middleware.CORS)
+
+	r.Get("/health", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusOK)
 		json.NewEncoder(w).Encode(map[string]string{"status": "ok", "message": "Hello from Go backend!"})
-	}))
+	})
 
-	http.HandleFunc("/users", middleware.CORS(handlers.CreateUser))
-	http.HandleFunc("/login", middleware.CORS(handlers.Login))
-	http.HandleFunc("/logout", middleware.CORS(handlers.Logout))
-	http.HandleFunc("/me", middleware.CORS(auth.RequireAuth(handlers.Me)))
-	http.HandleFunc("/clock-in", middleware.CORS(auth.RequireAuth(handlers.ClockIn)))
-	http.HandleFunc("/clock-out", middleware.CORS(auth.RequireAuth(handlers.ClockOut)))
+	r.Post("/users", handlers.CreateUser)
+	r.Post("/login", handlers.Login)
+	r.Post("/logout", handlers.Logout)
+
+	r.Group(func(r chi.Router) {
+		r.Use(auth.RequireAuth)
+		r.Get("/me", handlers.Me)
+		r.Post("/clock-in", handlers.ClockIn)
+		r.Post("/clock-out", handlers.ClockOut)
+		r.Get("/api/course", handlers.GetCourse)
+	})
 
 	port := os.Getenv("PORT")
 	if port == "" {
@@ -43,7 +52,7 @@ func main() {
 	}
 
 	log.Printf("Go backend running on :%s", port)
-	if err := http.ListenAndServe(":"+port, nil); err != nil {
+	if err := http.ListenAndServe(":"+port, r); err != nil {
 		log.Fatal(err)
 	}
 }

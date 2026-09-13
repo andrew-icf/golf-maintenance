@@ -36,6 +36,7 @@ func main() {
 	http.HandleFunc("/me", middleware.CORS(auth.RequireAuth(handlers.Me)))
 	http.HandleFunc("/clock-in", middleware.CORS(auth.RequireAuth(handlers.ClockIn)))
 	http.HandleFunc("/clock-out", middleware.CORS(auth.RequireAuth(handlers.ClockOut)))
+	http.HandleFunc("/api/course", middleware.CORS(auth.RequireAuth(handlers.GetCourse)))
 
 	port := os.Getenv("PORT")
 	if port == "" {

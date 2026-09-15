@@ -38,3 +38,25 @@ h1 {
   font-size: 1.1rem;
   color: #2f4d38;
 }
+
+.tab-switch {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.tab-switch button {
+  padding: 8px 20px;
+  border: 1px solid #dce8d7;
+  border-radius: 8px;
+  background: none;
+  color: #4d7a55;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.tab-switch button.active {
+  background: #2f6b3c;
+  color: #ffffff;
+  border-color: #2f6b3c;
+}

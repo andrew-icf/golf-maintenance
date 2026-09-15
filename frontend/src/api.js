@@ -29,4 +29,6 @@ export const api = {
   clockIn: () => request('/clock-in', { method: 'POST' }),
 
   clockOut: () => request('/clock-out', { method: 'POST' }),
+
+  getCourse: () => request('/api/course'),
 }

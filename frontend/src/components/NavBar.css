@@ -1,0 +1,22 @@
+.nav-bar {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.nav-bar a {
+  padding: 8px 20px;
+  border: 1px solid #dce8d7;
+  border-radius: 8px;
+  background: none;
+  color: #4d7a55;
+  font-weight: 600;
+  cursor: pointer;
+  text-decoration: none;
+}
+
+.nav-bar a.active {
+  background: #2f6b3c;
+  color: #ffffff;
+  border-color: #2f6b3c;
+}

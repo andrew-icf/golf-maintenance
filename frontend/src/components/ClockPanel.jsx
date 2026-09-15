@@ -1,10 +1,12 @@
 import { useState } from 'react'
 import { useAuth } from '../AuthContext'
 import { api } from '../api'
+import { useNavigate } from 'react-router-dom'
 import './ClockPanel.css'
 
 export function ClockPanel() {
-  const { user, logout, refreshUser } = useAuth()
+  const { user, logout } = useAuth()
+  const navigate = useNavigate()
   const [status, setStatus] = useState('')
 
   async function handleClockIn() {
@@ -27,6 +29,11 @@ export function ClockPanel() {
     }
   }
 
+  async function handleLogout() {
+    await logout()
+    navigate('/login')
+  }
+
   return (
     <div className="clock-panel">
       <p>Welcome, {user.full_name}</p>
@@ -38,9 +45,7 @@ export function ClockPanel() {
         )}
       </div>
       {status && <p className="status">{status}</p>}
-      <button onClick={logout} className="logout-link">
-        Log out
-      </button>
+      <button onClick={handleLogout} className="logout-link">Log out</button>
     </div>
   )
 }

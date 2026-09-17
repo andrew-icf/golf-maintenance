@@ -31,4 +31,12 @@ export const api = {
   clockOut: () => request('/clock-out', { method: 'POST' }),
 
   getCourse: () => request('/api/course'),
+
+  getEquipment: () => request('/api/equipment'),
+
+  updateEquipmentStatus: (id, status) =>
+    request(`/api/equipment/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify({ status }),
+  }),
 }

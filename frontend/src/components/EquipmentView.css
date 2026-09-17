@@ -1,0 +1,64 @@
+.equipment-view {
+  width: 100%;
+  text-align: left;
+}
+
+.equipment-view h2 {
+  margin: 0 0 24px;
+  color: #17341c;
+  text-align: center;
+}
+
+.equipment-view h3 {
+  margin: 0 0 8px;
+  color: #2f4d38;
+  font-size: 0.95rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.equipment-view section {
+  margin-bottom: 24px;
+}
+
+.equipment-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.equipment-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: #f4f7f2;
+  border: 1px solid #dce8d7;
+  border-radius: 8px;
+  padding: 10px 14px;
+}
+
+.equipment-row.status-needs_repair {
+  border-color: #e0b84a;
+  background: #fbf4e2;
+}
+
+.equipment-row.status-in_shop {
+  border-color: #d9736a;
+  background: #fbeae8;
+}
+
+.equipment-label {
+  font-weight: 600;
+  color: #2f4d38;
+}
+
+.equipment-row select {
+  padding: 6px 10px;
+  border: 1px solid #cfe0c9;
+  border-radius: 6px;
+  font-size: 0.85rem;
+  font-family: inherit;
+}

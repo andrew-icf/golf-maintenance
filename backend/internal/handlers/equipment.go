@@ -7,7 +7,53 @@ import (
 
 	"golf-maintenance/backend/internal/db"
 	"golf-maintenance/backend/internal/models"
+
+	"github.com/go-chi/chi/v5"
 )
+
+type updateEquipmentStatusRequest struct {
+	Status string `json:"status"`
+}
+
+var validStatuses = map[string]bool{
+	"working_order": true,
+	"needs_repair":  true,
+	"in_shop":       true,
+}
+
+func UpdateEquipmentStatus(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	id := chi.URLParam(r, "id")
+
+	var req updateEquipmentStatusRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, "invalid request body", http.StatusBadRequest)
+		return
+	}
+
+	if !validStatuses[req.Status] {
+		http.Error(w, "status must be one of: working_order, needs_repair, in_shop", http.StatusBadRequest)
+		return
+	}
+
+	var updatedID string
+	err := db.Pool.QueryRow(
+		r.Context(),
+		`UPDATE equipment SET status = $1 WHERE id = $2 RETURNING id`,
+		req.Status, id,
+	).Scan(&updatedID)
+
+	if err != nil {
+		http.Error(w, "equipment not found", http.StatusNotFound)
+		return
+	}
+
+	json.NewEncoder(w).Encode(map[string]string{
+		"id":      updatedID,
+		"status":  req.Status,
+		"message": "status updated",
+	})
+}
 
 func GetEquipment(w http.ResponseWriter, r *http.Request) {
 	rows, err := db.Pool.Query(

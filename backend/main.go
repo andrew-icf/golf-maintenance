@@ -44,6 +44,7 @@ func main() {
 		r.Post("/clock-in", handlers.ClockIn)
 		r.Post("/clock-out", handlers.ClockOut)
 		r.Get("/api/course", handlers.GetCourse)
+		r.Get("/api/equipment", handlers.GetEquipment)
 	})
 
 	port := os.Getenv("PORT")

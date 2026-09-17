@@ -6,6 +6,7 @@ import { ClockPanel } from './components/ClockPanel'
 import { CourseView } from './components/CourseView'
 import { ProtectedRoute } from './components/ProtectedRoute'
 import { NavBar } from './components/NavBar'
+import { EquipmentView } from './components/EquipmentView'
 
 function App() {
   const { user, loading } = useAuth()
@@ -43,6 +44,14 @@ function App() {
             element={
               <ProtectedRoute>
                 <CourseView />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/equipment"
+            element={
+              <ProtectedRoute>
+                <EquipmentView />
               </ProtectedRoute>
             }
           />

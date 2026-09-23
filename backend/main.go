@@ -45,8 +45,10 @@ func main() {
 		r.Post("/clock-out", handlers.ClockOut)
 		r.Get("/api/course", handlers.GetCourse)
 		r.Get("/api/equipment", handlers.GetEquipment)
+		r.Get("/api/schedule", handlers.GetSchedules)
 		// Applies middleware to a single route inline
 		r.With(auth.RequireRole("admin")).Put("/api/equipment/{id}", handlers.UpdateEquipmentStatus)
+		r.With(auth.RequireRole("admin")).Post("/api/schedule", handlers.CreateSchedule)
 	})
 
 	port := os.Getenv("PORT")

@@ -77,3 +77,34 @@ func UserIDFromContext(ctx context.Context) (string, bool) {
 	userID, ok := ctx.Value(userIDKey).(string)
 	return userID, ok
 }
+
+func RequireRole(role string) func(http.Handler) http.Handler {
+	return func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			userID, ok := UserIDFromContext(r.Context())
+			if !ok {
+				http.Error(w, "not authenticated", http.StatusUnauthorized)
+				return
+			}
+
+			var userRole string
+			err := db.Pool.QueryRow(
+				r.Context(),
+				`SELECT role FROM users WHERE id = $1`,
+				userID,
+			).Scan(&userRole)
+
+			if err != nil {
+				http.Error(w, "internal server error", http.StatusInternalServerError)
+				return
+			}
+
+			if userRole != role {
+				http.Error(w, "forbidden: insufficient permissions", http.StatusForbidden)
+				return
+			}
+
+			next.ServeHTTP(w, r)
+		})
+	}
+}

@@ -34,9 +34,9 @@ func main() {
 		json.NewEncoder(w).Encode(map[string]string{"status": "ok", "message": "Hello from Go backend!"})
 	})
 
-	r.Post("/users", handlers.CreateUser)
 	r.Post("/login", handlers.Login)
 	r.Post("/logout", handlers.Logout)
+	r.With(auth.RequireAuth, auth.RequireRole("admin")).Post("/users", handlers.CreateUser)
 
 	r.Group(func(r chi.Router) {
 		r.Use(auth.RequireAuth)
@@ -45,7 +45,8 @@ func main() {
 		r.Post("/clock-out", handlers.ClockOut)
 		r.Get("/api/course", handlers.GetCourse)
 		r.Get("/api/equipment", handlers.GetEquipment)
-		r.Put("/api/equipment/{id}", handlers.UpdateEquipmentStatus)
+		// Applies middleware to a single route inline
+		r.With(auth.RequireRole("admin")).Put("/api/equipment/{id}", handlers.UpdateEquipmentStatus)
 	})
 
 	port := os.Getenv("PORT")

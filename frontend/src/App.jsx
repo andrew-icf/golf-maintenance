@@ -7,6 +7,7 @@ import { CourseView } from './components/CourseView'
 import { ProtectedRoute } from './components/ProtectedRoute'
 import { NavBar } from './components/NavBar'
 import { EquipmentView } from './components/EquipmentView'
+import { ScheduleView } from './components/ScheduleView'
 
 function App() {
   const { user, loading } = useAuth()
@@ -52,6 +53,14 @@ function App() {
             element={
               <ProtectedRoute>
                 <EquipmentView />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/schedule"
+            element={
+              <ProtectedRoute>
+                <ScheduleView />
               </ProtectedRoute>
             }
           />

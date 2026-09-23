@@ -1,0 +1,51 @@
+.schedule-view {
+  width: 100%;
+  text-align: left;
+}
+
+.schedule-view h2 {
+  margin: 0 0 24px;
+  color: #17341c;
+  text-align: center;
+}
+
+.schedule-view h3 {
+  margin: 0 0 8px;
+  color: #2f4d38;
+  font-size: 0.95rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.schedule-view section {
+  margin-bottom: 24px;
+}
+
+.shift-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.shift-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: #f4f7f2;
+  border: 1px solid #dce8d7;
+  border-radius: 8px;
+  padding: 10px 14px;
+}
+
+.shift-name {
+  font-weight: 600;
+  color: #2f4d38;
+}
+
+.shift-time {
+  font-size: 0.9rem;
+  color: #4d7a55;
+}

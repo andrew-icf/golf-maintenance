@@ -13,6 +13,9 @@ export function NavBar() {
       <NavLink to="/equipment" className={({ isActive }) => (isActive ? 'active' : '')}>
         Equipment
       </NavLink>
+      <NavLink to="/schedule" className={({ isActive }) => (isActive ? 'active' : '')}>
+        Schedule
+      </NavLink>
     </nav>
   )
 }

@@ -39,4 +39,6 @@ export const api = {
       method: 'PUT',
       body: JSON.stringify({ status }),
   }),
+
+  getSchedules: () => request('/api/schedule'),
 }

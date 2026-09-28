@@ -41,4 +41,12 @@ export const api = {
   }),
 
   getSchedules: () => request('/api/schedule'),
+
+  getUsers: () => request('/api/users'),
+  
+  createSchedule: (shift) =>
+    request('/api/schedule', {
+      method: 'POST',
+      body: JSON.stringify(shift),
+    }),
 }

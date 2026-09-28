@@ -49,3 +49,24 @@
   font-size: 0.9rem;
   color: #4d7a55;
 }
+
+.admin-actions {
+  margin-bottom: 28px;
+}
+
+.toggle-form-button {
+  width: 100%;
+  padding: 12px;
+  border: 1px dashed #2f6b3c;
+  border-radius: 10px;
+  background: none;
+  color: #2f6b3c;
+  font-size: 0.95rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+.toggle-form-button:hover {
+  background: #f4f7f2;
+}

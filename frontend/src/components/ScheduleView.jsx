@@ -24,6 +24,7 @@ export function ScheduleView() {
   const { user } = useAuth()
   const [schedules, setSchedules] = useState(null)
   const [error, setError] = useState('')
+  const [showForm, setShowForm] = useState(false)
 
   useEffect(() => {
     api
@@ -59,7 +60,18 @@ export function ScheduleView() {
   return (
     <div className="schedule-view">
       <h2>Schedule</h2>
-      { user.role === 'admin' && <CreateShiftForm onCreated={ handleCreated } /> }
+      { user.role === 'admin' && (
+        <div className="admin-actions">
+            <button
+            className="toggle-form-button"
+            onClick={ () => setShowForm((current) => !current) }
+            aria-expanded={ showForm }
+            >
+            { showForm ? 'Close' : '+ Add shift' }
+            </button>
+            { showForm && <CreateShiftForm onCreated={ handleCreated } /> }
+        </div>
+      )}
       {dates.map((date) => (
         <section key={ date }>
           <h3>{ formatDate(date) }</h3>

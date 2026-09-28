@@ -205,3 +205,37 @@ func Me(w http.ResponseWriter, r *http.Request) {
 		"clocked_in": clockedIn,
 	})
 }
+
+type userSummary struct {
+	ID       string `json:"id"`
+	FullName string `json:"full_name"`
+	Role     string `json:"role"`
+}
+
+func ListUsers(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+
+	rows, err := db.Pool.Query(
+		r.Context(),
+		`SELECT id, full_name, role FROM users ORDER BY full_name`,
+	)
+	if err != nil {
+		log.Printf("error fetching users: %v", err)
+		http.Error(w, "could not fetch users", http.StatusInternalServerError)
+		return
+	}
+	defer rows.Close()
+
+	users := []userSummary{}
+	for rows.Next() {
+		var user userSummary
+		if err := rows.Scan(&user.ID, &user.FullName, &user.Role); err != nil {
+			log.Printf("error scanning user: %v", err)
+			http.Error(w, "could not fetch users", http.StatusInternalServerError)
+			return
+		}
+		users = append(users, user)
+	}
+
+	json.NewEncoder(w).Encode(users)
+}

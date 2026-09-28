@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react'
 import { api } from '../api'
 import './ScheduleView.css'
+import { useAuth } from '../AuthContext'
+import { CreateShiftForm } from './CreateShiftForm'
 
 function formatDate(dateStr) {
   const date = new Date(`${dateStr}T00:00:00`)
@@ -19,8 +21,10 @@ function formatTime(timeStr) {
 }
 
 export function ScheduleView() {
+  const { user } = useAuth()
   const [schedules, setSchedules] = useState(null)
   const [error, setError] = useState('')
+  const [showForm, setShowForm] = useState(false)
 
   useEffect(() => {
     api
@@ -28,6 +32,13 @@ export function ScheduleView() {
       .then(setSchedules)
       .catch((err) => setError(err.message))
   }, [])
+
+  function handleCreated() {
+    api
+      .getSchedules()
+      .then(setSchedules)
+      .catch((err) => setError(err.message))
+  }
 
   if (error) {
     return <p className="error">{ error }</p>
@@ -49,6 +60,18 @@ export function ScheduleView() {
   return (
     <div className="schedule-view">
       <h2>Schedule</h2>
+      { user.role === 'admin' && (
+        <div className="admin-actions">
+            <button
+            className="toggle-form-button"
+            onClick={ () => setShowForm((current) => !current) }
+            aria-expanded={ showForm }
+            >
+            { showForm ? 'Close' : '+ Add shift' }
+            </button>
+            { showForm && <CreateShiftForm onCreated={ handleCreated } /> }
+        </div>
+      )}
       {dates.map((date) => (
         <section key={ date }>
           <h3>{ formatDate(date) }</h3>

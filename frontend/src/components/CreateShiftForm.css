@@ -1,0 +1,73 @@
+.create-shift-form {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  background: #f4f7f2;
+  border: 1px solid #dce8d7;
+  border-radius: 12px;
+  padding: 20px;
+  margin: 12px 0 0;
+  text-align: left;
+}
+
+.create-shift-form .form-title {
+  margin: 0;
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: #17341c;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.create-shift-form label {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #2f4d38;
+}
+
+.create-shift-form select,
+.create-shift-form input {
+  padding: 10px 12px;
+  border: 1px solid #cfe0c9;
+  border-radius: 8px;
+  font-size: 1rem;
+  font-family: inherit;
+  background: #ffffff;
+}
+
+.create-shift-form select:focus,
+.create-shift-form input:focus {
+  outline: none;
+  border-color: #2f6b3c;
+  box-shadow: 0 0 0 3px rgba(47, 107, 60, 0.15);
+}
+
+.create-shift-form .time-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.create-shift-form button {
+  padding: 12px;
+  border: none;
+  border-radius: 10px;
+  background: #2f6b3c;
+  color: #ffffff;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+.create-shift-form button:hover:not(:disabled) {
+  background: #255530;
+}
+
+.create-shift-form button:disabled {
+  background: #a3bfa0;
+  cursor: not-allowed;
+}

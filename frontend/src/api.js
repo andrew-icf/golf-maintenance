@@ -49,4 +49,10 @@ export const api = {
       method: 'POST',
       body: JSON.stringify(shift),
     }),
+  
+  repeatSchedule: (pattern) =>
+    request('/api/schedule/repeat', {
+      method: 'POST',
+      body: JSON.stringify(pattern),
+    }),  
 }

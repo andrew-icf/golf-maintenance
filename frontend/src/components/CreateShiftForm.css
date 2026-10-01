@@ -71,3 +71,55 @@
   background: #a3bfa0;
   cursor: not-allowed;
 }
+
+.mode-toggle {
+  display: flex;
+  gap: 8px;
+}
+
+.mode-toggle button {
+  flex: 1;
+  padding: 8px;
+  border: 1px solid #cfe0c9;
+  border-radius: 8px;
+  background: #ffffff;
+  color: #4d7a55;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.mode-toggle button.active {
+  background: #2f6b3c;
+  color: #ffffff;
+  border-color: #2f6b3c;
+}
+
+.day-picker {
+  display: flex;
+  gap: 6px;
+}
+
+.day-picker button {
+  flex: 1;
+  padding: 8px 0;
+  border: 1px solid #cfe0c9;
+  border-radius: 8px;
+  background: #ffffff;
+  color: #4d7a55;
+  font-weight: 600;
+  cursor: pointer;
+  font-size: 0.85rem;
+}
+
+.day-picker button.active {
+  background: #2f6b3c;
+  color: #ffffff;
+  border-color: #2f6b3c;
+}
+
+.summary {
+  margin: 0;
+  color: #2f6b3c;
+  font-size: 0.9rem;
+  font-weight: 600;
+}

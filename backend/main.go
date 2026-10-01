@@ -50,6 +50,7 @@ func main() {
 		r.With(auth.RequireRole("admin")).Put("/api/equipment/{id}", handlers.UpdateEquipmentStatus)
 		r.With(auth.RequireRole("admin")).Post("/api/schedule", handlers.CreateSchedule)
 		r.With(auth.RequireRole("admin")).Get("/api/users", handlers.ListUsers)
+		r.With(auth.RequireRole("admin")).Post("/api/schedule/repeat", handlers.RepeatSchedule)
 	})
 
 	port := os.Getenv("PORT")

@@ -15,7 +15,7 @@ export function LoginForm() {
     setSubmitting(true)
     try {
       await login(email, password)
-    } catch (err) {
+    } catch {
       setError('Invalid email or password')
     } finally {
       setSubmitting(false)

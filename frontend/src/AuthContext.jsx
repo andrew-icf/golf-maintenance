@@ -37,6 +37,7 @@ export function AuthProvider({ children }) {
   )
 }
 
+// oxlint-disable-next-line react/only-export-components
 export function useAuth() {
   return useContext(AuthContext)
 }

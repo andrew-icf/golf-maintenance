@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { api } from '../api'
+import { api } from '../../api'
 import './CourseView.css'
 
 export function CourseView() {

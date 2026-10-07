@@ -1,11 +1,11 @@
 import { useState } from 'react'
-import { useAuth } from '../AuthContext'
-import { api } from '../api'
 import { useNavigate } from 'react-router-dom'
+import { useAuth } from '../auth/AuthContext'
+import { api } from '../../api'
 import './ClockPanel.css'
 
 export function ClockPanel() {
-  const { user, logout } = useAuth()
+  const { user, logout, refreshUser } = useAuth()
   const navigate = useNavigate()
   const [status, setStatus] = useState('')
 

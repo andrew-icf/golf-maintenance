@@ -1,13 +1,13 @@
 import { Navigate, Route, Routes } from 'react-router-dom'
 import './App.css'
-import { useAuth } from './AuthContext'
-import { LoginForm } from './components/LoginForm'
-import { ClockPanel } from './components/ClockPanel'
-import { CourseView } from './components/CourseView'
-import { ProtectedRoute } from './components/ProtectedRoute'
+import { useAuth } from './features/auth/AuthContext'
+import { LoginForm } from './features/auth/LoginForm'
+import { ProtectedRoute } from './features/auth/ProtectedRoute'
+import { ClockPanel } from './features/clock/ClockPanel'
+import { CourseView } from './features/course/CourseView'
 import { NavBar } from './components/NavBar'
-import { EquipmentView } from './components/EquipmentView'
-import { ScheduleView } from './components/ScheduleView'
+import { EquipmentView } from './features/equipment/EquipmentView'
+import { ScheduleView } from './features/schedule/ScheduleView'
 
 function App() {
   const { user, loading } = useAuth()

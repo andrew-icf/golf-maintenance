@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
-import { api } from '../api'
+import { api } from '../../api'
+import { useAuth } from '../auth/AuthContext'
 import './ScheduleView.css'
-import { useAuth } from '../AuthContext'
 import { CreateShiftForm } from './CreateShiftForm'
 
 function formatDate(dateStr) {

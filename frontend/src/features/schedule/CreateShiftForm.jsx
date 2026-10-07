@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { api } from '../api'
+import { api } from '../../api'
 import './CreateShiftForm.css'
 
 const DAYS_OF_WEEK = [

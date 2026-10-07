@@ -32,7 +32,7 @@ func TestCreateUserPermissions(t *testing.T) {
 
 	for _, testCase := range testCases {
 		t.Run(testCase.name, func(t *testing.T) {
-			body := strings.NewReader(`{"email":"new@example.com","password":"password123","full_name":"New Person"}`)
+			body := strings.NewReader(`{"email":"new@example.com","password":"password123","full_name":"New Person","job_title":"landscaper"}`)
 			request := httptest.NewRequest(http.MethodPost, "/users", body)
 			request.Header.Set("Content-Type", "application/json")
 			if testCase.cookie != nil {

@@ -10,13 +10,14 @@ import (
 
 	"golf-maintenance/backend/internal/auth"
 	"golf-maintenance/backend/internal/db"
+	"golf-maintenance/backend/internal/models"
 )
 
 type createUserRequest struct {
 	Email    string `json:"email"`
 	Password string `json:"password"`
 	FullName string `json:"full_name"`
-	Role     string `json:"role"`
+	JobTitle string `json:"job_title"`
 }
 
 func CreateUser(w http.ResponseWriter, r *http.Request) {
@@ -33,8 +34,14 @@ func CreateUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if req.Email == "" || req.Password == "" || req.FullName == "" {
-		http.Error(w, "email, password, and full_name are required", http.StatusBadRequest)
+	if req.Email == "" || req.Password == "" || req.FullName == "" || req.JobTitle == "" {
+		http.Error(w, "email, password, full_name, and job_title are required", http.StatusBadRequest)
+		return
+	}
+
+	role, validJobTitle := models.RoleForJobTitle(req.JobTitle)
+	if !validJobTitle {
+		http.Error(w, "invalid job_title", http.StatusBadRequest)
 		return
 	}
 
@@ -45,18 +52,13 @@ func CreateUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	role := req.Role
-	if role == "" {
-		role = "staff"
-	}
-
 	var id string
 	err = db.Pool.QueryRow(
 		r.Context(),
-		`INSERT INTO users (email, password_hash, full_name, role)
-		 VALUES ($1, $2, $3, $4)
+		`INSERT INTO users (email, password_hash, full_name, role, job_title)
+		 VALUES ($1, $2, $3, $4, $5)
 		 RETURNING id`,
-		req.Email, string(hash), req.FullName, role,
+		req.Email, string(hash), req.FullName, role, req.JobTitle,
 	).Scan(&id)
 
 	if err != nil {
@@ -67,9 +69,11 @@ func CreateUser(w http.ResponseWriter, r *http.Request) {
 
 	w.WriteHeader(http.StatusCreated)
 	json.NewEncoder(w).Encode(map[string]string{
-		"id":      id,
-		"email":   req.Email,
-		"message": "user created",
+		"id":        id,
+		"email":     req.Email,
+		"role":      role,
+		"job_title": req.JobTitle,
+		"message":   "user created",
 	})
 }
 
@@ -164,7 +168,10 @@ func Logout(w http.ResponseWriter, r *http.Request) {
 
 	json.NewEncoder(w).Encode(map[string]string{"message": "logged out"})
 }
+
 func Me(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+
 	userID, ok := auth.UserIDFromContext(r.Context())
 	if !ok {
 		http.Error(w, "not authenticated", http.StatusUnauthorized)
@@ -172,11 +179,12 @@ func Me(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var email, fullName, role string
+	var jobTitle *string
 	err := db.Pool.QueryRow(
 		r.Context(),
-		`SELECT email, full_name, role FROM users WHERE id = $1`,
+		`SELECT email, full_name, role, job_title FROM users WHERE id = $1`,
 		userID,
-	).Scan(&email, &fullName, &role)
+	).Scan(&email, &fullName, &role, &jobTitle)
 
 	if err != nil {
 		log.Printf("error fetching user: %v", err)
@@ -202,14 +210,16 @@ func Me(w http.ResponseWriter, r *http.Request) {
 		"email":      email,
 		"full_name":  fullName,
 		"role":       role,
+		"job_title":  jobTitle,
 		"clocked_in": clockedIn,
 	})
 }
 
 type userSummary struct {
-	ID       string `json:"id"`
-	FullName string `json:"full_name"`
-	Role     string `json:"role"`
+	ID       string  `json:"id"`
+	FullName string  `json:"full_name"`
+	Role     string  `json:"role"`
+	JobTitle *string `json:"job_title"`
 }
 
 func ListUsers(w http.ResponseWriter, r *http.Request) {
@@ -217,7 +227,7 @@ func ListUsers(w http.ResponseWriter, r *http.Request) {
 
 	rows, err := db.Pool.Query(
 		r.Context(),
-		`SELECT id, full_name, role FROM users ORDER BY full_name`,
+		`SELECT id, full_name, role, job_title FROM users ORDER BY full_name`,
 	)
 	if err != nil {
 		log.Printf("error fetching users: %v", err)
@@ -229,7 +239,7 @@ func ListUsers(w http.ResponseWriter, r *http.Request) {
 	users := []userSummary{}
 	for rows.Next() {
 		var user userSummary
-		if err := rows.Scan(&user.ID, &user.FullName, &user.Role); err != nil {
+		if err := rows.Scan(&user.ID, &user.FullName, &user.Role, &user.JobTitle); err != nil {
 			log.Printf("error scanning user: %v", err)
 			http.Error(w, "could not fetch users", http.StatusInternalServerError)
 			return

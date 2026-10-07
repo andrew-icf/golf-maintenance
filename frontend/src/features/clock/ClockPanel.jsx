@@ -1,11 +1,13 @@
 import { useState } from 'react'
-import { useAuth } from '../AuthContext'
-import { api } from '../api'
 import { useNavigate } from 'react-router-dom'
+import { useAuth } from '../auth/AuthContext'
+import { api } from '../../api'
 import './ClockPanel.css'
+import { formatJobTitle } from '../../constants/jobTitles'
 
 export function ClockPanel() {
-  const { user, logout } = useAuth()
+  const { user, logout, refreshUser } = useAuth()
+  const jobTitleLabel = formatJobTitle(user.job_title)
   const navigate = useNavigate()
   const [status, setStatus] = useState('')
 
@@ -36,7 +38,10 @@ export function ClockPanel() {
 
   return (
     <div className="clock-panel">
-      <p>Welcome, {user.full_name}</p>
+      <div className="welcome-block">
+        <p className="welcome">Welcome, { user.full_name }</p>
+        { jobTitleLabel && <p className="job-title">{ jobTitleLabel }</p> }
+      </div>
       <div className="clock-buttons">
         {user.clocked_in ? (
           <button onClick={handleClockOut}>Clock Out</button>

@@ -5,7 +5,7 @@ import { LoginForm } from './LoginForm'
 
 const { loginMock } = vi.hoisted(() => ({ loginMock: vi.fn() }))
 
-vi.mock('../AuthContext', () => ({
+vi.mock('./AuthContext', () => ({
   useAuth: () => ({ login: loginMock }),
 }))
 

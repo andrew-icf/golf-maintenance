@@ -1,5 +1,5 @@
 import { createContext, useContext, useEffect, useState } from 'react'
-import { api } from './api'
+import { api } from '../../api'
 
 const AuthContext = createContext(null)
 
@@ -21,8 +21,8 @@ export function AuthProvider({ children }) {
   }, [])
 
   async function login(email, password) {
-    const data = await api.login(email, password)
-    setUser(data)
+    await api.login(email, password)
+    await refreshUser()
   }
 
   async function logout() {

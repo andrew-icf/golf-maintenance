@@ -11,7 +11,7 @@ const { apiMock } = vi.hoisted(() => ({
   },
 }))
 
-vi.mock('../api', () => ({ api: apiMock }))
+vi.mock('../../api', () => ({ api: apiMock }))
 
 // Test data
 const EMPLOYEES = [

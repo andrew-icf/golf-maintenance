@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { api } from '../../api'
 import './CreateShiftForm.css'
+import { formatJobTitle } from '../../constants/jobTitles'
 
 const DAYS_OF_WEEK = [
   { value: 'sunday', label: 'Sun' },
@@ -109,9 +110,14 @@ export function CreateShiftForm({ onCreated }) {
         Employee
         <select value={ userId } onChange={ (event) => setUserId(event.target.value) } required>
           <option value="" disabled>Select an employee</option>
-          {users.map((user) => (
-            <option key={ user.id } value={ user.id }>{ user.full_name }</option>
-          ))}
+          {users.map((user) => {
+            const jobTitleLabel = formatJobTitle(user.job_title)
+            return (
+              <option key={ user.id } value={ user.id }>
+                { jobTitleLabel ? `${user.full_name} (${jobTitleLabel})` : user.full_name }
+              </option>
+            )
+          })}
         </select>
       </label>
 

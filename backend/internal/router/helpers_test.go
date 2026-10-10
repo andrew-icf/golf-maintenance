@@ -29,3 +29,12 @@ func decodeJSONObject(t *testing.T, responseBody []byte) map[string]any {
 	}
 	return decoded
 }
+
+func decodeJSONList(t *testing.T, responseBody []byte) []map[string]any {
+	t.Helper()
+	var decoded []map[string]any
+	if err := json.Unmarshal(responseBody, &decoded); err != nil {
+		t.Fatalf("could not decode response %q: %v", string(responseBody), err)
+	}
+	return decoded
+}

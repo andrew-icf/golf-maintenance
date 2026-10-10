@@ -1,0 +1,102 @@
+.week-grid-scroll {
+  width: 100%;
+  max-height: 70vh;
+  overflow: auto;
+  border: 1px solid #dce8d7;
+  border-radius: 12px;
+  background: #ffffff;
+}
+
+.week-grid {
+  width: 100%;
+  min-width: 760px;
+  border-collapse: separate;
+  border-spacing: 0;
+  font-size: 0.85rem;
+}
+
+.week-grid th,
+.week-grid td {
+  padding: 8px 10px;
+  border-bottom: 1px solid #edf3ea;
+  border-right: 1px solid #edf3ea;
+  vertical-align: top;
+  white-space: nowrap;
+  text-align: center;
+}
+
+.week-grid thead th {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  background: #f4f7f2;
+  color: #2f4d38;
+}
+
+.week-grid .employee-column {
+  position: sticky;
+  left: 0;
+  z-index: 1;
+  min-width: 150px;
+  background: #ffffff;
+  text-align: left;
+}
+
+.week-grid thead .employee-column {
+  z-index: 3;
+  background: #f4f7f2;
+}
+
+.day-weekday {
+  display: block;
+  font-weight: 700;
+}
+
+.day-date {
+  display: block;
+  font-weight: 400;
+  color: #4d7a55;
+}
+
+.week-grid thead th.today {
+  background: #2f6b3c;
+  color: #ffffff;
+}
+
+.week-grid thead th.today .day-date {
+  color: #dcebd7;
+}
+
+.week-grid td.today {
+  background: #f6faf4;
+}
+
+.week-grid tr.current-user th,
+.week-grid tr.current-user td {
+  background: #eaf3e6;
+}
+
+.employee-name {
+  display: block;
+  font-weight: 600;
+  color: #17341c;
+}
+
+.employee-title {
+  display: block;
+  font-size: 0.75rem;
+  color: #4d7a55;
+}
+
+.shift {
+  display: block;
+  color: #2f4d38;
+}
+
+.shift + .shift {
+  margin-top: 4px;
+}
+
+.off {
+  color: #b8c9b4;
+}

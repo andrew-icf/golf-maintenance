@@ -40,9 +40,14 @@ export const api = {
       body: JSON.stringify({ status }),
   }),
 
-  getSchedules: () => request('/api/schedule'),
-
   getUsers: () => request('/api/users'),
+  
+  getSchedules: (startDate, endDate) => {
+    const query = startDate && endDate ? `?start=${startDate}&end=${endDate}` : ''
+    return request(`/api/schedule${query}`)
+  },
+
+  getRoster: () => request('/api/roster'),
   
   createSchedule: (shift) =>
     request('/api/schedule', {
@@ -54,5 +59,17 @@ export const api = {
     request('/api/schedule/repeat', {
       method: 'POST',
       body: JSON.stringify(pattern),
-    }),  
+    }),
+
+  updateSchedule: (shiftId, shift) =>
+    request(`/api/schedule/${shiftId}`, {
+      method: 'PUT',
+      body: JSON.stringify(shift),
+    }),
+
+  deleteSchedules: (shiftIds) =>
+    request('/api/schedule', {
+      method: 'DELETE',
+      body: JSON.stringify({ ids: shiftIds }),
+    }),
 }

@@ -17,15 +17,53 @@ import (
 	"golf-maintenance/backend/internal/models"
 )
 
+const maxScheduleRangeDays = 62
+
 func GetSchedules(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
+
+	startParam := r.URL.Query().Get("start")
+	endParam := r.URL.Query().Get("end")
+
+	var startDate, endDate *string
+	if startParam != "" || endParam != "" {
+		if startParam == "" || endParam == "" {
+			http.Error(w, "start and end must be provided together", http.StatusBadRequest)
+			return
+		}
+
+		parsedStart, err := time.Parse("2006-01-02", startParam)
+		if err != nil {
+			http.Error(w, "invalid start date", http.StatusBadRequest)
+			return
+		}
+		parsedEnd, err := time.Parse("2006-01-02", endParam)
+		if err != nil {
+			http.Error(w, "invalid end date", http.StatusBadRequest)
+			return
+		}
+		if parsedEnd.Before(parsedStart) {
+			http.Error(w, "end must not be before start", http.StatusBadRequest)
+			return
+		}
+		if parsedEnd.Sub(parsedStart) > maxScheduleRangeDays*24*time.Hour {
+			http.Error(w, fmt.Sprintf("date range cannot exceed %d days", maxScheduleRangeDays), http.StatusBadRequest)
+			return
+		}
+
+		startDate = &startParam
+		endDate = &endParam
+	}
 
 	rows, err := db.Pool.Query(
 		r.Context(),
 		`SELECT s.id, s.user_id, u.full_name, s.shift_date::text, s.start_time::text, s.end_time::text
-		FROM schedules s
-		JOIN users u ON u.id = s.user_id
-		ORDER BY s.shift_date, s.start_time`,
+		 FROM schedules s
+		 JOIN users u ON u.id = s.user_id
+		 WHERE ($1::date IS NULL OR s.shift_date >= $1::date)
+		   AND ($2::date IS NULL OR s.shift_date <= $2::date)
+		 ORDER BY s.shift_date, s.start_time`,
+		startDate, endDate,
 	)
 	if err != nil {
 		log.Printf("error fetching schedules: %v", err)
@@ -36,13 +74,13 @@ func GetSchedules(w http.ResponseWriter, r *http.Request) {
 
 	schedules := []models.Schedule{}
 	for rows.Next() {
-		var s models.Schedule
-		if err := rows.Scan(&s.ID, &s.UserID, &s.FullName, &s.ShiftDate, &s.StartTime, &s.EndTime); err != nil {
+		var schedule models.Schedule
+		if err := rows.Scan(&schedule.ID, &schedule.UserID, &schedule.FullName, &schedule.ShiftDate, &schedule.StartTime, &schedule.EndTime); err != nil {
 			log.Printf("error scanning schedule: %v", err)
 			http.Error(w, "could not fetch schedules", http.StatusInternalServerError)
 			return
 		}
-		schedules = append(schedules, s)
+		schedules = append(schedules, schedule)
 	}
 
 	json.NewEncoder(w).Encode(schedules)

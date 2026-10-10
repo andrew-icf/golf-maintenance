@@ -42,7 +42,12 @@ export const api = {
 
   getUsers: () => request('/api/users'),
   
-  getSchedules: () => request('/api/schedule'),
+  getSchedules: (startDate, endDate) => {
+    const query = startDate && endDate ? `?start=${startDate}&end=${endDate}` : ''
+    return request(`/api/schedule${query}`)
+  },
+
+  getRoster: () => request('/api/roster'),
   
   createSchedule: (shift) =>
     request('/api/schedule', {

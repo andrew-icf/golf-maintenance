@@ -1,4 +1,4 @@
-import { Navigate, Route, Routes } from 'react-router-dom'
+import { Navigate, Route, Routes, useLocation } from 'react-router-dom'
 import './App.css'
 import { useAuth } from './features/auth/AuthContext'
 import { LoginForm } from './features/auth/LoginForm'
@@ -11,6 +11,8 @@ import { ScheduleView } from './features/schedule/ScheduleView'
 
 function App() {
   const { user, loading } = useAuth()
+  const { pathname } = useLocation()
+  const isWideLayout = pathname.startsWith('/schedule')
 
   if (loading) {
     return (
@@ -24,7 +26,7 @@ function App() {
 
   return (
     <main className="app-shell">
-      <section className="card">
+      <section className={ isWideLayout ? 'card card-wide' : 'card' }>
         <p className="eyebrow">Golf Maintenance</p>
         {user && <NavBar />}
         <Routes>

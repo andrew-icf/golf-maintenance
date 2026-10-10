@@ -60,3 +60,8 @@ h1 {
   color: #ffffff;
   border-color: #2f6b3c;
 }
+
+.card.card-wide {
+  width: min(1280px, 96vw);
+  padding: 40px 24px;
+}

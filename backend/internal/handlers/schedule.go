@@ -9,7 +9,9 @@ import (
 	"strings"
 	"time"
 
+	"github.com/go-chi/chi/v5"
 	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgconn"
 
 	"golf-maintenance/backend/internal/db"
 	"golf-maintenance/backend/internal/models"
@@ -214,5 +216,122 @@ func RepeatSchedule(w http.ResponseWriter, r *http.Request) {
 		"created": createdDates,
 		"skipped": skippedDates,
 		"message": "shifts created",
+	})
+}
+
+type updateScheduleRequest struct {
+	ShiftDate string `json:"shift_date"`
+	StartTime string `json:"start_time"`
+	EndTime   string `json:"end_time"`
+}
+
+func UpdateSchedule(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+
+	id := chi.URLParam(r, "id")
+
+	var req updateScheduleRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, "invalid request body", http.StatusBadRequest)
+		return
+	}
+
+	if req.ShiftDate == "" || req.StartTime == "" || req.EndTime == "" {
+		http.Error(w, "shift_date, start_time, and end_time are required", http.StatusBadRequest)
+		return
+	}
+
+	if req.EndTime <= req.StartTime {
+		http.Error(w, "end_time must be after start_time", http.StatusBadRequest)
+		return
+	}
+
+	if _, err := time.Parse("2006-01-02", req.ShiftDate); err != nil {
+		http.Error(w, "invalid shift_date", http.StatusBadRequest)
+		return
+	}
+
+	var updatedID string
+	err := db.Pool.QueryRow(
+		r.Context(),
+		`UPDATE schedules
+		 SET shift_date = $1, start_time = $2, end_time = $3
+		 WHERE id = $4
+		 RETURNING id`,
+		req.ShiftDate, req.StartTime, req.EndTime, id,
+	).Scan(&updatedID)
+
+	if errors.Is(err, pgx.ErrNoRows) {
+		http.Error(w, "shift not found", http.StatusNotFound)
+		return
+	}
+	if err != nil {
+		var pgError *pgconn.PgError
+		if errors.As(err, &pgError) && pgError.Code == "22P02" {
+			// The id in the URL isn't a valid UUID, so no shift can match it
+			http.Error(w, "shift not found", http.StatusNotFound)
+			return
+		}
+		log.Printf("error updating schedule: %v", err)
+		http.Error(w, "internal server error", http.StatusInternalServerError)
+		return
+	}
+
+	json.NewEncoder(w).Encode(map[string]string{
+		"id":      updatedID,
+		"message": "shift updated",
+	})
+}
+
+type deleteSchedulesRequest struct {
+	IDs []string `json:"ids"`
+}
+
+const maxDeleteBatchSize = 200
+
+func DeleteSchedules(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+
+	var req deleteSchedulesRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, "invalid request body", http.StatusBadRequest)
+		return
+	}
+
+	if len(req.IDs) == 0 {
+		http.Error(w, "ids is required", http.StatusBadRequest)
+		return
+	}
+	if len(req.IDs) > maxDeleteBatchSize {
+		http.Error(w, fmt.Sprintf("cannot delete more than %d shifts at once", maxDeleteBatchSize), http.StatusBadRequest)
+		return
+	}
+
+	// Sent as text and cast to uuid inside Postgres, so a malformed id fails
+	// the whole statement instead of being half-processed.
+	result, err := db.Pool.Exec(
+		r.Context(),
+		`DELETE FROM schedules WHERE id = ANY($1::text[]::uuid[])`,
+		req.IDs,
+	)
+	if err != nil {
+		var pgError *pgconn.PgError
+		if errors.As(err, &pgError) && pgError.Code == "22P02" {
+			http.Error(w, "one or more ids are invalid", http.StatusBadRequest)
+			return
+		}
+		log.Printf("error deleting schedules: %v", err)
+		http.Error(w, "internal server error", http.StatusInternalServerError)
+		return
+	}
+
+	if result.RowsAffected() == 0 {
+		http.Error(w, "no matching shifts found", http.StatusNotFound)
+		return
+	}
+
+	json.NewEncoder(w).Encode(map[string]any{
+		"deleted": result.RowsAffected(),
+		"message": "shifts deleted",
 	})
 }

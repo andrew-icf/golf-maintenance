@@ -34,6 +34,8 @@ func New() http.Handler {
 		r.With(auth.RequireRole("admin")).Post("/api/schedule", handlers.CreateSchedule)
 		r.With(auth.RequireRole("admin")).Get("/api/users", handlers.ListUsers)
 		r.With(auth.RequireRole("admin")).Post("/api/schedule/repeat", handlers.RepeatSchedule)
+		r.With(auth.RequireRole("admin")).Put("/api/schedule/{id}", handlers.UpdateSchedule)
+		r.With(auth.RequireRole("admin")).Delete("/api/schedule", handlers.DeleteSchedules)
 	})
 
 	return r

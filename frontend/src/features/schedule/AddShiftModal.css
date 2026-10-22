@@ -1,0 +1,41 @@
+.add-shift-result {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  padding: 8px 0;
+  text-align: center;
+}
+
+.result-headline {
+  margin: 0;
+  font-size: 1.3rem;
+  font-weight: 700;
+  color: #17341c;
+}
+
+.result-detail {
+  margin: 6px 0 0;
+  color: #4d7a55;
+}
+
+.result-actions {
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+}
+
+.result-actions button {
+  padding: 10px 20px;
+  border: 1px solid #dce8d7;
+  border-radius: 10px;
+  background: none;
+  color: #4d7a55;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.result-actions .primary {
+  border-color: #2f6b3c;
+  background: #2f6b3c;
+  color: #ffffff;
+}

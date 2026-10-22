@@ -1,0 +1,71 @@
+.editor-empty {
+  margin: 0 0 8px;
+  color: #6b8a70;
+}
+
+.editor-section {
+  padding: 12px 0;
+  border-top: 1px solid #edf3ea;
+}
+
+.editor-section-title {
+  margin: 0 0 8px;
+  font-size: 0.8rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: #2f4d38;
+}
+
+.time-range {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.time-range input {
+  flex: 1;
+  padding: 8px 10px;
+  border: 1px solid #cfe0c9;
+  border-radius: 8px;
+  font-size: 1rem;
+  font-family: inherit;
+}
+
+.editor-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.editor-actions button {
+  padding: 8px 16px;
+  border: 1px solid #dce8d7;
+  border-radius: 8px;
+  background: none;
+  color: #4d7a55;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.editor-actions .primary {
+  border-color: #2f6b3c;
+  background: #2f6b3c;
+  color: #ffffff;
+}
+
+.editor-actions .danger {
+  border-color: #d9736a;
+  color: #b3261e;
+}
+
+.editor-actions button:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+.editor-error {
+  margin: 8px 0 0;
+  color: #b3261e;
+  font-size: 0.9rem;
+}

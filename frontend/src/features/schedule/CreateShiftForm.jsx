@@ -24,7 +24,6 @@ export function CreateShiftForm({ onCreated }) {
   const [selectedDays, setSelectedDays] = useState([])
   const [error, setError] = useState('')
   const [submitting, setSubmitting] = useState(false)
-  const [summary, setSummary] = useState('')
 
   useEffect(() => {
     api
@@ -39,51 +38,50 @@ export function CreateShiftForm({ onCreated }) {
     )
   }
 
-  async function handleSubmit(event) {
-    event.preventDefault()
-    setError('')
-    setSummary('')
+   async function handleSubmit(event) {
+     event.preventDefault()
+     setError('')
 
-    if (endTime <= startTime) {
-      setError('End time must be after start time')
-      return
-    }
+     if (endTime <= startTime) {
+       setError('End time must be after start time')
+       return
+     }
 
-    setSubmitting(true)
-    try {
-      if (mode === 'single') {
-        await api.createSchedule({
-          user_id: userId,
-          shift_date: shiftDate,
-          start_time: startTime,
-          end_time: endTime,
-        })
-        setShiftDate('')
-      } else {
-        if (selectedDays.length === 0) {
-          setError('Select at least one day of the week')
-          setSubmitting(false)
-          return
-        }
-        const result = await api.repeatSchedule({
-          user_id: userId,
-          start_date: shiftDate,
-          weeks,
-          days: selectedDays,
-          start_time: startTime,
-          end_time: endTime,
-        })
-        const createdCount = result.created?.length || 0
-        const skippedCount = result.skipped?.length || 0
-        setSummary(`Added ${createdCount} shift(s)${skippedCount ? `, skipped ${skippedCount} (already scheduled)` : ''}.`)
-      }
-      onCreated()
-    } catch (err) {
-      setError(err.message)
-    } finally {
-      setSubmitting(false)
-    }
-  }
+     if (mode === 'repeat' && selectedDays.length === 0) {
+       setError('Select at least one day of the week')
+       return
+     }
+
+     setSubmitting(true)
+     try {
+       if (mode === 'single') {
+         await api.createSchedule({
+           user_id: userId,
+           shift_date: shiftDate,
+           start_time: startTime,
+           end_time: endTime,
+         })
+         onCreated({ createdCount: 1, skippedCount: 0 })
+       } else {
+         const result = await api.repeatSchedule({
+           user_id: userId,
+           start_date: shiftDate,
+           weeks,
+           days: selectedDays,
+           start_time: startTime,
+           end_time: endTime,
+         })
+         onCreated({
+           createdCount: result.created?.length || 0,
+           skippedCount: result.skipped?.length || 0,
+         })
+       }
+     } catch (err) {
+       setError(err.message)
+     } finally {
+       setSubmitting(false)
+     }
+   }
 
   return (
     <form onSubmit={ handleSubmit } className="create-shift-form">
@@ -182,7 +180,6 @@ export function CreateShiftForm({ onCreated }) {
       </div>
 
       { error && <p className="error">{ error }</p> }
-      { summary && <p className="summary">{ summary }</p> }
 
       <button type="submit" disabled={ submitting }>
         { submitting ? 'Adding...' : mode === 'single' ? 'Add shift' : 'Add shifts' }

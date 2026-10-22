@@ -3,80 +3,18 @@
   text-align: left;
 }
 
-.schedule-view h2 {
-  margin: 0 0 24px;
-  color: #17341c;
-  text-align: center;
-}
-
-.schedule-view h3 {
-  margin: 0 0 8px;
-  color: #2f4d38;
-  font-size: 0.95rem;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-}
-
-.schedule-view section {
-  margin-bottom: 24px;
-}
-
-.shift-list {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-.shift-row {
-  display: flex;
-  justify-content: space-between;
+.schedule-toolbar {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
   align-items: center;
-  background: #f4f7f2;
-  border: 1px solid #dce8d7;
-  border-radius: 8px;
-  padding: 10px 14px;
-}
-
-.shift-name {
-  font-weight: 600;
-  color: #2f4d38;
-}
-
-.shift-time {
-  font-size: 0.9rem;
-  color: #4d7a55;
-}
-
-.admin-actions {
-  margin-bottom: 28px;
-}
-
-.toggle-form-button {
-  width: 100%;
-  padding: 12px;
-  border: 1px dashed #2f6b3c;
-  border-radius: 10px;
-  background: none;
-  color: #2f6b3c;
-  font-size: 0.95rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: background 0.15s ease;
-}
-
-.toggle-form-button:hover {
-  background: #f4f7f2;
+  margin-bottom: 16px;
 }
 
 .week-nav {
+  grid-column: 2;
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: 8px;
-  margin-bottom: 16px;
+  gap: 16px;
 }
 
 .week-nav-center {
@@ -84,6 +22,8 @@
   flex-direction: column;
   align-items: center;
   gap: 4px;
+  /* Wide enough for the longest label, so the arrows stay put while paging */
+  min-width: 15rem;
 }
 
 .week-nav-label {
@@ -113,4 +53,47 @@
 .week-nav .this-week-button {
   padding: 2px 10px;
   font-size: 0.8rem;
+}
+
+.add-shift-button {
+  grid-column: 3;
+  justify-self: end;
+  padding: 10px 18px;
+  border: none;
+  border-radius: 10px;
+  background: #2f6b3c;
+  color: #ffffff;
+  font-size: 0.95rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+.add-shift-button:hover {
+  background: #255530;
+}
+
+@media (max-width: 640px) {
+  .schedule-toolbar {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+
+  .week-nav,
+  .add-shift-button {
+    grid-column: 1;
+  }
+
+  .week-nav {
+    justify-content: space-between;
+  }
+
+  .week-nav-center {
+    flex: 1;
+    min-width: 0;
+  }
+
+  .add-shift-button {
+    justify-self: stretch;
+  }
 }

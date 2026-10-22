@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { api } from '../../api'
 import { useAuth } from '../auth/AuthContext'
 import './ScheduleView.css'
-import { CreateShiftForm } from './CreateShiftForm'
+import { AddShiftModal } from './AddShiftModal'
 import { WeekGrid } from './WeekGrid'
 import { buildWeekGrid } from './buildWeekGrid'
 import {
@@ -21,7 +21,7 @@ export function ScheduleView() {
   const [refreshCount, setRefreshCount] = useState(0)
   const [rosterError, setRosterError] = useState('')
   const [shiftsError, setShiftsError] = useState('')
-  const [showForm, setShowForm] = useState(false)
+  const [isAddModalOpen, setIsAddModalOpen] = useState(false)
 
   const todayDate = todayDateString()
   const thisWeekStart = getWeekStart(todayDate)
@@ -64,7 +64,7 @@ export function ScheduleView() {
     setWeekStart(newWeekStart)
   }
 
-  function handleCreated() {
+  function handleShiftsAdded() {
     setRefreshCount((current) => current + 1)
   }
 
@@ -80,38 +80,31 @@ export function ScheduleView() {
 
   return (
     <div className="schedule-view">
-      <h2>Schedule</h2>
-
-      { user.role === 'admin' && (
-        <div className="admin-actions">
-          <button
-            className="toggle-form-button"
-            onClick={ () => setShowForm((current) => !current) }
-            aria-expanded={ showForm }
-          >
-            { showForm ? 'Close' : '+ Add shift' }
+      <div className="schedule-toolbar">
+        <div className="week-nav">
+          <button aria-label="Previous week" onClick={ () => goToWeek(addWeeks(weekStart, -1)) }>
+            ‹
           </button>
-          { showForm && <CreateShiftForm onCreated={ handleCreated } /> }
-        </div>
-      )}
-
-      <div className="week-nav">
-        <button aria-label="Previous week" onClick={ () => goToWeek(addWeeks(weekStart, -1)) }>
-          ‹
-        </button>
-        <div className="week-nav-center">
-          <span className="week-nav-label">{ formatWeekRange(weekStart) }</span>
-          <button
-            className="this-week-button"
-            onClick={ () => goToWeek(thisWeekStart) }
-            disabled={ weekStart === thisWeekStart }
-          >
-            This week
+          <div className="week-nav-center">
+            <span className="week-nav-label">{ formatWeekRange(weekStart) }</span>
+            <button
+              className="this-week-button"
+              onClick={ () => goToWeek(thisWeekStart) }
+              disabled={ weekStart === thisWeekStart }
+            >
+              This week
+            </button>
+          </div>
+          <button aria-label="Next week" onClick={ () => goToWeek(addWeeks(weekStart, 1)) }>
+            ›
           </button>
         </div>
-        <button aria-label="Next week" onClick={ () => goToWeek(addWeeks(weekStart, 1)) }>
-          ›
-        </button>
+
+        { user.role === 'admin' && (
+          <button className="add-shift-button" onClick={ () => setIsAddModalOpen(true) }>
+            + Add shift
+          </button>
+        )}
       </div>
 
       { shiftsError && <p className="error">{ shiftsError }</p> }
@@ -126,6 +119,13 @@ export function ScheduleView() {
           }) }
           weekDates={ weekDates }
           todayDate={ todayDate }
+        />
+      )}
+
+      { isAddModalOpen && (
+        <AddShiftModal
+          onShiftsAdded={ handleShiftsAdded }
+          onClose={ () => setIsAddModalOpen(false) }
         />
       )}
     </div>

@@ -85,7 +85,6 @@ export function CreateShiftForm({ onCreated }) {
 
   return (
     <form onSubmit={ handleSubmit } className="create-shift-form">
-      <p className="form-title">Add a shift</p>
 
       <div className="mode-toggle">
         <button

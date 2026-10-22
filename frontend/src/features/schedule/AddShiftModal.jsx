@@ -16,7 +16,6 @@ function describeResult({ createdCount, skippedCount }) {
 
 export function AddShiftModal({ onShiftsAdded, onClose }) {
   const [result, setResult] = useState(null)
-  const [formKey, setFormKey] = useState(0)
   const doneButtonRef = useRef(null)
 
   // The form unmounts on success, which drops focus. Put it on "Done" instead,
@@ -34,8 +33,6 @@ export function AddShiftModal({ onShiftsAdded, onClose }) {
 
   function handleAddAnother() {
     setResult(null)
-    // A new key makes React build a fresh form, so every field starts empty again
-    setFormKey((current) => current + 1)
   }
 
   const description = result ? describeResult(result) : null
@@ -54,7 +51,7 @@ export function AddShiftModal({ onShiftsAdded, onClose }) {
           </div>
         </div>
       ) : (
-        <CreateShiftForm key={ formKey } onCreated={ handleCreated } />
+        <CreateShiftForm onCreated={ handleCreated } />
       )}
     </Modal>
   )

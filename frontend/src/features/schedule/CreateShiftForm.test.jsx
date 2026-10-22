@@ -29,8 +29,17 @@ const END_BEFORE_START_SHIFT = { ...VALID_SHIFT, startTime: '15:00', endTime: '0
 const REPEAT_WEEKS = '3'
 const DAY_BUTTON_LABELS = ['Mon', 'Wed', 'Fri']
 const EXPECTED_DAY_NAMES = ['monday', 'wednesday', 'friday']
+
+// What the server sends back for a repeat request
 const REPEAT_RESULT_WITH_SKIPS = { created: ['2026-10-05', '2026-10-07'], skipped: ['2026-10-09'] }
 const REPEAT_RESULT_NO_SKIPS = { created: ['2026-10-05'], skipped: null }
+const REPEAT_RESULT_ALL_SKIPPED = { created: null, skipped: ['2026-10-05', '2026-10-07'] }
+
+// What the form reports to its parent after a success
+const SINGLE_SHIFT_SUMMARY = { createdCount: 1, skippedCount: 0 }
+const SUMMARY_WITH_SKIPS = { createdCount: 2, skippedCount: 1 }
+const SUMMARY_NO_SKIPS = { createdCount: 1, skippedCount: 0 }
+const SUMMARY_ALL_SKIPPED = { createdCount: 0, skippedCount: 2 }
 
 const END_BEFORE_START_MESSAGE = 'End time must be after start time'
 const NO_DAYS_MESSAGE = 'Select at least one day of the week'
@@ -97,7 +106,7 @@ describe('CreateShiftForm', () => {
       expect(screen.getByRole('option', { name: EMPLOYEES[1].full_name })).toBeInTheDocument()
     })
 
-    it('creates the shift with the entered details and notifies the parent', async () => {
+    it('creates the shift with the entered details and reports one shift created', async () => {
       givenCreateShiftSucceeds()
       const onCreated = await renderForm()
 
@@ -111,8 +120,7 @@ describe('CreateShiftForm', () => {
         end_time: VALID_SHIFT.endTime,
       })
       await waitFor(() => {
-        expect(onCreated).toHaveBeenCalledTimes(1)
-        expect(screen.getByLabelText(/date/i)).toHaveValue('')
+        expect(onCreated).toHaveBeenCalledWith(SINGLE_SHIFT_SUMMARY)
       })
     })
 
@@ -170,10 +178,9 @@ describe('CreateShiftForm', () => {
         end_time: VALID_SHIFT.endTime,
       })
       expect(apiMock.createSchedule).not.toHaveBeenCalled()
-      expect(
-        await screen.findByText('Added 2 shift(s), skipped 1 (already scheduled).')
-      ).toBeInTheDocument()
-      expect(onCreated).toHaveBeenCalledTimes(1)
+      await waitFor(() => {
+        expect(onCreated).toHaveBeenCalledWith(SUMMARY_WITH_SKIPS)
+      })
     })
 
     it('requires at least one day to be selected', async () => {
@@ -203,16 +210,32 @@ describe('CreateShiftForm', () => {
       )
     })
 
-    it('handles a server response where nothing was skipped', async () => {
+    it('reports zero skipped when the server sends null for skipped', async () => {
       givenRepeatSucceeds(REPEAT_RESULT_NO_SKIPS)
-      await renderForm()
+      const onCreated = await renderForm()
       await switchToRepeatMode()
 
       await fillShiftDetails(VALID_SHIFT)
       await clickButton('Mon')
       await clickButton('Add shifts')
 
-      expect(await screen.findByText('Added 1 shift(s).')).toBeInTheDocument()
+      await waitFor(() => {
+        expect(onCreated).toHaveBeenCalledWith(SUMMARY_NO_SKIPS)
+      })
+    })
+
+    it('reports zero created when the server sends null for created', async () => {
+      givenRepeatSucceeds(REPEAT_RESULT_ALL_SKIPPED)
+      const onCreated = await renderForm()
+      await switchToRepeatMode()
+
+      await fillShiftDetails(VALID_SHIFT)
+      await clickButton('Mon')
+      await clickButton('Add shifts')
+
+      await waitFor(() => {
+        expect(onCreated).toHaveBeenCalledWith(SUMMARY_ALL_SKIPPED)
+      })
     })
   })
 })

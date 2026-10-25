@@ -2,7 +2,30 @@ import { formatJobTitle } from '../../constants/jobTitles'
 import { formatDayLabel, formatShiftRange } from './scheduleDates'
 import './WeekGrid.css'
 
-export function WeekGrid({ rows, weekDates, todayDate }) {
+function describeShifts(shifts) {
+  if (shifts.length === 0) {
+    return 'day off'
+  }
+  return shifts.map((shift) => formatShiftRange(shift.start_time, shift.end_time)).join(', ')
+}
+
+function CellContent({ shifts }) {
+  if (shifts.length === 0) {
+    return <span className="off">—</span>
+  }
+
+  return (
+    <>
+      {shifts.map((shift) => (
+        <span key={ shift.id } className="shift">
+          { formatShiftRange(shift.start_time, shift.end_time) }
+        </span>
+      ))}
+    </>
+  )
+}
+
+export function WeekGrid({ rows, weekDates, todayDate, onCellClick }) {
   if (rows.length === 0) {
     return <p className="status">No staff to schedule yet.</p>
   }
@@ -33,19 +56,30 @@ export function WeekGrid({ rows, weekDates, todayDate }) {
                   <span className="employee-name">{ row.employee.full_name }</span>
                   { jobTitleLabel && <span className="employee-title">{ jobTitleLabel }</span> }
                 </th>
-                {row.cells.map((cell) => (
-                  <td key={ cell.date } className={ cell.date === todayDate ? 'today' : '' }>
-                    {cell.shifts.length === 0 ? (
-                      <span className="off">—</span>
-                    ) : (
-                      cell.shifts.map((shift) => (
-                        <span key={ shift.id } className="shift">
-                          { formatShiftRange(shift.start_time, shift.end_time) }
-                        </span>
-                      ))
-                    )}
-                  </td>
-                ))}
+                {row.cells.map((cell) => {
+                  const { weekday, monthDay } = formatDayLabel(cell.date)
+                  const classNames = [
+                    cell.date === todayDate ? 'today' : '',
+                    onCellClick ? 'editable' : '',
+                  ].filter(Boolean).join(' ')
+
+                  return (
+                    <td key={ cell.date } className={ classNames }>
+                      {onCellClick ? (
+                        <button
+                          type="button"
+                          className="cell-button"
+                          aria-label={ `Edit ${row.employee.full_name}, ${weekday} ${monthDay}: ${describeShifts(cell.shifts)}` }
+                          onClick={ () => onCellClick(row.employee, cell.date, cell.shifts) }
+                        >
+                          <CellContent shifts={ cell.shifts } />
+                        </button>
+                      ) : (
+                        <CellContent shifts={ cell.shifts } />
+                      )}
+                    </td>
+                  )
+                })}
               </tr>
             )
           })}

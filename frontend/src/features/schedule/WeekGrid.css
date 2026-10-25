@@ -100,3 +100,39 @@
 .off {
   color: #b8c9b4;
 }
+
+.week-grid td.editable {
+  position: relative;
+  padding: 0;
+}
+
+.cell-button {
+  display: block;
+  width: 100%;
+  padding: 8px 10px;
+  border: 0;
+  background: none;
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+}
+
+/* The button stays small, but this overlay stretches its click area over the whole cell */
+.cell-button::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+}
+
+.cell-button:focus-visible {
+  outline: none;
+}
+
+.week-grid td.editable:hover {
+  background: #eaf3e6;
+}
+
+.week-grid td.editable:focus-within {
+  outline: 2px solid #2f6b3c;
+  outline-offset: -2px;
+}

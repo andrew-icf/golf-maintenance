@@ -11,8 +11,8 @@ const { apiMock, useAuthMock } = vi.hoisted(() => ({
 vi.mock('../../api', () => ({ api: apiMock }))
 vi.mock('../auth/AuthContext', () => ({ useAuth: useAuthMock }))
 
-// A stand-in for the real modal, which has its own tests. It exposes the two
-// props ScheduleView hands it, so these tests can check the wiring.
+// Stand-ins for the two dialogs. Each has its own tests, so here they only
+// expose the props ScheduleView hands them, which lets these tests check the wiring.
 vi.mock('./AddShiftModal', async () => {
   const { createElement } = await import('react')
   return {
@@ -22,6 +22,25 @@ vi.mock('./AddShiftModal', async () => {
         { role: 'dialog', 'aria-label': 'Add shifts' },
         createElement('button', { onClick: onShiftsAdded }, 'Simulate shifts added'),
         createElement('button', { onClick: onClose }, 'Close modal')
+      ),
+  }
+})
+
+vi.mock('./ShiftEditor', async () => {
+  const { createElement } = await import('react')
+  return {
+    ShiftEditor: ({ employee, date, shifts, onChanged, onClose }) =>
+      createElement(
+        'div',
+        { role: 'dialog', 'aria-label': 'Edit shifts' },
+        createElement('p', null, `Editing ${employee.full_name} on ${date}`),
+        createElement(
+          'p',
+          null,
+          `Shifts in dialog: ${shifts.map((shift) => shift.id).join(', ') || 'none'}`
+        ),
+        createElement('button', { onClick: onChanged }, 'Simulate change'),
+        createElement('button', { onClick: onClose }, 'Close editor')
       ),
   }
 })
@@ -58,6 +77,7 @@ const LEIA_THURSDAY = makeShift('shift-2', LEIA, '2026-10-22', '04:00:00', '13:0
 const LUKE_NEXT_WEEK = makeShift('shift-3', LUKE, '2026-10-26', '07:00:00', '15:30:00')
 const LUKE_LAST_WEEK = makeShift('shift-4', LUKE, '2026-10-13', '05:30:00', '14:00:00')
 const LEIA_NEW_SHIFT = makeShift('shift-5', LEIA, '2026-10-20', '17:00:00', '20:00:00')
+const LEIA_TUESDAY_MORNING = makeShift('shift-6', LEIA, '2026-10-20', '05:00:00', '12:00:00')
 const ALL_SHIFTS = [LUKE_LAST_WEEK, LUKE_MONDAY, LEIA_THURSDAY, LUKE_NEXT_WEEK]
 
 // How each shift appears in the grid
@@ -70,6 +90,22 @@ const DAY_OFF_TEXT = '—'
 const DAYS_IN_WEEK = 7
 const MONDAY_COLUMN = 1
 const THURSDAY_COLUMN = 4
+
+// What a screen reader announces for the clickable cells an admin sees
+const EDIT_BUTTON_PATTERN = /^Edit /
+const CELL_COUNT = ROSTER.length * DAYS_IN_WEEK
+const LUKE_MONDAY_CELL = 'Edit Luke Skywalker, Mon 10/19: 6am – 2:30pm'
+const HAN_SUNDAY_CELL = 'Edit Han Solo, Sun 10/18: day off'
+const LEIA_SPLIT_DAY_CELL = 'Edit Leia Organa, Tue 10/20: 5am – 12pm, 5pm – 8pm'
+
+// What the editor stand-in shows for each cell
+const EDITOR_DIALOG_NAME = 'Edit shifts'
+const EDITOR_LUKE_MONDAY_TEXT = 'Editing Luke Skywalker on 2026-10-19'
+const EDITOR_HAN_SUNDAY_TEXT = 'Editing Han Solo on 2026-10-18'
+const EDITOR_LEIA_TUESDAY_TEXT = 'Editing Leia Organa on 2026-10-20'
+const EDITOR_LUKE_MONDAY_SHIFTS_TEXT = 'Shifts in dialog: shift-1'
+const EDITOR_NO_SHIFTS_TEXT = 'Shifts in dialog: none'
+const EDITOR_SPLIT_DAY_SHIFTS_TEXT = 'Shifts in dialog: shift-6, shift-5'
 
 const ROSTER_ERROR = 'could not fetch roster'
 const SHIFTS_ERROR = 'could not fetch schedules'
@@ -123,6 +159,10 @@ function rowFor(person) {
 
 function dayCells(person) {
   return within(rowFor(person)).getAllByRole('cell')
+}
+
+function queryEditor() {
+  return screen.queryByRole('dialog', { name: EDITOR_DIALOG_NAME })
 }
 
 describe('ScheduleView', () => {
@@ -312,7 +352,7 @@ describe('ScheduleView', () => {
       expect(screen.queryByRole('button', { name: '+ Add shift' })).not.toBeInTheDocument()
     })
 
-    it('highlights the logged-in staff member\'s own row and no other', async () => {
+    it("highlights the logged-in staff member's own row and no other", async () => {
       givenLoggedInAs(STAFF_LUKE)
 
       await renderLoadedSchedule()
@@ -375,6 +415,86 @@ describe('ScheduleView', () => {
       })
 
       expect(screen.getByText(LEIA_NEW_SHIFT_TEXT)).toBeInTheDocument()
+    })
+  })
+
+  describe('editing shifts', () => {
+    it('makes every day cell clickable for an admin', async () => {
+      await renderLoadedSchedule()
+
+      expect(screen.getAllByRole('button', { name: EDIT_BUTTON_PATTERN })).toHaveLength(CELL_COUNT)
+    })
+
+    it('opens no editor until a cell is clicked, then opens it for that employee, day, and shifts', async () => {
+      await renderLoadedSchedule()
+      expect(queryEditor()).not.toBeInTheDocument()
+
+      await clickButton(LUKE_MONDAY_CELL)
+
+      expect(queryEditor()).toBeInTheDocument()
+      expect(screen.getByText(EDITOR_LUKE_MONDAY_TEXT)).toBeInTheDocument()
+      expect(screen.getByText(EDITOR_LUKE_MONDAY_SHIFTS_TEXT)).toBeInTheDocument()
+    })
+
+    it('opens the editor with no shifts for a day off', async () => {
+      await renderLoadedSchedule()
+
+      await clickButton(HAN_SUNDAY_CELL)
+
+      expect(screen.getByText(EDITOR_HAN_SUNDAY_TEXT)).toBeInTheDocument()
+      expect(screen.getByText(EDITOR_NO_SHIFTS_TEXT)).toBeInTheDocument()
+    })
+
+    it('hands the editor every shift of a split day, earliest first', async () => {
+      givenShifts([...ALL_SHIFTS, LEIA_NEW_SHIFT, LEIA_TUESDAY_MORNING])
+      await renderLoadedSchedule()
+
+      await clickButton(LEIA_SPLIT_DAY_CELL)
+
+      expect(screen.getByText(EDITOR_LEIA_TUESDAY_TEXT)).toBeInTheDocument()
+      expect(screen.getByText(EDITOR_SPLIT_DAY_SHIFTS_TEXT)).toBeInTheDocument()
+    })
+
+    it('closes the editor without reloading anything when it is dismissed', async () => {
+      await renderLoadedSchedule()
+      await clickButton(LUKE_MONDAY_CELL)
+
+      await clickButton('Close editor')
+
+      expect(queryEditor()).not.toBeInTheDocument()
+      expect(apiMock.getSchedules).toHaveBeenCalledTimes(1)
+    })
+
+    it('closes the editor and reloads the same week after a change', async () => {
+      await renderLoadedSchedule()
+      await clickButton(LUKE_MONDAY_CELL)
+      givenShifts([...ALL_SHIFTS, LEIA_NEW_SHIFT])
+
+      await clickButton('Simulate change')
+
+      expect(await screen.findByText(LEIA_NEW_SHIFT_TEXT)).toBeInTheDocument()
+      expect(queryEditor()).not.toBeInTheDocument()
+      expect(apiMock.getSchedules).toHaveBeenCalledTimes(2)
+      expect(apiMock.getSchedules).toHaveBeenLastCalledWith(CURRENT_WEEK.start, CURRENT_WEEK.end)
+    })
+
+    it('closes the editor if the week changes while it is open, and does not bring it back', async () => {
+      await renderLoadedSchedule()
+      await clickButton(LUKE_MONDAY_CELL)
+
+      await clickButton('Next week')
+
+      expect(await screen.findByText(LUKE_NEXT_WEEK_TEXT)).toBeInTheDocument()
+      expect(queryEditor()).not.toBeInTheDocument()
+    })
+
+    it('gives a staff member no clickable cells and no editor', async () => {
+      givenLoggedInAs(STAFF_LUKE)
+
+      await renderLoadedSchedule()
+
+      expect(screen.queryAllByRole('button', { name: EDIT_BUTTON_PATTERN })).toHaveLength(0)
+      expect(queryEditor()).not.toBeInTheDocument()
     })
   })
 })

@@ -52,6 +52,12 @@ export function formatDayLabel(dateString) {
   }
 }
 
+// '2026-10-21' -> 'Wed, Oct 21'
+export function formatShortDate(dateString) {
+  const date = parseDateString(dateString)
+  return `${WEEKDAY_NAMES[date.getDay()]}, ${MONTH_NAMES[date.getMonth()]} ${date.getDate()}`
+}
+
 // '2026-10-04' -> 'Oct 4 – Oct 10, 2026'
 export function formatWeekRange(weekStart) {
   const start = parseDateString(weekStart)

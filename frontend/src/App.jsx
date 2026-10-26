@@ -1,75 +1,66 @@
-import { Navigate, Route, Routes, useLocation } from 'react-router-dom'
+import { Navigate, Route, Routes } from 'react-router-dom'
 import './App.css'
+import { AppLayout } from './components/layout/AppLayout'
+import { LANDING_PATH } from './components/layout/navItems'
 import { useAuth } from './features/auth/AuthContext'
 import { LoginForm } from './features/auth/LoginForm'
 import { ProtectedRoute } from './features/auth/ProtectedRoute'
 import { ClockPanel } from './features/clock/ClockPanel'
 import { CourseView } from './features/course/CourseView'
-import { NavBar } from './components/NavBar'
 import { EquipmentView } from './features/equipment/EquipmentView'
 import { ScheduleView } from './features/schedule/ScheduleView'
 
+// The centered card on the green background, used by the login and loading screens
+function CenteredCard({ children }) {
+  return (
+    <main className="app-shell">
+      <section className="card">{ children }</section>
+    </main>
+  )
+}
+
 function App() {
   const { user, loading } = useAuth()
-  const { pathname } = useLocation()
-  const isWideLayout = pathname.startsWith('/schedule')
 
   if (loading) {
     return (
-      <main className="app-shell">
-        <section className="card">
-          <p>Loading...</p>
-        </section>
-      </main>
+      <CenteredCard>
+        <p>Loading...</p>
+      </CenteredCard>
     )
   }
 
   return (
-    <main className="app-shell">
-      <section className={ isWideLayout ? 'card card-wide' : 'card' }>
-        <p className="eyebrow">Golf Maintenance</p>
-        {user && <NavBar />}
-        <Routes>
-          <Route
-            path="/login"
-            element={user ? <Navigate to="/clock" replace /> : <LoginForm />}
-          />
-          <Route
-            path="/clock"
-            element={
-              <ProtectedRoute>
-                <ClockPanel />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/course"
-            element={
-              <ProtectedRoute>
-                <CourseView />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/equipment"
-            element={
-              <ProtectedRoute>
-                <EquipmentView />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/schedule"
-            element={
-              <ProtectedRoute>
-                <ScheduleView />
-              </ProtectedRoute>
-            }
-          />
-          <Route path="*" element={<Navigate to={user ? '/clock' : '/login'} replace />} />
-        </Routes>
-      </section>
-    </main>
+    <Routes>
+      <Route
+        path="/login"
+        element={
+          user ? (
+            <Navigate to={ LANDING_PATH } replace />
+          ) : (
+            <CenteredCard>
+              <p className="eyebrow">Golf Maintenance</p>
+              <LoginForm />
+            </CenteredCard>
+          )
+        }
+      />
+
+      <Route
+        element={
+          <ProtectedRoute>
+            <AppLayout />
+          </ProtectedRoute>
+        }
+      >
+        <Route path="/schedule" element={ <ScheduleView /> } />
+        <Route path="/course" element={ <CourseView /> } />
+        <Route path="/equipment" element={ <EquipmentView /> } />
+        <Route path="/clock" element={ <ClockPanel /> } />
+      </Route>
+
+      <Route path="*" element={ <Navigate to={ user ? LANDING_PATH : '/login' } replace /> } />
+    </Routes>
   )
 }
 

@@ -1,0 +1,77 @@
+.top-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: 64px;
+  box-sizing: border-box;
+  padding: 10px 32px;
+  background: #ffffff;
+  border-bottom: 1px solid #dce8d7;
+}
+
+/* The global h1 style in App.css is sized for the login page, so the top bar sets its own */
+.top-bar-title {
+  margin: 0;
+  font-size: 20px;
+  font-weight: 700;
+  color: #17341c;
+}
+
+.top-bar-user {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.top-bar-user-text {
+  text-align: right;
+}
+
+.top-bar-user-name {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 600;
+  color: #17341c;
+}
+
+.top-bar-user-title {
+  margin: 0;
+  font-size: 12px;
+  color: #4d7a55;
+}
+
+.top-bar-logout {
+  min-height: 44px;
+  padding: 0 18px;
+  border: 1px solid #dce8d7;
+  border-radius: 10px;
+  background: #ffffff;
+  color: #4d7a55;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.top-bar-logout:hover:not(:disabled) {
+  background: #f4f7f2;
+}
+
+.top-bar-logout:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+.top-bar-logout:focus-visible {
+  outline: 2px solid #2f6b3c;
+  outline-offset: 2px;
+}
+
+.top-bar-error {
+  flex-basis: 100%;
+  margin: 0;
+  text-align: right;
+  font-size: 14px;
+  color: #b3261e;
+}

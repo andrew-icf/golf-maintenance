@@ -1,0 +1,38 @@
+.app-layout {
+  display: flex;
+  flex-wrap: wrap;
+  min-height: 100vh;
+  background: #f4f7f2;
+}
+
+/* The page area takes whatever the side nav leaves. Below about 800px wide it wraps
+   underneath the nav instead of squeezing. */
+.app-layout-main {
+  flex: 999 1 560px;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.app-layout-content {
+  padding: 24px 32px 32px;
+}
+
+.app-layout-page {
+  margin: 0 auto;
+}
+
+.app-layout-page-reading {
+  max-width: 720px;
+}
+
+/* Keep the side nav on screen while a long page scrolls, but only when it sits beside the page */
+@media (min-width: 801px) {
+  .app-layout > .side-nav {
+    position: sticky;
+    top: 0;
+    align-self: flex-start;
+    height: 100vh;
+    overflow-y: auto;
+  }
+}

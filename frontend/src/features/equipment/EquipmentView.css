@@ -1,24 +1,22 @@
 .equipment-view {
-  width: 100%;
-  text-align: left;
+  display: flex;
+  flex-direction: column;
+  gap: 28px;
 }
 
-.equipment-view h2 {
-  margin: 0 0 24px;
-  color: #17341c;
-  text-align: center;
+.equipment-section {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
 }
 
-.equipment-view h3 {
-  margin: 0 0 8px;
-  color: #2f4d38;
-  font-size: 0.95rem;
+.equipment-section-title {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
   text-transform: uppercase;
-  letter-spacing: 0.06em;
-}
-
-.equipment-view section {
-  margin-bottom: 24px;
+  color: #2f4d38;
 }
 
 .equipment-list {
@@ -34,7 +32,8 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  background: #f4f7f2;
+  gap: 12px;
+  background: #ffffff;
   border: 1px solid #dce8d7;
   border-radius: 8px;
   padding: 10px 14px;
@@ -56,9 +55,20 @@
 }
 
 .equipment-row select {
-  padding: 6px 10px;
+  min-height: 44px;
+  padding: 0 12px;
   border: 1px solid #cfe0c9;
-  border-radius: 6px;
-  font-size: 0.85rem;
-  font-family: inherit;
+  border-radius: 8px;
+  background: #ffffff;
+  color: #17341c;
+  font-size: 14px;
+}
+
+.equipment-row select:disabled {
+  opacity: 0.6;
+}
+
+.equipment-row select:focus-visible {
+  outline: 2px solid #2f6b3c;
+  outline-offset: 2px;
 }

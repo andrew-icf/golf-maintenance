@@ -6,6 +6,7 @@ import {
   formatDayLabel,
   formatShiftRange,
   formatShiftTime,
+  formatShortDate,
   formatWeekRange,
   getWeekDates,
   getWeekStart,
@@ -24,6 +25,18 @@ const LATE_EVENING = new Date(2026, 9, 5, 23, 30)
 const JUST_AFTER_MIDNIGHT = new Date(2026, 9, 6, 0, 30)
 
 const ROUND_TRIP_DATES = ['2026-01-01', '2026-03-05', '2026-12-31', '2028-02-29']
+
+const SHORT_DATE_CASES = [
+  { label: 'a Sunday', date: SUNDAY, expected: 'Sun, Oct 4' },
+  { label: 'a Wednesday', date: '2026-10-21', expected: 'Wed, Oct 21' },
+  { label: 'a Saturday', date: SATURDAY, expected: 'Sat, Oct 10' },
+  { label: 'a single-digit day, without padding', date: '2026-03-05', expected: 'Thu, Mar 5' },
+  { label: 'the first day of the year', date: '2027-01-01', expected: 'Fri, Jan 1' },
+  { label: 'the last day of the year', date: '2026-12-31', expected: 'Thu, Dec 31' },
+  { label: 'a leap day', date: '2028-02-29', expected: 'Tue, Feb 29' },
+  // A UTC-based parse shows this as Sunday 10/04 anywhere west of Greenwich
+  { label: 'a Monday, which must not slip back to Sunday', date: MONDAY, expected: 'Mon, Oct 5' },
+]
 
 const ADD_DAYS_CASES = [
   { label: 'moves forward within a month', startDate: '2026-10-04', dayCount: 3, expected: '2026-10-07' },
@@ -150,6 +163,20 @@ describe('todayDateString', () => {
     vi.setSystemTime(JUST_AFTER_MIDNIGHT)
 
     expect(todayDateString()).toBe('2026-10-06')
+  })
+})
+
+describe('formatShortDate', () => {
+  it.each(SHORT_DATE_CASES)('formats $label', ({ date, expected }) => {
+    expect(formatShortDate(date)).toBe(expected)
+  })
+
+  it('uses the same weekday as formatDayLabel for every day of 2026 and 2027', () => {
+    for (let dayOffset = 0; dayOffset < 730; dayOffset++) {
+      const day = addDays('2026-01-01', dayOffset)
+
+      expect(formatShortDate(day).startsWith(`${formatDayLabel(day).weekday}, `), day).toBe(true)
+    }
   })
 })
 

@@ -1,34 +1,35 @@
 .course-view {
-  width: 100%;
-  text-align: left;
+  display: flex;
+  flex-direction: column;
+  gap: 28px;
 }
 
-.course-view h2 {
-  margin: 0 0 24px;
-  color: #17341c;
-  text-align: center;
+.course-section {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
 }
 
-.course-view h3 {
-  margin: 0 0 12px;
-  color: #2f4d38;
-  font-size: 1rem;
-  text-transform: uppercase;
+.course-section-title {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 700;
   letter-spacing: 0.08em;
-}
-
-.course-view section {
-  margin-bottom: 28px;
+  text-transform: uppercase;
+  color: #2f4d38;
 }
 
 .hole-grid {
+  list-style: none;
+  margin: 0;
+  padding: 0;
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
   gap: 10px;
 }
 
 .hole-card {
-  background: #f4f7f2;
+  background: #ffffff;
   border: 1px solid #dce8d7;
   border-radius: 10px;
   padding: 12px;
@@ -58,7 +59,7 @@
 }
 
 .amenity-list li {
-  background: #f4f7f2;
+  background: #ffffff;
   border: 1px solid #dce8d7;
   border-radius: 8px;
   padding: 10px 14px;

@@ -1,53 +1,36 @@
 import { useEffect, useState } from 'react'
 import { api } from '../../api'
+import { EQUIPMENT_STATUS_OPTIONS, formatEquipmentType } from '../../constants/equipment'
 import './EquipmentView.css'
-
-const STATUS_LABELS = {
-  working_order: 'Working Order',
-  needs_repair: 'Needs Repair',
-  in_shop: 'In Shop',
-}
-
-const TYPE_LABELS = {
-  cart: 'Cart',
-  trash_can: 'Trash Can',
-  ball_mark_repair_tool: 'Ball Mark Repair Tool',
-  sand_tube: 'Ball Marker Eraser (Sand Tube)',
-  weed_eater: 'Weed Eater',
-  edger: 'Edger',
-  blower: 'Blower',
-  hole_punch: 'Hole Punch',
-  bucket: 'Bucket',
-  cup_puller: 'Cup Puller',
-  cup_setter: 'Cup Setter',
-  dust_pan: 'Dust Pan',
-  sand_bucket: 'Sand Bucket w/ Scooper',
-  chainsaw: 'Chainsaw',
-  gas_can: 'Gas Can',
-}
 
 function EquipmentRow({ item, onStatusChange }) {
   const [updatingStatus, setUpdatingStatus] = useState(false)
+  const typeLabel = formatEquipmentType(item.type)
 
-  async function handleChange(e) {
-    const newStatus = e.target.value
+  async function handleChange(event) {
+    const newStatus = event.target.value
     setUpdatingStatus(true)
     try {
       await api.updateEquipmentStatus(item.id, newStatus)
       onStatusChange(item.id, newStatus)
-    } catch (err) {
-      alert(err.message)
+    } catch (requestError) {
+      alert(requestError.message)
     } finally {
       setUpdatingStatus(false)
     }
   }
 
   return (
-    <li className={`equipment-row status-${item.status}`}>
-      <span className="equipment-label">{ TYPE_LABELS[item.type] || item.type }</span>
-      <select value={ item.status } onChange={ handleChange } disabled={ updatingStatus }>
-        {Object.entries(STATUS_LABELS).map(([value, text]) => (
-          <option key={ value } value={ value }>{ text }</option>
+    <li className={ `equipment-row status-${item.status}` }>
+      <span className="equipment-label">{ typeLabel }</span>
+      <select
+        aria-label={ `Status of ${item.label} (${typeLabel})` }
+        value={ item.status }
+        onChange={ handleChange }
+        disabled={ updatingStatus }
+      >
+        {EQUIPMENT_STATUS_OPTIONS.map(({ value, label }) => (
+          <option key={ value } value={ value }>{ label }</option>
         ))}
       </select>
     </li>
@@ -62,7 +45,7 @@ export function EquipmentView() {
     api
       .getEquipment()
       .then(setEquipment)
-      .catch((err) => setError(err.message))
+      .catch((requestError) => setError(requestError.message))
   }, [])
 
   function handleStatusChange(id, newStatus) {
@@ -79,16 +62,19 @@ export function EquipmentView() {
     return <p className="status">Loading equipment...</p>
   }
 
+  if (equipment.length === 0) {
+    return <p className="status">No equipment yet.</p>
+  }
+
   const carts = equipment.filter((item) => !item.parent_equipment_id)
 
   return (
     <div className="equipment-view">
-      <h2>Equipment</h2>
       {carts.map((cart) => {
         const attached = equipment.filter((item) => item.parent_equipment_id === cart.id)
         return (
-          <section key={ cart.id }>
-            <h3>{ cart.label }</h3>
+          <section key={ cart.id } className="equipment-section">
+            <h2 className="equipment-section-title">{ cart.label }</h2>
             <ul className="equipment-list">
               <EquipmentRow item={ cart } onStatusChange={ handleStatusChange } />
               {attached.map((item) => (

@@ -10,7 +10,7 @@ export function CourseView() {
     api
       .getCourse()
       .then(setCourse)
-      .catch((err) => setError(err.message))
+      .catch((requestError) => setError(requestError.message))
   }, [])
 
   if (error) {
@@ -21,30 +21,41 @@ export function CourseView() {
     return <p className="status">Loading course...</p>
   }
 
+  const holes = course.holes ?? []
+  const amenities = course.amenities ?? []
+
   return (
     <div className="course-view">
-      <h2>{ course.name }</h2>
-
-      <section>
-        <h3>Holes</h3>
-        <div className="hole-grid">
-          { course.holes.map((hole) => (
-            <div key={ hole.id } className="hole-card">
-              <span className="hole-number">Hole { hole.hole_number }</span>
-              <span className="hole-detail">Par { hole.par }</span>
-              { hole.yardage && <span className="hole-detail">{ hole.yardage } yds</span> }
-            </div>
-          )) }
-        </div>
+      <section className="course-section">
+        <h2 className="course-section-title">Holes</h2>
+        { holes.length === 0 ? (
+          <p className="status">No holes yet.</p>
+        ) : (
+          <ul className="hole-grid">
+            {holes.map((hole) => (
+              <li key={ hole.id } className="hole-card">
+                <span className="hole-number">Hole { hole.hole_number }</span>
+                <span className="hole-detail">Par { hole.par }</span>
+                { typeof hole.yardage === 'number' && (
+                  <span className="hole-detail">{ hole.yardage } yds</span>
+                )}
+              </li>
+            ))}
+          </ul>
+        )}
       </section>
 
-      <section>
-        <h3>Amenities</h3>
-        <ul className="amenity-list">
-          { course.amenities.map((amenity) => (
-            <li key={ amenity.id }>{ amenity.name }</li>
-          )) }
-        </ul>
+      <section className="course-section">
+        <h2 className="course-section-title">Amenities</h2>
+        { amenities.length === 0 ? (
+          <p className="status">No amenities yet.</p>
+        ) : (
+          <ul className="amenity-list">
+            {amenities.map((amenity) => (
+              <li key={ amenity.id }>{ amenity.name }</li>
+            ))}
+          </ul>
+        )}
       </section>
     </div>
   )

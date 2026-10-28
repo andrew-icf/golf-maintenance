@@ -26,22 +26,37 @@ const MON_MOTHMA = {
 }
 const JOB_TITLE_LABEL = 'Superintendent'
 
-const COURSE_NAME = 'Dagobah Pines Golf Club'
-const HOLE_COUNT = 27
-const HOLE_YARDAGE = 400
-const HOLES_TEXT = '27 holes'
-const YARDAGE_TEXT = '10,800 yds'
-const COURSE_RESPONSE = {
-  id: 'course-1',
-  name: COURSE_NAME,
-  holes: Array.from({ length: HOLE_COUNT }, (unusedItem, index) => ({
-    id: `hole-${index + 1}`,
-    hole_number: index + 1,
-    par: 4,
-    yardage: HOLE_YARDAGE,
-  })),
-  amenities: [],
-}
+   const COURSE_NAME = 'Dagobah Pines Golf Club'
+   const HOLES_PER_COURSE = 9
+   const HOLE_YARDAGE = 400
+   const HOLES_TEXT = '27 holes · 3 courses'
+   const YARDAGE_TEXT = '10,800 yds'
+
+   function makeNine(code) {
+     return {
+       id: `layout-${code}`,
+       name: `Course ${code}`,
+       code,
+       position: code.charCodeAt(0) - 64,
+       front_hole_count: 5,
+       holes: Array.from({ length: HOLES_PER_COURSE }, (unusedItem, index) => ({
+         id: `hole-${code}${index + 1}`,
+         layout_id: `layout-${code}`,
+         hole_number: index + 1,
+         par: 4,
+         yardage: HOLE_YARDAGE,
+       })),
+     }
+   }
+
+   const COURSE_RESPONSE = {
+     id: 'course-1',
+     name: COURSE_NAME,
+     layouts: [makeNine('A'), makeNine('B'), makeNine('C')],
+     // The server also sends this flat list, which the sidebar does not read
+     holes: [],
+     amenities: [],
+   }
 
 const NOT_IN_NAV_PATH = '/elsewhere'
 const NOT_IN_NAV_CONTENT = 'Elsewhere content'

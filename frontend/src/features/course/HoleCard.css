@@ -1,0 +1,37 @@
+.hole-card {
+  background: #ffffff;
+  border: 1px solid #dce8d7;
+  border-radius: 10px;
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  text-align: center;
+}
+
+.hole-number {
+  font-weight: 600;
+  color: #17341c;
+}
+
+.hole-detail {
+  font-size: 0.85rem;
+  color: #4d7a55;
+}
+
+.hole-amenities {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 4px;
+  margin-top: 4px;
+}
+
+.hole-amenity {
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: #eaf3e6;
+  color: #2f4d38;
+  font-size: 0.75rem;
+  font-weight: 600;
+}

@@ -1,5 +1,29 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { act, render, screen, within } from '@testing-library/react'
+import {
+  CLUB_SHAPES,
+  COURSE_NAME,
+  HOLES_IN_MAIN_COURSE,
+  NINES,
+  THREE_NINE_HOLE_COUNT,
+  makeClubResponse,
+} from '../../test/fixtures/course'
+import {
+  AMENITIES_IN_SERVER_ORDER,
+  AMENITY_ROW_CASES,
+  HOLES_WITH_STATIONS,
+  MAIN_COURSE_GROUP_TITLES,
+  MAIN_COURSE_HEADINGS,
+  MAIN_COURSE_PAGE,
+  NO_AMENITIES_PAGE,
+  NO_COURSES_PAGE,
+  NO_LISTS_PAGE,
+  STATION_CHIP_TEXT,
+  THREE_NINE_GROUP_TITLES,
+  THREE_NINE_HEADINGS,
+  THREE_NINE_PAGE,
+} from '../../test/fixtures/coursePageCases'
+import { createDeferred } from '../../test/helpers'
 import { CourseView } from './CourseView'
 
 const { apiMock } = vi.hoisted(() => ({
@@ -8,103 +32,30 @@ const { apiMock } = vi.hoisted(() => ({
 
 vi.mock('../../api', () => ({ api: apiMock }))
 
-// Test data
-const COURSE_NAME = 'Dagobah Pines Golf Club'
 const LOADING_TEXT = 'Loading course...'
 const LOAD_ERROR_MESSAGE = 'could not fetch course'
-const NO_HOLES_TEXT = 'No holes yet.'
+const NO_COURSES_TEXT = 'No courses set up yet.'
 const NO_AMENITIES_TEXT = 'No amenities yet.'
-const HOLE_YARDAGE = 400
-
-// A hole with no yardage key at all is made by leaving yardage undefined
-function makeHole({ number, par = 4, yardage }) {
-  const hole = { id: `hole-${number}`, hole_number: number, par }
-  return yardage === undefined ? hole : { ...hole, yardage }
-}
-
-function makeHoles(count) {
-  return Array.from({ length: count }, (unusedItem, index) =>
-    makeHole({ number: index + 1, yardage: HOLE_YARDAGE })
-  )
-}
-
-const CLUBHOUSE = { id: 'amenity-1', name: 'Clubhouse', type: 'clubhouse' }
-const DRIVING_RANGE = { id: 'amenity-2', name: 'Driving Range', type: 'driving_range' }
-const COMFORT_STATION = { id: 'amenity-3', name: 'Comfort Station 1', type: 'comfort_station' }
-const AMENITIES = [CLUBHOUSE, DRIVING_RANGE, COMFORT_STATION]
-const MARKUP_NAME = '<b>Pool</b>'
-const MARKUP_AMENITY = { id: 'amenity-4', name: MARKUP_NAME, type: 'pool' }
-
-function makeCourse({ holes = makeHoles(9), amenities = AMENITIES } = {}) {
-  return { id: 'course-1', name: COURSE_NAME, holes, amenities }
-}
-
-// What each hole card should say, for each way the yardage can arrive
-const CARD_CASES = [
-  {
-    label: 'a yardage',
-    hole: makeHole({ number: 1, par: 4, yardage: 380 }),
-    expected: ['Hole 1', 'Par 4', '380 yds'],
-  },
-  {
-    label: 'a yardage of null',
-    hole: makeHole({ number: 2, par: 3, yardage: null }),
-    expected: ['Hole 2', 'Par 3'],
-  },
-  {
-    label: 'no yardage field at all',
-    hole: makeHole({ number: 3, par: 5 }),
-    expected: ['Hole 3', 'Par 5'],
-  },
-  {
-    label: 'a yardage of zero, shown rather than dropped',
-    hole: makeHole({ number: 4, par: 4, yardage: 0 }),
-    expected: ['Hole 4', 'Par 4', '0 yds'],
-  },
-]
-
-// Course sizes that exist in the real world, so nothing is tied to 18 holes
-const HOLE_COUNTS = [1, 9, 18, 27, 36]
-
-// The server sends holes sorted, and the page shows them exactly as received
-const OUT_OF_ORDER_HOLES = [
-  makeHole({ number: 3, yardage: 510 }),
-  makeHole({ number: 1, yardage: 380 }),
-  makeHole({ number: 2, yardage: 165 }),
-]
-const OUT_OF_ORDER_HEADINGS = ['Hole 3', 'Hole 1', 'Hole 2']
-
-function createDeferred() {
-  let resolve
-  const promise = new Promise((resolvePromise) => {
-    resolve = resolvePromise
-  })
-  return { promise, resolve }
-}
 
 // Actions
-async function renderLoadedView(course = makeCourse()) {
+async function renderLoadedView(course) {
   apiMock.getCourse.mockResolvedValue(course)
-  render(<CourseView />)
-  await screen.findByRole('heading', { name: 'Holes' })
+  const view = render(<CourseView />)
+  // The amenities section is always drawn once the course has loaded
+  await screen.findByRole('heading', { level: 2, name: 'Amenities' })
+  return view
 }
 
-function sectionTitled(title) {
-  return screen.getByRole('heading', { name: title }).closest('section')
+function levelTwoHeadings() {
+  return screen.getAllByRole('heading', { level: 2 }).map((heading) => heading.textContent)
 }
 
-function holeCards() {
-  return within(sectionTitled('Holes')).queryAllByRole('listitem')
+function textsIn(root, selector) {
+  return Array.from(root.querySelectorAll(selector)).map((node) => node.textContent)
 }
 
-function cardTexts(card) {
-  return Array.from(card.querySelectorAll('span')).map((span) => span.textContent)
-}
-
-function amenityNames() {
-  return within(sectionTitled('Amenities'))
-    .queryAllByRole('listitem')
-    .map((item) => item.textContent)
+function amenitySection() {
+  return screen.getByRole('heading', { level: 2, name: 'Amenities' }).closest('section')
 }
 
 describe('CourseView', () => {
@@ -123,11 +74,11 @@ describe('CourseView', () => {
       expect(screen.queryByRole('heading')).not.toBeInTheDocument()
 
       await act(async () => {
-        course.resolve(makeCourse())
+        course.resolve(THREE_NINE_PAGE)
       })
 
       expect(screen.queryByText(LOADING_TEXT)).not.toBeInTheDocument()
-      expect(screen.getByRole('heading', { name: 'Holes' })).toBeInTheDocument()
+      expect(levelTwoHeadings()).toEqual(THREE_NINE_HEADINGS)
     })
 
     it('shows the error and no sections when loading fails', async () => {
@@ -141,83 +92,116 @@ describe('CourseView', () => {
     })
 
     it('asks for the course once', async () => {
-      await renderLoadedView()
+      await renderLoadedView(THREE_NINE_PAGE)
 
       expect(apiMock.getCourse).toHaveBeenCalledTimes(1)
     })
   })
 
-  describe('layout', () => {
-    it('has only the two section headings, and does not repeat the course name the side nav shows', async () => {
-      await renderLoadedView()
+  describe('courses', () => {
+    it('shows a section for each course, then the amenities', async () => {
+      await renderLoadedView(THREE_NINE_PAGE)
 
-      const headings = screen.getAllByRole('heading').map((heading) => heading.textContent)
+      expect(levelTwoHeadings()).toEqual(THREE_NINE_HEADINGS)
+    })
 
-      expect(headings).toEqual(['Holes', 'Amenities'])
+    it('does not repeat the club name, which the side nav shows', async () => {
+      await renderLoadedView(THREE_NINE_PAGE)
+
       expect(screen.queryByText(COURSE_NAME)).not.toBeInTheDocument()
     })
 
-    it.each(CARD_CASES)('shows a hole card with $label', async ({ hole, expected }) => {
-      await renderLoadedView(makeCourse({ holes: [hole] }))
+    it('shows the real par and yardage of each course', async () => {
+      const { container } = await renderLoadedView(THREE_NINE_PAGE)
 
-      const cards = holeCards()
-
-      expect(cards).toHaveLength(1)
-      expect(cardTexts(cards[0])).toEqual(expected)
+      expect(textsIn(container, '.layout-totals')).toEqual(NINES.map((nine) => nine.expectedTotals))
     })
 
-    it('shows the holes in the order the server sends them', async () => {
-      await renderLoadedView(makeCourse({ holes: OUT_OF_ORDER_HOLES }))
+    it('splits every nine into front and back', async () => {
+      const { container } = await renderLoadedView(THREE_NINE_PAGE)
 
-      const headings = holeCards().map((card) => cardTexts(card)[0])
-
-      expect(headings).toEqual(OUT_OF_ORDER_HEADINGS)
+      expect(textsIn(container, '.group-title')).toEqual(THREE_NINE_GROUP_TITLES)
     })
 
-    it.each(HOLE_COUNTS)('shows every hole of a %i-hole course', async (count) => {
-      await renderLoadedView(makeCourse({ holes: makeHoles(count) }))
+    it('shows every hole of every course', async () => {
+      const { container } = await renderLoadedView(THREE_NINE_PAGE)
 
-      const cards = holeCards()
-
-      expect(cards).toHaveLength(count)
-      expect(cardTexts(cards[count - 1])[0]).toBe(`Hole ${count}`)
+      expect(container.querySelectorAll('.hole-card')).toHaveLength(THREE_NINE_HOLE_COUNT)
     })
 
-    it('lists the amenities in the order received', async () => {
-      await renderLoadedView()
+    it('calls the only course "Holes" and splits it into front and back', async () => {
+      const { container } = await renderLoadedView(MAIN_COURSE_PAGE)
 
-      expect(amenityNames()).toEqual(AMENITIES.map((amenity) => amenity.name))
+      expect(levelTwoHeadings()).toEqual(MAIN_COURSE_HEADINGS)
+      expect(textsIn(container, '.group-title')).toEqual(MAIN_COURSE_GROUP_TITLES)
+      expect(container.querySelectorAll('.hole-card')).toHaveLength(HOLES_IN_MAIN_COURSE)
     })
 
-    it('shows an amenity name as text, never as markup', async () => {
-      await renderLoadedView(makeCourse({ amenities: [MARKUP_AMENITY] }))
+    it.each(CLUB_SHAPES)('shows every course and hole of $label', async ({ sizes }) => {
+      const { container } = await renderLoadedView(makeClubResponse(sizes))
+      const courseHeadings =
+        sizes.length > 1
+          ? sizes.map((unusedSize, index) => `Course ${String.fromCharCode(65 + index)}`)
+          : ['Holes']
 
-      expect(screen.getByText(MARKUP_NAME)).toBeInTheDocument()
-      expect(sectionTitled('Amenities').querySelector('b')).toBeNull()
+      expect(levelTwoHeadings()).toEqual([...courseHeadings, 'Amenities'])
+      expect(container.querySelectorAll('.hole-card')).toHaveLength(
+        sizes.reduce((total, size) => total + size, 0)
+      )
+    })
+  })
+
+  describe('amenities', () => {
+    it('shows each comfort station on the hole it sits on, and on no other card', async () => {
+      const { container } = await renderLoadedView(THREE_NINE_PAGE)
+
+      const cardsWithStations = Array.from(container.querySelectorAll('.hole-card')).filter((card) =>
+        card.querySelector('.hole-amenity')
+      )
+
+      expect(cardsWithStations.map((card) => card.querySelector('.hole-number').textContent)).toEqual(
+        HOLES_WITH_STATIONS
+      )
+      for (const card of cardsWithStations) {
+        expect(card.querySelector('.hole-amenity').textContent).toBe(STATION_CHIP_TEXT)
+      }
+    })
+
+    it('lists every amenity, saying which hole each comfort station is on', async () => {
+      await renderLoadedView(THREE_NINE_PAGE)
+
+      const rows = within(amenitySection()).getAllByRole('listitem')
+
+      expect(textsIn(amenitySection(), '.amenity-name')).toEqual(AMENITY_ROW_CASES.map((row) => row.name))
+      expect(rows.map((row) => row.querySelector('.amenity-location')?.textContent ?? null)).toEqual(
+        AMENITY_ROW_CASES.map((row) => row.location)
+      )
     })
   })
 
   describe('empty lists', () => {
-    it('says so when there are no holes, and still shows the amenities', async () => {
-      await renderLoadedView(makeCourse({ holes: [] }))
+    it('says so when there are no courses, ignores the old flat hole list, and still lists the amenities', async () => {
+      const { container } = await renderLoadedView(NO_COURSES_PAGE)
 
-      expect(screen.getByText(NO_HOLES_TEXT)).toBeInTheDocument()
-      expect(holeCards()).toHaveLength(0)
-      expect(amenityNames()).toHaveLength(AMENITIES.length)
+      expect(screen.getByText(NO_COURSES_TEXT)).toBeInTheDocument()
+      expect(levelTwoHeadings()).toEqual(['Amenities'])
+      expect(container.querySelectorAll('.hole-card')).toHaveLength(0)
+      expect(within(amenitySection()).getAllByRole('listitem')).toHaveLength(AMENITIES_IN_SERVER_ORDER.length)
     })
 
-    it('says so when there are no amenities, and still shows the holes', async () => {
-      await renderLoadedView(makeCourse({ amenities: [] }))
+    it('says so when there are no amenities, and still shows the courses', async () => {
+      const { container } = await renderLoadedView(NO_AMENITIES_PAGE)
 
       expect(screen.getByText(NO_AMENITIES_TEXT)).toBeInTheDocument()
-      expect(amenityNames()).toHaveLength(0)
-      expect(holeCards()).toHaveLength(9)
+      expect(within(amenitySection()).queryAllByRole('listitem')).toHaveLength(0)
+      expect(levelTwoHeadings()).toEqual(THREE_NINE_HEADINGS)
+      expect(container.querySelectorAll('.hole-card')).toHaveLength(THREE_NINE_HOLE_COUNT)
     })
 
     it('copes with a response that has no lists at all', async () => {
-      await renderLoadedView({ id: 'course-1', name: COURSE_NAME })
+      await renderLoadedView(NO_LISTS_PAGE)
 
-      expect(screen.getByText(NO_HOLES_TEXT)).toBeInTheDocument()
+      expect(screen.getByText(NO_COURSES_TEXT)).toBeInTheDocument()
       expect(screen.getByText(NO_AMENITIES_TEXT)).toBeInTheDocument()
     })
   })

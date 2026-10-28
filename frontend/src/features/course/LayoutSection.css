@@ -1,0 +1,59 @@
+.layout-section {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.layout-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 4px 16px;
+}
+
+.layout-title {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 700;
+  color: #17341c;
+}
+
+.layout-totals {
+  margin: 0;
+  font-size: 13px;
+  color: #4d7a55;
+}
+
+.hole-group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.group-header {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+}
+
+.group-title {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 600;
+  color: #17341c;
+}
+
+.group-range {
+  font-size: 13px;
+  color: #4d7a55;
+}
+
+.hole-grid {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
+  gap: 10px;
+}

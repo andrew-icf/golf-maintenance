@@ -9,13 +9,14 @@ const APP_NAME = 'Golf Maintenance'
 const TODAY = '2026-10-21'
 const TODAY_TEXT = 'Wed, Oct 21'
 const COURSE_NAME = 'Dagobah Pines Golf Club'
-const TOTAL_YARDAGE_TEXT = '9,980 yds'
+const TOTAL_YARDAGE_TEXT = '10,763 yds'
 
 function makeCourse(overrides = {}) {
   return {
     name: COURSE_NAME,
+    layoutCount: 3,
     holeCount: 27,
-    totalYardage: 9980,
+    totalYardage: 10763,
     holesMissingYardage: 0,
     ...overrides,
   }
@@ -27,29 +28,47 @@ const APP_NAME_CASES = [
 ]
 
 const COURSE_DISPLAY_CASES = [
-  { label: 'a 27-hole course', course: makeCourse(), holes: '27 holes', yardage: '9,980 yds' },
+  { label: 'three nines', course: makeCourse(), holes: '27 holes · 3 courses', yardage: '10,763 yds' },
   {
-    label: 'a nine-hole course',
-    course: makeCourse({ holeCount: 9, totalYardage: 3320 }),
+    label: 'an 18-hole club as two nines',
+    course: makeCourse({ holeCount: 18, layoutCount: 2, totalYardage: 7114 }),
+    holes: '18 holes · 2 courses',
+    yardage: '7,114 yds',
+  },
+  {
+    label: 'an 18-hole club as one course',
+    course: makeCourse({ holeCount: 18, layoutCount: 1, totalYardage: 6680 }),
+    holes: '18 holes',
+    yardage: '6,680 yds',
+  },
+  {
+    label: 'a nine-hole club',
+    course: makeCourse({ holeCount: 9, layoutCount: 1, totalYardage: 3320 }),
     holes: '9 holes',
     yardage: '3,320 yds',
   },
   {
     label: 'a single hole',
-    course: makeCourse({ holeCount: 1, totalYardage: 150 }),
+    course: makeCourse({ holeCount: 1, layoutCount: 1, totalYardage: 150 }),
     holes: '1 hole',
     yardage: '150 yds',
   },
   {
     label: 'a course with no yardage entered',
     course: makeCourse({ totalYardage: null }),
-    holes: '27 holes',
+    holes: '27 holes · 3 courses',
     yardage: '—',
   },
   {
-    label: 'a course with no holes yet',
-    course: makeCourse({ holeCount: 0, totalYardage: null }),
+    label: 'a club with no holes or courses yet',
+    course: makeCourse({ holeCount: 0, layoutCount: 0, totalYardage: null }),
     holes: '0 holes',
+    yardage: '—',
+  },
+  {
+    label: 'courses that have no holes yet',
+    course: makeCourse({ holeCount: 0, totalYardage: null }),
+    holes: '0 holes · 3 courses',
     yardage: '—',
   },
 ]
@@ -109,7 +128,7 @@ describe('SideNav', () => {
       expect(screen.queryByText(TODAY_TEXT)).not.toBeInTheDocument()
     })
 
-    it.each(COURSE_DISPLAY_CASES)('shows the name, holes, and yardage for $label', ({ course, holes, yardage }) => {
+    it.each(COURSE_DISPLAY_CASES)('shows the name, size, and yardage for $label', ({ course, holes, yardage }) => {
       renderSideNav({ course })
 
       expect(screen.getByText(COURSE_NAME)).toBeInTheDocument()

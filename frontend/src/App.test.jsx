@@ -48,7 +48,7 @@ const MON_MOTHMA = {
   role: 'admin',
 }
 const COURSE_NAME = 'Dagobah Pines Golf Club'
-const COURSE_RESPONSE = { id: 'course-1', name: COURSE_NAME, holes: [], amenities: [] }
+   const COURSE_RESPONSE = { id: 'course-1', name: COURSE_NAME, layouts: [], amenities: [] }
 
 const LOGIN_TEXT = 'Login form'
 const LOADING_TEXT = 'Loading...'

@@ -66,7 +66,7 @@ func SetupTestDB(t *testing.T) {
 
 	_, err = pool.Exec(
 		context.Background(),
-		`TRUNCATE TABLE schedules, equipment, amenities, holes, sessions, clock_entries, courses, users CASCADE`,
+		`TRUNCATE TABLE schedules, equipment, amenities, holes, layouts, sessions, clock_entries, courses, users CASCADE`,
 	)
 	if err != nil {
 		t.Fatalf("could not clean test database: %v", err)

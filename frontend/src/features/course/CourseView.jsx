@@ -1,5 +1,8 @@
 import { useEffect, useState } from 'react'
 import { api } from '../../api'
+import { AmenityList } from './AmenityList'
+import { LayoutSection } from './LayoutSection'
+import { buildHoleLabels, groupAmenitiesByHole } from './courseLayout'
 import './CourseView.css'
 
 export function CourseView() {
@@ -21,42 +24,26 @@ export function CourseView() {
     return <p className="status">Loading course...</p>
   }
 
-  const holes = course.holes ?? []
+  const layouts = course.layouts ?? []
   const amenities = course.amenities ?? []
+  const amenitiesByHole = groupAmenitiesByHole(amenities)
+  const holeLabels = buildHoleLabels(layouts)
 
   return (
     <div className="course-view">
-      <section className="course-section">
-        <h2 className="course-section-title">Holes</h2>
-        { holes.length === 0 ? (
-          <p className="status">No holes yet.</p>
-        ) : (
-          <ul className="hole-grid">
-            {holes.map((hole) => (
-              <li key={ hole.id } className="hole-card">
-                <span className="hole-number">Hole { hole.hole_number }</span>
-                <span className="hole-detail">Par { hole.par }</span>
-                { typeof hole.yardage === 'number' && (
-                  <span className="hole-detail">{ hole.yardage } yds</span>
-                )}
-              </li>
-            ))}
-          </ul>
-        )}
-      </section>
-
-      <section className="course-section">
-        <h2 className="course-section-title">Amenities</h2>
-        { amenities.length === 0 ? (
-          <p className="status">No amenities yet.</p>
-        ) : (
-          <ul className="amenity-list">
-            {amenities.map((amenity) => (
-              <li key={ amenity.id }>{ amenity.name }</li>
-            ))}
-          </ul>
-        )}
-      </section>
+      { layouts.length === 0 ? (
+        <p className="status">No courses set up yet.</p>
+      ) : (
+        layouts.map((layout) => (
+          <LayoutSection
+            key={ layout.id }
+            layout={ layout }
+            layoutCount={ layouts.length }
+            amenitiesByHole={ amenitiesByHole }
+          />
+        ))
+      )}
+      <AmenityList amenities={ amenities } holeLabels={ holeLabels } />
     </div>
   )
 }

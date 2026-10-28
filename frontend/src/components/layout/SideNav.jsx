@@ -1,5 +1,5 @@
 import { NavLink } from 'react-router-dom'
-import { formatHoleCount, formatYardage } from '../../features/course/courseSummary'
+import { formatCourseSize, formatYardage } from '../../features/course/courseSummary'
 import { formatShortDate } from '../../features/schedule/scheduleDates'
 import { NavIcon } from './NavIcon'
 import { NAV_ITEMS } from './navItems'
@@ -20,7 +20,7 @@ export function SideNav({ course, todayDate }) {
               </div>
               <div className="side-nav-course-text">
                 <p className="side-nav-course-name">{ course.name }</p>
-                <p className="side-nav-course-holes">{ formatHoleCount(course.holeCount) }</p>
+                <p className="side-nav-course-holes">{ formatCourseSize(course) }</p>
               </div>
             </div>
 

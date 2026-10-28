@@ -1,6 +1,9 @@
+import { lookupLabel } from './lookupLabel'
+
 // What each status and type from the API is called on screen.
 // The statuses mirror the database's equipment_status enum, which the Go handler also
-// lists, so a new status has to be added in all three places.
+// lists, so a new status has to be added in all three places. The tests below catch a
+// mismatch with their own lists, but they can't see a new type added in the database.
 export const EQUIPMENT_STATUS_LABELS = {
   working_order: 'Working Order',
   needs_repair: 'Needs Repair',
@@ -29,15 +32,6 @@ export const EQUIPMENT_TYPE_LABELS = {
 export const EQUIPMENT_STATUS_OPTIONS = Object.entries(EQUIPMENT_STATUS_LABELS).map(
   ([value, label]) => ({ value, label })
 )
-
-// A value with no label is shown as it arrived, so a missing label is visible instead of
-// blank. Anything that isn't text shows nothing.
-function lookupLabel(labels, value) {
-  if (typeof value !== 'string') {
-    return ''
-  }
-  return Object.hasOwn(labels, value) ? labels[value] : value
-}
 
 export function formatEquipmentStatus(status) {
   return lookupLabel(EQUIPMENT_STATUS_LABELS, status)

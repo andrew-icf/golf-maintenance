@@ -71,3 +71,15 @@ export const FRONT_BACK_SECTION_CASES = [
 // A nine with no front count, so it isn't split
 export const UNSPLIT_NINE = makeNine(NINES[0], 0, null)
 export const UNSPLIT_NINE_LABELS = numberedLabels('A', 1, 9)
+
+// HoleCard: the page each card opens
+export const HOLE_LINK_CASES = [
+  { label: 'a first hole', cardLabel: 'A1', hole: makeHole('A', 1, 4, 380), path: '/course/holes/hole-A1' },
+  { label: 'a back hole', cardLabel: 'C7', hole: HOLE_C7, path: '/course/holes/hole-C7' },
+  {
+    label: 'a hole whose id needs encoding',
+    cardLabel: 'A2',
+    hole: { ...makeHole('A', 2, 3, 168), id: 'hole with/odd?id' },
+    path: '/course/holes/hole%20with%2Fodd%3Fid',
+  },
+]

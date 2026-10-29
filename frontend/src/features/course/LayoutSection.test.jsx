@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { render, screen } from '@testing-library/react'
+import { MemoryRouter } from 'react-router-dom'
 import { CLUB_SHAPES, COURSE_C, MAIN_COURSE, makeClubLayouts } from '../../test/fixtures/course'
 import { EMPTY_LAYOUT } from '../../test/fixtures/courseLayoutCases'
 import {
@@ -11,7 +12,11 @@ import { LayoutSection } from './LayoutSection'
 
 // Actions
 function renderSection({ layout, layoutCount }) {
-  return render(<LayoutSection layout={ layout } layoutCount={ layoutCount } />)
+  return render(
+    <MemoryRouter>
+      <LayoutSection layout={ layout } layoutCount={ layoutCount } />
+    </MemoryRouter>
+  )
 }
 
 function textsIn(root, selector) {
@@ -76,11 +81,11 @@ describe('LayoutSection', () => {
     it.each(CLUB_SHAPES)('shows every hole of every course for $label', ({ sizes }) => {
       const layouts = makeClubLayouts(sizes)
       const { container } = render(
-        <>
+        <MemoryRouter>
           {layouts.map((layout) => (
             <LayoutSection key={ layout.id } layout={ layout } layoutCount={ layouts.length } />
           ))}
-        </>
+        </MemoryRouter>
       )
       const expectedTitles =
         sizes.length > 1

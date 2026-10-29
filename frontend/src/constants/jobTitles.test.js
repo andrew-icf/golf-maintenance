@@ -5,6 +5,9 @@ import { formatJobTitle } from './jobTitles'
 const KNOWN_TITLE = 'master_mechanic'
 const KNOWN_TITLE_LABEL = 'Master Mechanic'
 const UNKNOWN_TITLE = 'janitor'
+const RETIRED_TITLE = 'gardener'
+const RENAMED_TITLE = 'greenskeeper'
+const RENAMED_TITLE_LABEL = 'Greenskeeper'
 
 // Every value the backend can send, mirroring the database enum
 const BACKEND_JOB_TITLES = [
@@ -12,7 +15,7 @@ const BACKEND_JOB_TITLES = [
   'assistant_superintendent',
   'master_mechanic',
   'operator',
-  'gardener',
+  'greenskeeper',
   'landscaper',
   'mechanic',
   'office_admin',
@@ -23,6 +26,10 @@ describe('formatJobTitle', () => {
     expect(formatJobTitle(KNOWN_TITLE)).toBe(KNOWN_TITLE_LABEL)
   })
 
+  it('labels the greenskeeper title', () => {
+    expect(formatJobTitle(RENAMED_TITLE)).toBe(RENAMED_TITLE_LABEL)
+  })
+
   it('returns an empty string for a user with no job title', () => {
     expect(formatJobTitle(null)).toBe('')
     expect(formatJobTitle(undefined)).toBe('')
@@ -30,6 +37,10 @@ describe('formatJobTitle', () => {
 
   it('returns an empty string for a value it does not recognize', () => {
     expect(formatJobTitle(UNKNOWN_TITLE)).toBe('')
+  })
+
+  it('no longer recognizes the retired title gardener', () => {
+    expect(formatJobTitle(RETIRED_TITLE)).toBe('')
   })
 
   it('has a label for every title the backend can send', () => {

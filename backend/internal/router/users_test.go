@@ -50,7 +50,7 @@ func TestCreateUser_DerivesRoleFromJobTitle(t *testing.T) {
 		{"assistant_superintendent", "admin"},
 		{"master_mechanic", "admin"},
 		{"operator", "staff"},
-		{"gardener", "staff"},
+		{"greenskeeper", "staff"},
 		{"landscaper", "staff"},
 		{"mechanic", "staff"},
 		{"office_admin", "staff"},
@@ -119,6 +119,7 @@ func TestCreateUser_RejectsMissingOrInvalidJobTitle(t *testing.T) {
 		{"unknown job title", "janitor"},
 		{"wrong capitalization", "Superintendent"},
 		{"display label instead of stored value", "Master Mechanic"},
+		{"retired title gardener", "gardener"},
 	}
 
 	for _, testCase := range testCases {

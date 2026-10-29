@@ -18,7 +18,7 @@ const DATE_AFTER_WEEK = '2026-10-11'
 
 const ALEX = { id: 'user-alex', full_name: 'Alex Rivera', job_title: 'mechanic' }
 const CASEY = { id: 'user-casey', full_name: 'Casey Brooks', job_title: null }
-const DANA = { id: 'user-dana', full_name: 'Dana Whitfield', job_title: 'gardener' }
+const DANA = { id: 'user-dana', full_name: 'Dana Whitfield', job_title: 'greenskeeper' }
 const ROSTER = [ALEX, CASEY, DANA]
 const ADMIN_ID = 'user-admin'
 

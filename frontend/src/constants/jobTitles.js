@@ -3,7 +3,7 @@ export const JOB_TITLE_LABELS = {
   assistant_superintendent: 'Assistant Superintendent',
   master_mechanic: 'Master Mechanic',
   operator: 'Operator',
-  gardener: 'Gardener',
+  greenskeeper: 'Greenskeeper',
   landscaper: 'Landscaper',
   mechanic: 'Mechanic',
   office_admin: 'Office Admin',

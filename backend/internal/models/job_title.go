@@ -7,7 +7,7 @@ var roleByJobTitle = map[string]string{
 	"assistant_superintendent": "admin",
 	"master_mechanic":          "admin",
 	"operator":                 "staff",
-	"gardener":                 "staff",
+	"greenskeeper":             "staff",
 	"landscaper":               "staff",
 	"mechanic":                 "staff",
 	"office_admin":             "staff",

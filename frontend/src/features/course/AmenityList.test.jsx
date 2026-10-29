@@ -15,7 +15,7 @@ import {
   THREE_NINE_HOLE_LABELS,
 } from '../../test/fixtures/coursePageCases'
 import { AmenityList } from './AmenityList'
-import { HOLE_ROUTE_PATTERN } from './holePath'
+import { HOLE_ROUTE_PATTERN } from '../hole/holePath'
 
 // Test data
 const NO_AMENITIES_TEXT = 'No amenities yet.'

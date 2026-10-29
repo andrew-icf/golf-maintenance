@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom'
-import { holePath } from './holePath'
+import { holePath } from '../hole/holePath'
 import './HoleCard.css'
 
 // One hole as a card that opens the hole's details: its label ("C7"), par, and yardage.

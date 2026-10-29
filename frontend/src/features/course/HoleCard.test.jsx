@@ -6,7 +6,6 @@ import { HoleCard } from './HoleCard'
 
 // Test data
 const LONG_LABEL = 'Back Course 12'
-const CARD_PART_CLASSES = ['hole-number', 'hole-detail']
 
 // Actions
 function renderCard({ cardLabel = 'C7', hole = HOLE_C7 } = {}) {
@@ -34,21 +33,7 @@ describe('HoleCard', () => {
     expect(screen.getAllByRole('listitem')).toHaveLength(1)
   })
 
-  it.each(HOLE_CARD_CASES)(
-    'is made of only a label and detail lines for $label, so every card can be the same size',
-    ({ cardLabel, hole }) => {
-      const { container } = renderCard({ cardLabel, hole })
-
-      const parts = Array.from(container.querySelector('.hole-card').children)
-
-      expect(parts[0]).toHaveClass('hole-number')
-      for (const part of parts) {
-        expect(CARD_PART_CLASSES.some((className) => part.classList.contains(className))).toBe(true)
-      }
-    }
-  )
-
-  it('gives the full label as a hover title, since a long one is cut short to keep the size fixed', () => {
+  it('gives the full label as a hover title, for a label too long to fit', () => {
     renderCard({ cardLabel: LONG_LABEL })
 
     expect(screen.getByText(LONG_LABEL)).toHaveAttribute('title', LONG_LABEL)

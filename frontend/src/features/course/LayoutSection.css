@@ -1,7 +1,7 @@
 .layout-section {
   display: flex;
   flex-direction: column;
-  gap: 14px;
+  gap: 12px;
 }
 
 .layout-title {
@@ -11,10 +11,29 @@
   color: #17341c;
 }
 
+/* The front and back sit side by side while they fit, so a nine is one row. On a narrower
+   screen the back wraps underneath. */
+.hole-groups {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px 24px;
+}
+
+/* Each group is as wide as its holes need and takes spare room in proportion to how many
+   holes it has, so cards come out the same width in the front and the back. It stops
+   growing at a maximum card width, so cards stay equal even when the back wraps onto its
+   own row. */
 .hole-group {
+  --card-min: 96px;
+  --card-max: 140px;
+  --card-gap: 8px;
   display: flex;
   flex-direction: column;
   gap: 8px;
+  min-width: 0;
+  flex: var(--hole-count) 1
+    calc(var(--hole-count) * var(--card-min) + (var(--hole-count) - 1) * var(--card-gap));
+  max-width: calc(var(--hole-count) * var(--card-max) + (var(--hole-count) - 1) * var(--card-gap));
 }
 
 .group-header {
@@ -40,6 +59,6 @@
   margin: 0;
   padding: 0;
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
-  gap: 10px;
+  grid-template-columns: repeat(auto-fit, minmax(92px, 1fr));
+  gap: var(--card-gap);
 }

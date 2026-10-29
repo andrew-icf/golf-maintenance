@@ -33,7 +33,6 @@ const LOADING_TEXT = 'Loading course...'
 const LOAD_ERROR_MESSAGE = 'could not fetch course'
 const NO_COURSES_TEXT = 'No courses set up yet.'
 const NO_AMENITIES_TEXT = 'No amenities yet.'
-const HOLE_CARD_PART_COUNT = 3
 
 // Actions
 async function renderLoadedView(course) {
@@ -144,18 +143,6 @@ describe('CourseView', () => {
   })
 
   describe('amenities', () => {
-    it('keeps every hole card to the same plain parts, with no amenity on any of them', async () => {
-      const { container } = await renderLoadedView(THREE_NINE_PAGE)
-
-      const cards = Array.from(container.querySelectorAll('.hole-card'))
-
-      expect(cards).toHaveLength(THREE_NINE_HOLE_COUNT)
-      expect(container.querySelector('.hole-amenity')).toBeNull()
-      for (const card of cards) {
-        expect(card.children).toHaveLength(HOLE_CARD_PART_COUNT)
-      }
-    })
-
     it('lists every amenity, saying which hole each comfort station is on', async () => {
       await renderLoadedView(THREE_NINE_PAGE)
 

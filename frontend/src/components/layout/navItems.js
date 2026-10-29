@@ -1,11 +1,11 @@
 // Where everyone lands after logging in
-export const LANDING_PATH = '/course'
+export const LANDING_PATH = '/schedule'
 
 // Every page in the side nav. `width` is how much of the screen the page's content may use:
 // 'full' fills the available space, 'reading' stays at a comfortable line length.
 export const NAV_ITEMS = [
   { path: '/schedule', label: 'Schedule', title: 'Schedule', icon: 'schedule', width: 'full' },
-  { path: '/course', label: 'Course', title: 'Course', icon: 'course', width: 'reading' },
+  { path: '/course', label: 'Course', title: 'Course', icon: 'course', width: 'full' },
   { path: '/equipment', label: 'Equipment', title: 'Equipment', icon: 'equipment', width: 'reading' },
   { path: '/clock', label: 'Clock', title: 'Clock', icon: 'clock', width: 'reading' },
 ]

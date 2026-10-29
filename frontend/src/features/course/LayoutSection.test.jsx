@@ -1,9 +1,9 @@
 import { describe, expect, it } from 'vitest'
-import { render, screen, within } from '@testing-library/react'
+import { render, screen } from '@testing-library/react'
+import { MemoryRouter } from 'react-router-dom'
 import { CLUB_SHAPES, COURSE_C, MAIN_COURSE, makeClubLayouts } from '../../test/fixtures/course'
-import { EMPTY_LAYOUT, NINE_TOTAL_CASES } from '../../test/fixtures/courseLayoutCases'
+import { EMPTY_LAYOUT } from '../../test/fixtures/courseLayoutCases'
 import {
-  AMENITIES_BY_HOLE,
   FRONT_BACK_SECTION_CASES,
   UNSPLIT_NINE,
   UNSPLIT_NINE_LABELS,
@@ -11,9 +11,11 @@ import {
 import { LayoutSection } from './LayoutSection'
 
 // Actions
-function renderSection({ layout, layoutCount, amenitiesByHole }) {
+function renderSection({ layout, layoutCount }) {
   return render(
-    <LayoutSection layout={ layout } layoutCount={ layoutCount } amenitiesByHole={ amenitiesByHole } />
+    <MemoryRouter>
+      <LayoutSection layout={ layout } layoutCount={ layoutCount } />
+    </MemoryRouter>
   )
 }
 
@@ -26,7 +28,7 @@ function levelTwoHeadings() {
 }
 
 describe('LayoutSection', () => {
-  describe('title and totals', () => {
+  describe('title', () => {
     it('titles the section after the course in a multi-course club', () => {
       renderSection({ layout: COURSE_C, layoutCount: 3 })
 
@@ -39,18 +41,11 @@ describe('LayoutSection', () => {
       expect(levelTwoHeadings()).toEqual(['Holes'])
     })
 
-    it.each(NINE_TOTAL_CASES)('shows the real totals for course $code', ({ layout, expected }) => {
-      const { container } = renderSection({ layout, layoutCount: 3 })
-
-      expect(textsIn(container, '.layout-totals')).toEqual([expected])
-    })
-
-    it('says so, with no totals and no cards, for a course with no holes yet', () => {
-      const { container } = renderSection({ layout: EMPTY_LAYOUT, layoutCount: 3 })
+    it('says so, with no cards, for a course with no holes yet', () => {
+      renderSection({ layout: EMPTY_LAYOUT, layoutCount: 3 })
 
       expect(screen.getByRole('heading', { level: 2, name: EMPTY_LAYOUT.name })).toBeInTheDocument()
       expect(screen.getByText('No holes yet.')).toBeInTheDocument()
-      expect(container.querySelector('.layout-totals')).toBeNull()
       expect(screen.queryAllByRole('listitem')).toHaveLength(0)
     })
   })
@@ -82,39 +77,15 @@ describe('LayoutSection', () => {
     })
   })
 
-  describe('amenities on holes', () => {
-    it('shows an amenity on the hole it sits on, and on no other card', () => {
-      const { container } = renderSection({
-        layout: COURSE_C,
-        layoutCount: 3,
-        amenitiesByHole: AMENITIES_BY_HOLE,
-      })
-
-      const cardsWithAmenities = Array.from(container.querySelectorAll('.hole-card')).filter((card) =>
-        card.querySelector('.hole-amenity')
-      )
-
-      expect(cardsWithAmenities).toHaveLength(1)
-      expect(within(cardsWithAmenities[0]).getByText('C7')).toBeInTheDocument()
-      expect(within(cardsWithAmenities[0]).getByText('Comfort station')).toBeInTheDocument()
-    })
-
-    it('shows no amenities when none are given', () => {
-      const { container } = renderSection({ layout: COURSE_C, layoutCount: 3 })
-
-      expect(container.querySelector('.hole-amenity')).toBeNull()
-    })
-  })
-
   describe('club shapes', () => {
     it.each(CLUB_SHAPES)('shows every hole of every course for $label', ({ sizes }) => {
       const layouts = makeClubLayouts(sizes)
       const { container } = render(
-        <>
+        <MemoryRouter>
           {layouts.map((layout) => (
             <LayoutSection key={ layout.id } layout={ layout } layoutCount={ layouts.length } />
           ))}
-        </>
+        </MemoryRouter>
       )
       const expectedTitles =
         sizes.length > 1

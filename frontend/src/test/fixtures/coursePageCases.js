@@ -11,6 +11,7 @@ import {
   makeAmenity,
   makeCourseResponse,
   makeNumberedHoles,
+  NINES,
 } from './course'
 
 // A /api/course response with amenities. `flatHoles` is the flat list the server still sends
@@ -55,7 +56,20 @@ export const NO_LISTS_PAGE = { id: 'course-1', name: COURSE_NAME }
 // What those pages should show
 export const THREE_NINE_HEADINGS = ['Course A', 'Course B', 'Course C', 'Amenities']
 export const THREE_NINE_GROUP_TITLES = ['Front A', 'Back A', 'Front B', 'Back B', 'Front C', 'Back C']
-export const HOLES_WITH_STATIONS = ['A5', 'B6', 'C7']
-export const STATION_CHIP_TEXT = 'Comfort station'
 export const MAIN_COURSE_HEADINGS = ['Holes', 'Amenities']
 export const MAIN_COURSE_GROUP_TITLES = ['Front', 'Back']
+
+// The comfort stations, with the hole each sits on and the page its link opens
+export const AMENITY_LINK_CASES = [
+  { name: 'Comfort Station A5', holeLabel: 'A5', path: '/course/holes/hole-A5' },
+  { name: 'Comfort Station B6', holeLabel: 'B6', path: '/course/holes/hole-B6' },
+  { name: 'Comfort Station C7', holeLabel: 'C7', path: '/course/holes/hole-C7' },
+]
+
+// Amenities that belong to the whole club, so they open nothing
+export const CLUB_LEVEL_AMENITY_NAMES = ['Clubhouse', 'Driving Range']
+
+// The page each of the 27 hole cards of the three-nine club opens, in the order on screen
+export const THREE_NINE_HOLE_PATHS = NINES.flatMap((nine) =>
+  nine.pars.map((unusedPar, index) => `/course/holes/hole-${nine.code}${index + 1}`)
+)

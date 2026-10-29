@@ -1,26 +1,26 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { act, render, screen, within } from '@testing-library/react'
+import { MemoryRouter } from 'react-router-dom'
 import {
   CLUB_SHAPES,
   COURSE_NAME,
   HOLES_IN_MAIN_COURSE,
-  NINES,
   THREE_NINE_HOLE_COUNT,
   makeClubResponse,
 } from '../../test/fixtures/course'
 import {
   AMENITIES_IN_SERVER_ORDER,
+  AMENITY_LINK_CASES,
   AMENITY_ROW_CASES,
-  HOLES_WITH_STATIONS,
   MAIN_COURSE_GROUP_TITLES,
   MAIN_COURSE_HEADINGS,
   MAIN_COURSE_PAGE,
   NO_AMENITIES_PAGE,
   NO_COURSES_PAGE,
   NO_LISTS_PAGE,
-  STATION_CHIP_TEXT,
   THREE_NINE_GROUP_TITLES,
   THREE_NINE_HEADINGS,
+  THREE_NINE_HOLE_PATHS,
   THREE_NINE_PAGE,
 } from '../../test/fixtures/coursePageCases'
 import { createDeferred } from '../../test/helpers'
@@ -38,9 +38,17 @@ const NO_COURSES_TEXT = 'No courses set up yet.'
 const NO_AMENITIES_TEXT = 'No amenities yet.'
 
 // Actions
+function renderView() {
+  return render(
+    <MemoryRouter>
+      <CourseView />
+    </MemoryRouter>
+  )
+}
+
 async function renderLoadedView(course) {
   apiMock.getCourse.mockResolvedValue(course)
-  const view = render(<CourseView />)
+  const view = renderView()
   // The amenities section is always drawn once the course has loaded
   await screen.findByRole('heading', { level: 2, name: 'Amenities' })
   return view
@@ -68,7 +76,7 @@ describe('CourseView', () => {
       const course = createDeferred()
       apiMock.getCourse.mockReturnValue(course.promise)
 
-      render(<CourseView />)
+      renderView()
 
       expect(screen.getByText(LOADING_TEXT)).toBeInTheDocument()
       expect(screen.queryByRole('heading')).not.toBeInTheDocument()
@@ -84,7 +92,7 @@ describe('CourseView', () => {
     it('shows the error and no sections when loading fails', async () => {
       apiMock.getCourse.mockRejectedValue(new Error(LOAD_ERROR_MESSAGE))
 
-      render(<CourseView />)
+      renderView()
 
       expect(await screen.findByText(LOAD_ERROR_MESSAGE)).toBeInTheDocument()
       expect(screen.queryByText(LOADING_TEXT)).not.toBeInTheDocument()
@@ -111,12 +119,6 @@ describe('CourseView', () => {
       expect(screen.queryByText(COURSE_NAME)).not.toBeInTheDocument()
     })
 
-    it('shows the real par and yardage of each course', async () => {
-      const { container } = await renderLoadedView(THREE_NINE_PAGE)
-
-      expect(textsIn(container, '.layout-totals')).toEqual(NINES.map((nine) => nine.expectedTotals))
-    })
-
     it('splits every nine into front and back', async () => {
       const { container } = await renderLoadedView(THREE_NINE_PAGE)
 
@@ -127,6 +129,16 @@ describe('CourseView', () => {
       const { container } = await renderLoadedView(THREE_NINE_PAGE)
 
       expect(container.querySelectorAll('.hole-card')).toHaveLength(THREE_NINE_HOLE_COUNT)
+    })
+
+    it("links every hole card to that hole's page", async () => {
+      const { container } = await renderLoadedView(THREE_NINE_PAGE)
+
+      const cardPaths = Array.from(container.querySelectorAll('.hole-card')).map((card) =>
+        card.getAttribute('href')
+      )
+
+      expect(cardPaths).toEqual(THREE_NINE_HOLE_PATHS)
     })
 
     it('calls the only course "Holes" and splits it into front and back', async () => {
@@ -152,21 +164,6 @@ describe('CourseView', () => {
   })
 
   describe('amenities', () => {
-    it('shows each comfort station on the hole it sits on, and on no other card', async () => {
-      const { container } = await renderLoadedView(THREE_NINE_PAGE)
-
-      const cardsWithStations = Array.from(container.querySelectorAll('.hole-card')).filter((card) =>
-        card.querySelector('.hole-amenity')
-      )
-
-      expect(cardsWithStations.map((card) => card.querySelector('.hole-number').textContent)).toEqual(
-        HOLES_WITH_STATIONS
-      )
-      for (const card of cardsWithStations) {
-        expect(card.querySelector('.hole-amenity').textContent).toBe(STATION_CHIP_TEXT)
-      }
-    })
-
     it('lists every amenity, saying which hole each comfort station is on', async () => {
       await renderLoadedView(THREE_NINE_PAGE)
 
@@ -177,6 +174,19 @@ describe('CourseView', () => {
         AMENITY_ROW_CASES.map((row) => row.location)
       )
     })
+
+    it.each(AMENITY_LINK_CASES)(
+      'sends $name to the same page as the card for hole $holeLabel',
+      async ({ name, holeLabel, path }) => {
+        await renderLoadedView(THREE_NINE_PAGE)
+
+        const card = screen.getByText(holeLabel, { selector: '.hole-number' }).closest('a')
+        const amenityLink = within(screen.getByText(name).closest('li')).getByRole('link')
+
+        expect(amenityLink).toHaveAttribute('href', path)
+        expect(card).toHaveAttribute('href', path)
+      }
+    )
   })
 
   describe('empty lists', () => {

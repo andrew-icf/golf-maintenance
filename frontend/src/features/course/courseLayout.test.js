@@ -15,21 +15,12 @@ import {
   holeIdOf,
 } from '../../test/fixtures/course'
 import {
-  COURSE_A_SUMMARY,
-  EMPTY_LAYOUT,
-  EMPTY_LAYOUT_SUMMARY,
   FROZEN_LAYOUT,
   GROUP_TITLE_CASES,
   LABEL_CASES,
   LAYOUT_WITHOUT_HOLES_FIELD,
-  NINE_TOTAL_CASES,
   NO_AMENITIES_CASES,
   NO_SPLIT_CASES,
-  NO_YARDAGE_LAYOUT,
-  NO_YARDAGE_TOTALS_TEXT,
-  PARTIAL_YARDAGE_LAYOUT,
-  PARTIAL_YARDAGE_TOTAL,
-  PARTIAL_YARDAGE_TOTALS_TEXT,
   RANGE_CASES,
   SHUFFLED_BACK,
   SHUFFLED_FRONT,
@@ -41,10 +32,8 @@ import {
   formatGroupTitle,
   formatHoleLabel,
   formatHoleRange,
-  formatLayoutTotals,
   groupAmenitiesByHole,
   splitFrontBack,
-  summarizeLayout,
 } from './courseLayout'
 
 function holeNumbers(holes) {
@@ -95,35 +84,6 @@ describe('splitFrontBack', () => {
 describe('formatGroupTitle', () => {
   it.each(GROUP_TITLE_CASES)('titles $label', ({ layout, key, layoutCount, expected }) => {
     expect(formatGroupTitle(layout, key, layoutCount)).toBe(expected)
-  })
-})
-
-describe('course totals', () => {
-  it.each(NINE_TOTAL_CASES)('shows the real totals for course $code', ({ layout, expected }) => {
-    expect(formatLayoutTotals(summarizeLayout(layout))).toBe(expected)
-  })
-
-  it('counts the holes, par, and yardage of a course', () => {
-    expect(summarizeLayout(COURSE_A)).toEqual(COURSE_A_SUMMARY)
-  })
-
-  it('shows only the par when no hole has a yardage', () => {
-    expect(summarizeLayout(NO_YARDAGE_LAYOUT).totalYardage).toBeNull()
-    expect(formatLayoutTotals(summarizeLayout(NO_YARDAGE_LAYOUT))).toBe(NO_YARDAGE_TOTALS_TEXT)
-  })
-
-  it('adds up only the yardages that exist', () => {
-    expect(summarizeLayout(PARTIAL_YARDAGE_LAYOUT).totalYardage).toBe(PARTIAL_YARDAGE_TOTAL)
-    expect(formatLayoutTotals(summarizeLayout(PARTIAL_YARDAGE_LAYOUT))).toBe(PARTIAL_YARDAGE_TOTALS_TEXT)
-  })
-
-  it('shows nothing for a course with no holes yet', () => {
-    expect(summarizeLayout(EMPTY_LAYOUT)).toEqual(EMPTY_LAYOUT_SUMMARY)
-    expect(formatLayoutTotals(summarizeLayout(EMPTY_LAYOUT))).toBe('')
-  })
-
-  it('treats a course with no holes field as having no holes', () => {
-    expect(summarizeLayout(LAYOUT_WITHOUT_HOLES_FIELD)).toEqual(EMPTY_LAYOUT_SUMMARY)
   })
 })
 

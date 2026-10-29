@@ -1,10 +1,8 @@
 import {
-  COMFORT_C7,
+  COURSE_C,
   HOLE_C7,
   MAIN_COURSE,
   NINES,
-  WATER_COOLER_C7,
-  COURSE_C,
   holeIdOf,
   makeAmenity,
   makeHole,
@@ -42,35 +40,9 @@ export const HOLE_CARD_CASES = [
   },
 ]
 
+// An amenity whose name contains markup, used to check names are shown as text
 export const MARKUP_NAME = '<b>Pool</b>'
-const NAMELESS_TYPE_AMENITY = makeAmenity('amenity-7', 'Spare Restroom', null, holeIdOf('C', 7))
 export const MARKUP_AMENITY = makeAmenity('amenity-8', MARKUP_NAME, null, holeIdOf('C', 7))
-
-// What the amenity chips on a card say
-export const AMENITY_CHIP_CASES = [
-  { label: 'one comfort station', amenities: [COMFORT_C7], expected: ['Comfort station'] },
-  {
-    label: 'two amenities, in the order given',
-    amenities: [COMFORT_C7, WATER_COOLER_C7],
-    expected: ['Comfort station', 'water_cooler'],
-  },
-  {
-    label: 'a type it has no name for, shown as it arrived',
-    amenities: [WATER_COOLER_C7],
-    expected: ['water_cooler'],
-  },
-  {
-    label: 'an amenity with no type, shown by its name',
-    amenities: [NAMELESS_TYPE_AMENITY],
-    expected: ['Spare Restroom'],
-  },
-]
-
-export const NO_CHIP_CASES = [
-  { label: 'an empty list', amenities: [] },
-  { label: 'no list at all', amenities: undefined },
-  { label: 'null', amenities: null },
-]
 
 // LayoutSection: a split course, with the title, group titles, ranges, and labels it should show
 export const FRONT_BACK_SECTION_CASES = [
@@ -100,5 +72,14 @@ export const FRONT_BACK_SECTION_CASES = [
 export const UNSPLIT_NINE = makeNine(NINES[0], 0, null)
 export const UNSPLIT_NINE_LABELS = numberedLabels('A', 1, 9)
 
-// A comfort station on C7, keyed by the hole's id
-export const AMENITIES_BY_HOLE = new Map([[holeIdOf('C', 7), [COMFORT_C7]]])
+// HoleCard: the page each card opens
+export const HOLE_LINK_CASES = [
+  { label: 'a first hole', cardLabel: 'A1', hole: makeHole('A', 1, 4, 380), path: '/course/holes/hole-A1' },
+  { label: 'a back hole', cardLabel: 'C7', hole: HOLE_C7, path: '/course/holes/hole-C7' },
+  {
+    label: 'a hole whose id needs encoding',
+    cardLabel: 'A2',
+    hole: { ...makeHole('A', 2, 3, 168), id: 'hole with/odd?id' },
+    path: '/course/holes/hole%20with%2Fodd%3Fid',
+  },
+]

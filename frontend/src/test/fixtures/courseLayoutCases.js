@@ -5,7 +5,6 @@ import {
   HOLE_C7,
   MAIN_COURSE,
   NINES,
-  THREE_NINES,
   makeHole,
   makeLayout,
   makeNine,
@@ -94,31 +93,6 @@ export const GROUP_TITLE_CASES = [
   { label: 'a course with no code in a multi-course club', key: 'front', layout: BACK_COURSE, layoutCount: 2, expected: 'Front' },
   { label: 'a course that is not split', key: 'all', layout: COURSE_C, layoutCount: 3, expected: null },
 ]
-
-// Course totals
-export const NINE_TOTAL_CASES = NINES.map((nine, index) => ({
-  code: nine.code,
-  layout: THREE_NINES[index],
-  expected: nine.expectedTotals,
-}))
-export const COURSE_A_SUMMARY = { holeCount: 9, par: 36, totalYardage: 3514 }
-export const EMPTY_LAYOUT_SUMMARY = { holeCount: 0, par: 0, totalYardage: null }
-
-export const NO_YARDAGE_LAYOUT = makeLayout({
-  name: 'No yardages',
-  code: 'N',
-  holes: [makeHole('N', 1, 4, null), makeHole('N', 2, 4), makeHole('N', 3, 4, null)],
-})
-export const NO_YARDAGE_TOTALS_TEXT = 'Par 12'
-
-// One null, one missing entirely, and two with a yardage
-export const PARTIAL_YARDAGE_LAYOUT = makeLayout({
-  name: 'Some yardages',
-  code: 'P',
-  holes: [makeHole('P', 1, 4, 380), makeHole('P', 2, 4, null), makeHole('P', 3, 4), makeHole('P', 4, 4, 510)],
-})
-export const PARTIAL_YARDAGE_TOTAL = 890
-export const PARTIAL_YARDAGE_TOTALS_TEXT = 'Par 16 · 890 yds'
 
 export const EMPTY_LAYOUT = makeLayout({ name: 'Empty', code: 'E', holes: [] })
 

@@ -2,6 +2,7 @@
   display: flex;
   flex-direction: column;
   gap: 10px;
+  max-width: 720px;
 }
 
 .amenity-section-title {
@@ -21,6 +22,7 @@
 }
 
 .amenity-row {
+  position: relative;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -29,6 +31,10 @@
   border: 1px solid #dce8d7;
   border-radius: 8px;
   padding: 10px 14px;
+}
+
+.amenity-row:has(.amenity-location):hover {
+  border-color: #2f6b3c;
 }
 
 .amenity-name {
@@ -43,4 +49,22 @@
   font-size: 0.8rem;
   font-weight: 600;
   white-space: nowrap;
+  text-decoration: none;
+}
+
+/* The tag is the link, and it stretches over the whole row so the row is easy to tap */
+.amenity-location::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 8px;
+}
+
+.amenity-location:focus-visible {
+  outline: none;
+}
+
+.amenity-location:focus-visible::after {
+  outline: 2px solid #2f6b3c;
+  outline-offset: -2px;
 }

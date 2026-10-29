@@ -1,21 +1,33 @@
 import { describe, expect, it } from 'vitest'
 import { render, screen } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
+import { MemoryRouter, Route, Routes } from 'react-router-dom'
 import { HOLE_C7 } from '../../test/fixtures/course'
-import {
-  AMENITY_CHIP_CASES,
-  HOLE_CARD_CASES,
-  MARKUP_AMENITY,
-  MARKUP_NAME,
-  NO_CHIP_CASES,
-} from '../../test/fixtures/courseViewCases'
+import { HOLE_CARD_CASES, HOLE_LINK_CASES } from '../../test/fixtures/courseViewCases'
 import { HoleCard } from './HoleCard'
+import { HOLE_ROUTE_PATTERN } from './holePath'
+
+// Test data
+const LONG_LABEL = 'Back Course 12'
+const COURSE_LIST_PATH = '/course'
+const DETAILS_PAGE_TEXT = 'Hole details page'
 
 // Actions
-function renderCard({ cardLabel = 'C7', hole = HOLE_C7, amenities } = {}) {
+function renderCard({ cardLabel = 'C7', hole = HOLE_C7 } = {}) {
   return render(
-    <ul>
-      <HoleCard label={ cardLabel } hole={ hole } amenities={ amenities } />
-    </ul>
+    <MemoryRouter initialEntries={ [COURSE_LIST_PATH] }>
+      <Routes>
+        <Route
+          path={ COURSE_LIST_PATH }
+          element={
+            <ul>
+              <HoleCard label={ cardLabel } hole={ hole } />
+            </ul>
+          }
+        />
+        <Route path={ HOLE_ROUTE_PATTERN } element={ <p>{ DETAILS_PAGE_TEXT }</p> } />
+      </Routes>
+    </MemoryRouter>
   )
 }
 
@@ -36,22 +48,24 @@ describe('HoleCard', () => {
     expect(screen.getAllByRole('listitem')).toHaveLength(1)
   })
 
-  it.each(AMENITY_CHIP_CASES)('shows $label', ({ amenities, expected }) => {
-    const { container } = renderCard({ amenities })
+  it('gives the full label as a hover title, for a label too long to fit', () => {
+    renderCard({ cardLabel: LONG_LABEL })
 
-    expect(textsIn(container, '.hole-amenity')).toEqual(expected)
+    expect(screen.getByText(LONG_LABEL)).toHaveAttribute('title', LONG_LABEL)
   })
 
-  it.each(NO_CHIP_CASES)('shows no amenities for $label', ({ amenities }) => {
-    const { container } = renderCard({ amenities })
+  it.each(HOLE_LINK_CASES)('links $label to its own page', ({ cardLabel, hole, path }) => {
+    renderCard({ cardLabel, hole })
 
-    expect(container.querySelector('.hole-amenities')).toBeNull()
+    expect(screen.getByRole('link')).toHaveAttribute('href', path)
   })
 
-  it('shows an amenity name as text, never as markup', () => {
-    const { container } = renderCard({ amenities: [MARKUP_AMENITY] })
+  it("opens the hole's details page when it is used", async () => {
+    renderCard()
 
-    expect(screen.getByText(MARKUP_NAME)).toBeInTheDocument()
-    expect(container.querySelector('b')).toBeNull()
+    await userEvent.click(screen.getByRole('link'))
+
+    expect(screen.getByText(DETAILS_PAGE_TEXT)).toBeInTheDocument()
+    expect(screen.queryByRole('listitem')).not.toBeInTheDocument()
   })
 })

@@ -55,7 +55,5 @@ export const NO_LISTS_PAGE = { id: 'course-1', name: COURSE_NAME }
 // What those pages should show
 export const THREE_NINE_HEADINGS = ['Course A', 'Course B', 'Course C', 'Amenities']
 export const THREE_NINE_GROUP_TITLES = ['Front A', 'Back A', 'Front B', 'Back B', 'Front C', 'Back C']
-export const HOLES_WITH_STATIONS = ['A5', 'B6', 'C7']
-export const STATION_CHIP_TEXT = 'Comfort station'
 export const MAIN_COURSE_HEADINGS = ['Holes', 'Amenities']
 export const MAIN_COURSE_GROUP_TITLES = ['Front', 'Back']

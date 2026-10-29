@@ -1,20 +1,18 @@
 import { describe, expect, it } from 'vitest'
 import { render, screen } from '@testing-library/react'
 import { HOLE_C7 } from '../../test/fixtures/course'
-import {
-  AMENITY_CHIP_CASES,
-  HOLE_CARD_CASES,
-  MARKUP_AMENITY,
-  MARKUP_NAME,
-  NO_CHIP_CASES,
-} from '../../test/fixtures/courseViewCases'
+import { HOLE_CARD_CASES } from '../../test/fixtures/courseViewCases'
 import { HoleCard } from './HoleCard'
 
+// Test data
+const LONG_LABEL = 'Back Course 12'
+const CARD_PART_CLASSES = ['hole-number', 'hole-detail']
+
 // Actions
-function renderCard({ cardLabel = 'C7', hole = HOLE_C7, amenities } = {}) {
+function renderCard({ cardLabel = 'C7', hole = HOLE_C7 } = {}) {
   return render(
     <ul>
-      <HoleCard label={ cardLabel } hole={ hole } amenities={ amenities } />
+      <HoleCard label={ cardLabel } hole={ hole } />
     </ul>
   )
 }
@@ -36,22 +34,23 @@ describe('HoleCard', () => {
     expect(screen.getAllByRole('listitem')).toHaveLength(1)
   })
 
-  it.each(AMENITY_CHIP_CASES)('shows $label', ({ amenities, expected }) => {
-    const { container } = renderCard({ amenities })
+  it.each(HOLE_CARD_CASES)(
+    'is made of only a label and detail lines for $label, so every card can be the same size',
+    ({ cardLabel, hole }) => {
+      const { container } = renderCard({ cardLabel, hole })
 
-    expect(textsIn(container, '.hole-amenity')).toEqual(expected)
-  })
+      const parts = Array.from(container.querySelector('.hole-card').children)
 
-  it.each(NO_CHIP_CASES)('shows no amenities for $label', ({ amenities }) => {
-    const { container } = renderCard({ amenities })
+      expect(parts[0]).toHaveClass('hole-number')
+      for (const part of parts) {
+        expect(CARD_PART_CLASSES.some((className) => part.classList.contains(className))).toBe(true)
+      }
+    }
+  )
 
-    expect(container.querySelector('.hole-amenities')).toBeNull()
-  })
+  it('gives the full label as a hover title, since a long one is cut short to keep the size fixed', () => {
+    renderCard({ cardLabel: LONG_LABEL })
 
-  it('shows an amenity name as text, never as markup', () => {
-    const { container } = renderCard({ amenities: [MARKUP_AMENITY] })
-
-    expect(screen.getByText(MARKUP_NAME)).toBeInTheDocument()
-    expect(container.querySelector('b')).toBeNull()
+    expect(screen.getByText(LONG_LABEL)).toHaveAttribute('title', LONG_LABEL)
   })
 })

@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { api } from '../../api'
 import { AmenityList } from './AmenityList'
 import { LayoutSection } from './LayoutSection'
-import { buildHoleLabels, groupAmenitiesByHole } from './courseLayout'
+import { buildHoleLabels } from './courseLayout'
 import './CourseView.css'
 
 export function CourseView() {
@@ -26,7 +26,6 @@ export function CourseView() {
 
   const layouts = course.layouts ?? []
   const amenities = course.amenities ?? []
-  const amenitiesByHole = groupAmenitiesByHole(amenities)
   const holeLabels = buildHoleLabels(layouts)
 
   return (
@@ -35,12 +34,7 @@ export function CourseView() {
         <p className="status">No courses set up yet.</p>
       ) : (
         layouts.map((layout) => (
-          <LayoutSection
-            key={ layout.id }
-            layout={ layout }
-            layoutCount={ layouts.length }
-            amenitiesByHole={ amenitiesByHole }
-          />
+          <LayoutSection key={ layout.id } layout={ layout } layoutCount={ layouts.length } />
         ))
       )}
       <AmenityList amenities={ amenities } holeLabels={ holeLabels } />

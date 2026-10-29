@@ -11,14 +11,12 @@ import {
 import {
   AMENITIES_IN_SERVER_ORDER,
   AMENITY_ROW_CASES,
-  HOLES_WITH_STATIONS,
   MAIN_COURSE_GROUP_TITLES,
   MAIN_COURSE_HEADINGS,
   MAIN_COURSE_PAGE,
   NO_AMENITIES_PAGE,
   NO_COURSES_PAGE,
   NO_LISTS_PAGE,
-  STATION_CHIP_TEXT,
   THREE_NINE_GROUP_TITLES,
   THREE_NINE_HEADINGS,
   THREE_NINE_PAGE,
@@ -36,6 +34,7 @@ const LOADING_TEXT = 'Loading course...'
 const LOAD_ERROR_MESSAGE = 'could not fetch course'
 const NO_COURSES_TEXT = 'No courses set up yet.'
 const NO_AMENITIES_TEXT = 'No amenities yet.'
+const HOLE_CARD_PART_COUNT = 3
 
 // Actions
 async function renderLoadedView(course) {
@@ -152,19 +151,16 @@ describe('CourseView', () => {
   })
 
   describe('amenities', () => {
-    it('shows each comfort station on the hole it sits on, and on no other card', async () => {
-      const { container } = await renderLoadedView(THREE_NINE_PAGE)
+    it('keeps every hole card to the same plain parts, with no amenity on any of them', async () => {
+        const { container } = await renderLoadedView(THREE_NINE_PAGE)
 
-      const cardsWithStations = Array.from(container.querySelectorAll('.hole-card')).filter((card) =>
-        card.querySelector('.hole-amenity')
-      )
+        const cards = Array.from(container.querySelectorAll('.hole-card'))
 
-      expect(cardsWithStations.map((card) => card.querySelector('.hole-number').textContent)).toEqual(
-        HOLES_WITH_STATIONS
-      )
-      for (const card of cardsWithStations) {
-        expect(card.querySelector('.hole-amenity').textContent).toBe(STATION_CHIP_TEXT)
-      }
+        expect(cards).toHaveLength(THREE_NINE_HOLE_COUNT)
+        expect(container.querySelector('.hole-amenity')).toBeNull()
+        for (const card of cards) {
+        expect(card.children).toHaveLength(HOLE_CARD_PART_COUNT)
+        }
     })
 
     it('lists every amenity, saying which hole each comfort station is on', async () => {

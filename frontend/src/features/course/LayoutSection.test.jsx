@@ -1,9 +1,8 @@
 import { describe, expect, it } from 'vitest'
-import { render, screen, within } from '@testing-library/react'
+import { render, screen } from '@testing-library/react'
 import { CLUB_SHAPES, COURSE_C, MAIN_COURSE, makeClubLayouts } from '../../test/fixtures/course'
 import { EMPTY_LAYOUT, NINE_TOTAL_CASES } from '../../test/fixtures/courseLayoutCases'
 import {
-  AMENITIES_BY_HOLE,
   FRONT_BACK_SECTION_CASES,
   UNSPLIT_NINE,
   UNSPLIT_NINE_LABELS,
@@ -11,10 +10,8 @@ import {
 import { LayoutSection } from './LayoutSection'
 
 // Actions
-function renderSection({ layout, layoutCount, amenitiesByHole }) {
-  return render(
-    <LayoutSection layout={ layout } layoutCount={ layoutCount } amenitiesByHole={ amenitiesByHole } />
-  )
+function renderSection({ layout, layoutCount }) {
+  return render(<LayoutSection layout={ layout } layoutCount={ layoutCount } />)
 }
 
 function textsIn(root, selector) {
@@ -79,30 +76,6 @@ describe('LayoutSection', () => {
       expect(screen.queryAllByRole('heading', { level: 3 })).toHaveLength(0)
       expect(container.querySelectorAll('.hole-group')).toHaveLength(1)
       expect(textsIn(container, '.hole-number')).toEqual(UNSPLIT_NINE_LABELS)
-    })
-  })
-
-  describe('amenities on holes', () => {
-    it('shows an amenity on the hole it sits on, and on no other card', () => {
-      const { container } = renderSection({
-        layout: COURSE_C,
-        layoutCount: 3,
-        amenitiesByHole: AMENITIES_BY_HOLE,
-      })
-
-      const cardsWithAmenities = Array.from(container.querySelectorAll('.hole-card')).filter((card) =>
-        card.querySelector('.hole-amenity')
-      )
-
-      expect(cardsWithAmenities).toHaveLength(1)
-      expect(within(cardsWithAmenities[0]).getByText('C7')).toBeInTheDocument()
-      expect(within(cardsWithAmenities[0]).getByText('Comfort station')).toBeInTheDocument()
-    })
-
-    it('shows no amenities when none are given', () => {
-      const { container } = renderSection({ layout: COURSE_C, layoutCount: 3 })
-
-      expect(container.querySelector('.hole-amenity')).toBeNull()
     })
   })
 

@@ -12,8 +12,7 @@ import './LayoutSection.css'
 // One course of the club ("Course C") with its par and yardage, and its holes split into
 // front and back. A club with a single course calls it "Holes", since the club has no other
 // course to tell it apart from.
-// `amenitiesByHole` maps a hole's id to the amenities that sit on it.
-export function LayoutSection({ layout, layoutCount, amenitiesByHole = new Map() }) {
+export function LayoutSection({ layout, layoutCount }) {
   const holes = layout.holes ?? []
   const title = layoutCount > 1 ? layout.name : 'Holes'
   const totals = formatLayoutTotals(summarizeLayout(layout))
@@ -45,7 +44,6 @@ export function LayoutSection({ layout, layoutCount, amenitiesByHole = new Map()
                     key={ hole.id }
                     label={ formatHoleLabel(layout, hole, layoutCount) }
                     hole={ hole }
-                    amenities={ amenitiesByHole.get(hole.id) }
                   />
                 ))}
               </ul>

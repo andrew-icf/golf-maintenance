@@ -1,0 +1,114 @@
+.hole-details {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  max-width: 720px;
+}
+
+.hole-details-back {
+  align-self: flex-start;
+  color: #4d7a55;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.hole-details-back:hover {
+  text-decoration: underline;
+}
+
+.hole-details-back:focus-visible {
+  outline: 2px solid #2f6b3c;
+  outline-offset: 2px;
+}
+
+.hole-details-header {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.hole-details-title {
+  margin: 0;
+  font-size: 28px;
+  font-weight: 700;
+  color: #17341c;
+}
+
+.hole-details-subtitle {
+  margin: 0;
+  color: #4d7a55;
+}
+
+.hole-details-facts {
+  margin: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.hole-details-facts > div {
+  min-width: 120px;
+  background: #ffffff;
+  border: 1px solid #dce8d7;
+  border-radius: 10px;
+  padding: 12px 18px;
+}
+
+.hole-details-facts dt {
+  font-size: 13px;
+  color: #4d7a55;
+}
+
+.hole-details-facts dd {
+  margin: 2px 0 0;
+  font-size: 20px;
+  font-weight: 700;
+  color: #17341c;
+}
+
+.hole-details-section {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.hole-details-section-title {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 700;
+  color: #17341c;
+}
+
+.hole-details-amenities {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.hole-details-amenity {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  background: #ffffff;
+  border: 1px solid #dce8d7;
+  border-radius: 8px;
+  padding: 10px 14px;
+}
+
+.hole-details-amenity-name {
+  color: #2f4d38;
+}
+
+.hole-details-amenity-type {
+  padding: 2px 10px;
+  border-radius: 999px;
+  background: #eaf3e6;
+  color: #2f4d38;
+  font-size: 0.8rem;
+  font-weight: 600;
+  white-space: nowrap;
+}

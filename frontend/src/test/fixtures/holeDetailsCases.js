@@ -9,6 +9,7 @@ import {
   holeIdOf,
   makeHole,
   makeLayout,
+  makeNumberedHoles,
 } from './course'
 import { LAYOUT_WITHOUT_HOLES_FIELD } from './courseLayoutCases'
 import {
@@ -18,7 +19,7 @@ import {
   THREE_NINE_PAGE,
   makePageResponse,
 } from './coursePageCases'
-import { UNSPLIT_NINE } from './courseViewCases'
+import { MARKUP_AMENITY, UNSPLIT_NINE } from './courseViewCases'
 
 // A multi-course club where one course is not split into front and back
 export const UNSPLIT_PAGE = makePageResponse([UNSPLIT_NINE, THREE_NINES[1]], [])
@@ -158,3 +159,78 @@ export const MISSING_COURSE_CASES = [
   { label: 'null', course: null },
   { label: 'undefined', course: undefined },
 ]
+
+// A club with one course that is not split into front and back
+export const SINGLE_UNSPLIT_PAGE = makePageResponse(
+  [makeLayout({ name: 'Main', holes: makeNumberedHoles('M', 9) })],
+  []
+)
+
+// What the page shows for each kind of hole: the heading, the line under it, par, and yardage
+export const HOLE_PAGE_CASES = [
+  {
+    label: 'a front hole in a multi-course club',
+    course: THREE_NINE_PAGE,
+    holeId: holeIdOf('A', 1),
+    heading: 'A1',
+    subtitle: 'Course A · Front A',
+    par: '4',
+    yardage: '409 yds',
+  },
+  {
+    label: 'a back hole in a multi-course club',
+    course: THREE_NINE_PAGE,
+    holeId: holeIdOf('C', 7),
+    heading: 'C7',
+    subtitle: 'Course C · Back C',
+    par: '3',
+    yardage: '210 yds',
+  },
+  {
+    label: 'a hole in a club with one split course',
+    course: MAIN_COURSE_PAGE,
+    holeId: holeIdOf('M', 4),
+    heading: 'Hole 4',
+    subtitle: 'Front',
+    par: '4',
+    yardage: '400 yds',
+  },
+  {
+    label: 'a hole of a course that is not split',
+    course: UNSPLIT_PAGE,
+    holeId: holeIdOf('A', 3),
+    heading: 'A3',
+    subtitle: 'Course A',
+    par: '3',
+    yardage: '168 yds',
+  },
+  {
+    label: 'a hole in a club with one course that is not split',
+    course: SINGLE_UNSPLIT_PAGE,
+    holeId: holeIdOf('M', 3),
+    heading: 'Hole 3',
+    subtitle: null,
+    par: '4',
+    yardage: '400 yds',
+  },
+]
+
+// The amenities the page lists for a hole, by name and by type label
+export const AMENITIES_ON_HOLE_CASES = [
+  {
+    label: 'a hole with two amenities',
+    holeId: holeIdOf('C', 7),
+    names: [COMFORT_C7.name, WATER_COOLER_C7.name],
+    types: ['Comfort station', 'water_cooler'],
+  },
+  {
+    label: 'a hole with one amenity',
+    holeId: holeIdOf('A', 5),
+    names: [COMFORT_A5.name],
+    types: ['Comfort station'],
+  },
+]
+export const HOLE_WITH_NO_AMENITIES_ID = holeIdOf('A', 1)
+
+// An amenity whose name contains markup, sitting on hole C7
+export const MARKUP_AMENITY_PAGE = makePageResponse(THREE_NINES, [MARKUP_AMENITY])

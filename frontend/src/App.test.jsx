@@ -30,6 +30,11 @@ vi.mock('./features/course/CourseView', async () => {
   return { CourseView: () => createElement('p', null, 'Course page') }
 })
 
+vi.mock('./features/course/HoleDetailsView', async () => {
+    const { createElement } = await import('react')
+    return { HoleDetailsView: () => createElement('p', null, 'Hole details page') }
+})
+
 vi.mock('./features/equipment/EquipmentView', async () => {
   const { createElement } = await import('react')
   return { EquipmentView: () => createElement('p', null, 'Equipment page') }
@@ -73,6 +78,9 @@ const LOADING_CASES = [
   { label: 'a user is already known', user: MON_MOTHMA },
 ]
 
+const HOLE_DETAILS_PATH = '/course/holes/hole-C7'
+const HOLE_DETAILS_TEXT = 'Hole details page'
+
 const LOGGED_OUT_PATHS = [
   { label: 'the site root', path: '/' },
   { label: 'the login page itself', path: '/login' },
@@ -80,6 +88,7 @@ const LOGGED_OUT_PATHS = [
   { label: 'the course page', path: '/course' },
   { label: 'the equipment page', path: '/equipment' },
   { label: 'the clock page', path: '/clock' },
+  { label: 'a hole details page', path: HOLE_DETAILS_PATH },
   { label: 'an unknown page', path: '/unknown' },
 ]
 
@@ -188,6 +197,14 @@ describe('App', () => {
 
       expect(screen.getByText(pageText(COURSE_ITEM))).toBeInTheDocument()
       expect(screen.getByRole('heading', { level: 1, name: COURSE_ITEM.title })).toBeInTheDocument()
+    })
+
+    it('shows a hole details page inside the layout, under the Course heading', async () => {
+        await renderLoadedApp(HOLE_DETAILS_PATH)
+
+        expect(within(screen.getByRole('main')).getByText(HOLE_DETAILS_TEXT)).toBeInTheDocument()
+        expect(screen.getByRole('heading', { level: 1, name: COURSE_ITEM.title })).toBeInTheDocument()
+        expect(screen.getByRole('link', { name: COURSE_ITEM.label })).toHaveAttribute('aria-current', 'page')
     })
 
     it('keeps one layout while moving between pages, asking for the course only once', async () => {

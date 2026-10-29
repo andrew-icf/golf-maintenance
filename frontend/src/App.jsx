@@ -7,6 +7,7 @@ import { LoginForm } from './features/auth/LoginForm'
 import { ProtectedRoute } from './features/auth/ProtectedRoute'
 import { ClockPanel } from './features/clock/ClockPanel'
 import { CourseView } from './features/course/CourseView'
+import { HoleDetailsView } from './features/course/HoleDetailsView'
 import { EquipmentView } from './features/equipment/EquipmentView'
 import { ScheduleView } from './features/schedule/ScheduleView'
 
@@ -55,6 +56,7 @@ function App() {
       >
         <Route path="/schedule" element={ <ScheduleView /> } />
         <Route path="/course" element={ <CourseView /> } />
+        <Route path="/course/holes/:holeId" element={ <HoleDetailsView /> } />
         <Route path="/equipment" element={ <EquipmentView /> } />
         <Route path="/clock" element={ <ClockPanel /> } />
       </Route>

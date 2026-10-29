@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { render, screen } from '@testing-library/react'
 import { CLUB_SHAPES, COURSE_C, MAIN_COURSE, makeClubLayouts } from '../../test/fixtures/course'
-import { EMPTY_LAYOUT, NINE_TOTAL_CASES } from '../../test/fixtures/courseLayoutCases'
+import { EMPTY_LAYOUT } from '../../test/fixtures/courseLayoutCases'
 import {
   FRONT_BACK_SECTION_CASES,
   UNSPLIT_NINE,
@@ -23,7 +23,7 @@ function levelTwoHeadings() {
 }
 
 describe('LayoutSection', () => {
-  describe('title and totals', () => {
+  describe('title', () => {
     it('titles the section after the course in a multi-course club', () => {
       renderSection({ layout: COURSE_C, layoutCount: 3 })
 
@@ -36,18 +36,11 @@ describe('LayoutSection', () => {
       expect(levelTwoHeadings()).toEqual(['Holes'])
     })
 
-    it.each(NINE_TOTAL_CASES)('shows the real totals for course $code', ({ layout, expected }) => {
-      const { container } = renderSection({ layout, layoutCount: 3 })
-
-      expect(textsIn(container, '.layout-totals')).toEqual([expected])
-    })
-
-    it('says so, with no totals and no cards, for a course with no holes yet', () => {
-      const { container } = renderSection({ layout: EMPTY_LAYOUT, layoutCount: 3 })
+    it('says so, with no cards, for a course with no holes yet', () => {
+      renderSection({ layout: EMPTY_LAYOUT, layoutCount: 3 })
 
       expect(screen.getByRole('heading', { level: 2, name: EMPTY_LAYOUT.name })).toBeInTheDocument()
       expect(screen.getByText('No holes yet.')).toBeInTheDocument()
-      expect(container.querySelector('.layout-totals')).toBeNull()
       expect(screen.queryAllByRole('listitem')).toHaveLength(0)
     })
   })

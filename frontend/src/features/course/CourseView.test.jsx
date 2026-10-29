@@ -4,7 +4,6 @@ import {
   CLUB_SHAPES,
   COURSE_NAME,
   HOLES_IN_MAIN_COURSE,
-  NINES,
   THREE_NINE_HOLE_COUNT,
   makeClubResponse,
 } from '../../test/fixtures/course'
@@ -110,12 +109,6 @@ describe('CourseView', () => {
       expect(screen.queryByText(COURSE_NAME)).not.toBeInTheDocument()
     })
 
-    it('shows the real par and yardage of each course', async () => {
-      const { container } = await renderLoadedView(THREE_NINE_PAGE)
-
-      expect(textsIn(container, '.layout-totals')).toEqual(NINES.map((nine) => nine.expectedTotals))
-    })
-
     it('splits every nine into front and back', async () => {
       const { container } = await renderLoadedView(THREE_NINE_PAGE)
 
@@ -152,15 +145,15 @@ describe('CourseView', () => {
 
   describe('amenities', () => {
     it('keeps every hole card to the same plain parts, with no amenity on any of them', async () => {
-        const { container } = await renderLoadedView(THREE_NINE_PAGE)
+      const { container } = await renderLoadedView(THREE_NINE_PAGE)
 
-        const cards = Array.from(container.querySelectorAll('.hole-card'))
+      const cards = Array.from(container.querySelectorAll('.hole-card'))
 
-        expect(cards).toHaveLength(THREE_NINE_HOLE_COUNT)
-        expect(container.querySelector('.hole-amenity')).toBeNull()
-        for (const card of cards) {
+      expect(cards).toHaveLength(THREE_NINE_HOLE_COUNT)
+      expect(container.querySelector('.hole-amenity')).toBeNull()
+      for (const card of cards) {
         expect(card.children).toHaveLength(HOLE_CARD_PART_COUNT)
-        }
+      }
     })
 
     it('lists every amenity, saying which hole each comfort station is on', async () => {

@@ -1,5 +1,3 @@
-import { formatYardage } from './courseSummary'
-
 const RANGE_DASH = '–'
 
 // How a hole is named on screen. A club with several courses uses the course's letter
@@ -63,34 +61,6 @@ export function formatGroupTitle(layout, groupKey, layoutCount) {
 
   const base = groupKey === 'front' ? 'Front' : 'Back'
   return layoutCount > 1 && layout.code ? `${base} ${layout.code}` : base
-}
-
-// Par and yardage for one course. Holes with no yardage are skipped.
-export function summarizeLayout(layout) {
-  const holes = layout.holes ?? []
-  const holesWithYardage = holes.filter((hole) => typeof hole.yardage === 'number')
-
-  return {
-    holeCount: holes.length,
-    par: holes.reduce((total, hole) => total + hole.par, 0),
-    totalYardage:
-      holesWithYardage.length === 0
-        ? null
-        : holesWithYardage.reduce((total, hole) => total + hole.yardage, 0),
-  }
-}
-
-// "Par 36 · 3,514 yds", or just the par when no hole has a yardage, or nothing for no holes
-export function formatLayoutTotals(summary) {
-  if (summary.holeCount === 0) {
-    return ''
-  }
-
-  const parts = [`Par ${summary.par}`]
-  if (summary.totalYardage !== null) {
-    parts.push(formatYardage(summary.totalYardage))
-  }
-  return parts.join(' · ')
 }
 
 // Which amenities sit on each hole, keyed by hole id, in the order the amenities arrive.

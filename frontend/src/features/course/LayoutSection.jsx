@@ -2,9 +2,7 @@ import {
   formatGroupTitle,
   formatHoleLabel,
   formatHoleRange,
-  formatLayoutTotals,
   splitFrontBack,
-  summarizeLayout,
 } from './courseLayout'
 import { HoleCard } from './HoleCard'
 import './LayoutSection.css'
@@ -15,14 +13,10 @@ import './LayoutSection.css'
 export function LayoutSection({ layout, layoutCount }) {
   const holes = layout.holes ?? []
   const title = layoutCount > 1 ? layout.name : 'Holes'
-  const totals = formatLayoutTotals(summarizeLayout(layout))
 
   return (
     <section className="layout-section">
-      <div className="layout-header">
-        <h2 className="layout-title">{ title }</h2>
-        { totals && <p className="layout-totals">{ totals }</p> }
-      </div>
+      <h2 className="layout-title">{ title }</h2>
 
       { holes.length === 0 ? (
         <p className="status">No holes yet.</p>

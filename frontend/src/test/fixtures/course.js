@@ -12,19 +12,16 @@ export const NINES = [
     code: 'A',
     pars: [4, 5, 3, 4, 3, 4, 4, 5, 4],
     yardages: [409, 518, 168, 452, 191, 363, 418, 543, 452],
-    expectedTotals: 'Par 36 · 3,514 yds',
   },
   {
     code: 'B',
     pars: [4, 4, 5, 3, 4, 5, 3, 4, 4],
     yardages: [395, 455, 567, 164, 418, 546, 189, 426, 440],
-    expectedTotals: 'Par 36 · 3,600 yds',
   },
   {
     code: 'C',
     pars: [4, 4, 3, 4, 4, 5, 3, 4, 5],
     yardages: [481, 459, 174, 405, 398, 532, 210, 458, 532],
-    expectedTotals: 'Par 36 · 3,649 yds',
   },
 ]
 export const THREE_NINE_HOLE_COUNT = 27

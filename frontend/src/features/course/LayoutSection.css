@@ -4,25 +4,11 @@
   gap: 14px;
 }
 
-.layout-header {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: 4px 16px;
-}
-
 .layout-title {
   margin: 0;
   font-size: 18px;
   font-weight: 700;
   color: #17341c;
-}
-
-.layout-totals {
-  margin: 0;
-  font-size: 13px;
-  color: #4d7a55;
 }
 
 .hole-group {

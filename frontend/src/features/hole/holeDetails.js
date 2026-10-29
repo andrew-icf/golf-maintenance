@@ -3,7 +3,7 @@ import {
   formatHoleLabel,
   groupAmenitiesByHole,
   splitFrontBack,
-} from './courseLayout'
+} from '../course/courseLayout'
 
 function buildDetails(course, layout, hole, layoutCount) {
   const group = splitFrontBack(layout).find((holeGroup) =>

@@ -30,7 +30,7 @@ vi.mock('./features/course/CourseView', async () => {
   return { CourseView: () => createElement('p', null, 'Course page') }
 })
 
-vi.mock('./features/course/HoleDetailsView', async () => {
+vi.mock('./features/hole/HoleDetailsView', async () => {
     const { createElement } = await import('react')
     return { HoleDetailsView: () => createElement('p', null, 'Hole details page') }
 })

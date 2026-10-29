@@ -5,7 +5,7 @@ import { MemoryRouter, Route, Routes } from 'react-router-dom'
 import { HOLE_C7 } from '../../test/fixtures/course'
 import { HOLE_CARD_CASES, HOLE_LINK_CASES } from '../../test/fixtures/courseViewCases'
 import { HoleCard } from './HoleCard'
-import { HOLE_ROUTE_PATTERN } from './holePath'
+import { HOLE_ROUTE_PATTERN } from '../hole/holePath'
 
 // Test data
 const LONG_LABEL = 'Back Course 12'

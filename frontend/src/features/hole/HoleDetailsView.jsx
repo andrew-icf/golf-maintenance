@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { api } from '../../api'
 import { formatAmenityType } from '../../constants/amenities'
-import { formatYardage } from './courseSummary'
+import { formatYardage } from '../course/courseSummary'
 import { findHoleDetails } from './holeDetails'
 import './HoleDetailsView.css'
 

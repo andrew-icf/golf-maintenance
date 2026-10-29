@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom'
-import { holePath } from './holePath'
+import { holePath } from '../hole/holePath'
 import './AmenityList.css'
 
 // Every amenity of the club, in the order given. One that sits on a hole says which

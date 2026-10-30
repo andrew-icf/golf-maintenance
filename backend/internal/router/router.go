@@ -23,20 +23,28 @@ func New() http.Handler {
 
 	r.Group(func(r chi.Router) {
 		r.Use(auth.RequireAuth)
+
+		// Open to anyone logged in, on the clock or not
 		r.Get("/me", handlers.Me)
 		r.Post("/clock-in", handlers.ClockIn)
 		r.Post("/clock-out", handlers.ClockOut)
-		r.Get("/api/course", handlers.GetCourse)
-		r.Get("/api/equipment", handlers.GetEquipment)
-		r.Put("/api/equipment/{id}", handlers.UpdateEquipmentStatus)
-		r.Get("/api/schedule", handlers.GetSchedules)
-		// Applies middleware to a single route inline
-		r.With(auth.RequireRole("admin")).Post("/api/schedule", handlers.CreateSchedule)
+
+		// Admin only. Staff are stopped by their role, and admins skip the clock rule
 		r.With(auth.RequireRole("admin")).Get("/api/users", handlers.ListUsers)
+		r.With(auth.RequireRole("admin")).Post("/api/schedule", handlers.CreateSchedule)
 		r.With(auth.RequireRole("admin")).Post("/api/schedule/repeat", handlers.RepeatSchedule)
 		r.With(auth.RequireRole("admin")).Put("/api/schedule/{id}", handlers.UpdateSchedule)
 		r.With(auth.RequireRole("admin")).Delete("/api/schedule", handlers.DeleteSchedules)
-		r.Get("/api/roster", handlers.GetRoster)
+
+		// Work: staff must be clocked in
+		r.Group(func(r chi.Router) {
+			r.Use(auth.RequireClockedIn)
+			r.Get("/api/course", handlers.GetCourse)
+			r.Get("/api/equipment", handlers.GetEquipment)
+			r.Put("/api/equipment/{id}", handlers.UpdateEquipmentStatus)
+			r.Get("/api/schedule", handlers.GetSchedules)
+			r.Get("/api/roster", handlers.GetRoster)
+		})
 	})
 
 	return r

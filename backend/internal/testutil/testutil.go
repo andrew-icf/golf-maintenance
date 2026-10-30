@@ -117,3 +117,34 @@ func SessionCookie(t *testing.T, userID string) *http.Cookie {
 	}
 	return &http.Cookie{Name: "session_token", Value: token}
 }
+
+// ClockIn gives the user an open clock entry, as if they had clocked in.
+func ClockIn(t *testing.T, userID string) {
+	t.Helper()
+
+	_, err := db.Pool.Exec(
+		context.Background(),
+		`INSERT INTO clock_entries (user_id) VALUES ($1)`,
+		userID,
+	)
+	if err != nil {
+		t.Fatalf("could not clock in user: %v", err)
+	}
+}
+
+// ClockOut closes the user's open clock entry, as if they had clocked out.
+func ClockOut(t *testing.T, userID string) {
+	t.Helper()
+
+	tag, err := db.Pool.Exec(
+		context.Background(),
+		`UPDATE clock_entries SET clock_out = now() WHERE user_id = $1 AND clock_out IS NULL`,
+		userID,
+	)
+	if err != nil {
+		t.Fatalf("could not clock out user: %v", err)
+	}
+	if tag.RowsAffected() == 0 {
+		t.Fatalf("user %s had no open clock entry to close", userID)
+	}
+}

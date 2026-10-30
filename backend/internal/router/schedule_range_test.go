@@ -28,6 +28,7 @@ func shiftDates(t *testing.T, responseBody []byte) []string {
 func TestGetSchedules_RangeIncludesBothEndsAndNothingOutside(t *testing.T) {
 	testutil.SetupTestDB(t)
 	staffID := testutil.CreateUser(t, "staff@example.com", "password123", "staff")
+	testutil.ClockIn(t, staffID)
 	cookie := testutil.SessionCookie(t, staffID)
 	handler := router.New()
 
@@ -50,6 +51,7 @@ func TestGetSchedules_RangeIncludesBothEndsAndNothingOutside(t *testing.T) {
 func TestGetSchedules_WithoutARangeReturnsEverything(t *testing.T) {
 	testutil.SetupTestDB(t)
 	staffID := testutil.CreateUser(t, "staff@example.com", "password123", "staff")
+	testutil.ClockIn(t, staffID)
 	cookie := testutil.SessionCookie(t, staffID)
 	handler := router.New()
 
@@ -68,6 +70,8 @@ func TestGetSchedules_StaffSeeEveryonesShifts(t *testing.T) {
 	testutil.SetupTestDB(t)
 	viewerID := testutil.CreateUser(t, "viewer@example.com", "password123", "staff")
 	coworkerID := testutil.CreateUser(t, "coworker@example.com", "password123", "staff")
+	// Only the viewer is on the clock: the coworker's shift is visible all the same
+	testutil.ClockIn(t, viewerID)
 	viewerCookie := testutil.SessionCookie(t, viewerID)
 	handler := router.New()
 
@@ -87,6 +91,7 @@ func TestGetSchedules_StaffSeeEveryonesShifts(t *testing.T) {
 func TestGetSchedules_EmptyRangeIsAnEmptyListNotNull(t *testing.T) {
 	testutil.SetupTestDB(t)
 	staffID := testutil.CreateUser(t, "staff@example.com", "password123", "staff")
+	testutil.ClockIn(t, staffID)
 	cookie := testutil.SessionCookie(t, staffID)
 	handler := router.New()
 
@@ -103,6 +108,7 @@ func TestGetSchedules_EmptyRangeIsAnEmptyListNotNull(t *testing.T) {
 func TestGetSchedules_RejectsInvalidRanges(t *testing.T) {
 	testutil.SetupTestDB(t)
 	staffID := testutil.CreateUser(t, "staff@example.com", "password123", "staff")
+	testutil.ClockIn(t, staffID)
 	cookie := testutil.SessionCookie(t, staffID)
 	handler := router.New()
 
@@ -132,6 +138,7 @@ func TestGetSchedules_RejectsInvalidRanges(t *testing.T) {
 func TestGetSchedules_AcceptsTheLongestAllowedRange(t *testing.T) {
 	testutil.SetupTestDB(t)
 	staffID := testutil.CreateUser(t, "staff@example.com", "password123", "staff")
+	testutil.ClockIn(t, staffID)
 	cookie := testutil.SessionCookie(t, staffID)
 	handler := router.New()
 

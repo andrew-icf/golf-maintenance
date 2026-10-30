@@ -116,10 +116,11 @@ func TestRoster_ExposesOnlyIdNameAndTitle(t *testing.T) {
 	}
 }
 
-func TestRoster_AvailableToAnyLoggedInUser(t *testing.T) {
+func TestRoster_AvailableToAnyUserOnTheClock(t *testing.T) {
 	testutil.SetupTestDB(t)
 	adminID := testutil.CreateUser(t, "admin@example.com", "password123", "admin")
 	staffID := testutil.CreateUser(t, "staff@example.com", "password123", "staff")
+	testutil.ClockIn(t, staffID)
 	adminCookie := testutil.SessionCookie(t, adminID)
 	staffCookie := testutil.SessionCookie(t, staffID)
 	handler := router.New()
@@ -130,7 +131,7 @@ func TestRoster_AvailableToAnyLoggedInUser(t *testing.T) {
 		expectedStatus int
 	}{
 		{"no session", nil, http.StatusUnauthorized},
-		{"staff user", staffCookie, http.StatusOK},
+		{"staff user on the clock", staffCookie, http.StatusOK},
 		{"admin user", adminCookie, http.StatusOK},
 	}
 

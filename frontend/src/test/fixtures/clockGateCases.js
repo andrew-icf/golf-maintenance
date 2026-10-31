@@ -83,3 +83,23 @@ export const SPLIT_ROW = { label: 'Thu 10/22', shifts: ['6am â€“ 10am', '12pm â€
 
 export const SCHEDULE_FAILED_TEXT = 'Your schedule could not be loaded.'
 export const SCHEDULE_LOADING_TEXT = 'Loading your schedule...'
+
+export const CLOCKED_IN_USER = { ...GATE_USER, clocked_in: true }
+
+// Who is held at the gate: staff who are not clocked in, and nobody else. The server compares
+// the role exactly, so "Admin" is not an admin.
+export const GATE_STATUS_CASES = [
+  { label: 'an admin who is not clocked in', user: { role: 'admin', clocked_in: false }, expected: false },
+  { label: 'an admin who is clocked in', user: { role: 'admin', clocked_in: true }, expected: false },
+  { label: 'an admin with no clock status', user: { role: 'admin' }, expected: false },
+  { label: 'staff who are clocked in', user: { role: 'staff', clocked_in: true }, expected: false },
+  { label: 'staff who are not clocked in', user: { role: 'staff', clocked_in: false }, expected: true },
+  { label: 'staff with no clock status', user: { role: 'staff' }, expected: true },
+  { label: 'staff with an empty clock status', user: { role: 'staff', clocked_in: null }, expected: true },
+  { label: 'staff whose clock status is the text "true"', user: { role: 'staff', clocked_in: 'true' }, expected: true },
+  { label: 'a person with no role who is clocked in', user: { clocked_in: true }, expected: false },
+  { label: 'a person with no role who is not clocked in', user: { clocked_in: false }, expected: true },
+  { label: 'a role spelled "Admin", which the server does not accept', user: { role: 'Admin', clocked_in: false }, expected: true },
+  { label: 'no person at all', user: null, expected: true },
+  { label: 'an undefined person', user: undefined, expected: true },
+]

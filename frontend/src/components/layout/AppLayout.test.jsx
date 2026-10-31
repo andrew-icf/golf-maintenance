@@ -1,12 +1,16 @@
+import { useState } from 'react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { act, render, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { MemoryRouter, Route, Routes } from 'react-router-dom'
+import { FAILURE_MESSAGE } from '../../test/fixtures/asyncActionCases'
+import { CLOCKED_IN_USER, GATE_DIALOG_NAME, GATE_USER } from '../../test/fixtures/clockGateCases'
+import { createDeferred } from '../../test/helpers'
 import { AppLayout } from './AppLayout'
 import { NAV_ITEMS } from './navItems'
 
 const { apiMock, useAuthMock } = vi.hoisted(() => ({
-  apiMock: { getCourse: vi.fn() },
+  apiMock: { getCourse: vi.fn(), getMySchedule: vi.fn(), clockIn: vi.fn() },
   useAuthMock: vi.fn(),
 }))
 
@@ -24,39 +28,40 @@ const MON_MOTHMA = {
   job_title: 'superintendent',
   role: 'admin',
 }
+const ADMIN_OFF_THE_CLOCK = { ...MON_MOTHMA, clocked_in: false }
 const JOB_TITLE_LABEL = 'Superintendent'
 
-   const COURSE_NAME = 'Dagobah Pines Golf Club'
-   const HOLES_PER_COURSE = 9
-   const HOLE_YARDAGE = 400
-   const HOLES_TEXT = '27 holes · 3 courses'
-   const YARDAGE_TEXT = '10,800 yds'
+const COURSE_NAME = 'Dagobah Pines Golf Club'
+const HOLES_PER_COURSE = 9
+const HOLE_YARDAGE = 400
+const HOLES_TEXT = '27 holes · 3 courses'
+const YARDAGE_TEXT = '10,800 yds'
 
-   function makeNine(code) {
-     return {
-       id: `layout-${code}`,
-       name: `Course ${code}`,
-       code,
-       position: code.charCodeAt(0) - 64,
-       front_hole_count: 5,
-       holes: Array.from({ length: HOLES_PER_COURSE }, (unusedItem, index) => ({
-         id: `hole-${code}${index + 1}`,
-         layout_id: `layout-${code}`,
-         hole_number: index + 1,
-         par: 4,
-         yardage: HOLE_YARDAGE,
-       })),
-     }
-   }
+function makeNine(code) {
+  return {
+    id: `layout-${code}`,
+    name: `Course ${code}`,
+    code,
+    position: code.charCodeAt(0) - 64,
+    front_hole_count: 5,
+    holes: Array.from({ length: HOLES_PER_COURSE }, (unusedItem, index) => ({
+      id: `hole-${code}${index + 1}`,
+      layout_id: `layout-${code}`,
+      hole_number: index + 1,
+      par: 4,
+      yardage: HOLE_YARDAGE,
+    })),
+  }
+}
 
-   const COURSE_RESPONSE = {
-     id: 'course-1',
-     name: COURSE_NAME,
-     layouts: [makeNine('A'), makeNine('B'), makeNine('C')],
-     // The server also sends this flat list, which the sidebar does not read
-     holes: [],
-     amenities: [],
-   }
+const COURSE_RESPONSE = {
+  id: 'course-1',
+  name: COURSE_NAME,
+  layouts: [makeNine('A'), makeNine('B'), makeNine('C')],
+  // The server also sends this flat list, which the sidebar does not read
+  holes: [],
+  amenities: [],
+}
 
 const NOT_IN_NAV_PATH = '/elsewhere'
 const NOT_IN_NAV_CONTENT = 'Elsewhere content'
@@ -67,19 +72,26 @@ function contentFor(item) {
   return `${item.label} content`
 }
 
-function createDeferred() {
-  let resolve
-  const promise = new Promise((resolvePromise) => {
-    resolve = resolvePromise
-  })
-  return { promise, resolve }
-}
-
 // Scenarios
 const logoutMock = vi.fn()
+const refreshUserMock = vi.fn()
 
-function givenLoggedInAs(user) {
-  useAuthMock.mockReturnValue({ user, logout: logoutMock })
+// Stands in for the real sign-in provider. It keeps the user in state, so refreshing the user
+// re-renders the layout the way the real one does. userAfterRefresh is who the server would
+// report once the refresh has run, for instance after clocking in.
+function givenLoggedInAs(user, userAfterRefresh = user) {
+  useAuthMock.mockImplementation(function useFakeAuth() {
+    const [currentUser, setCurrentUser] = useState(user)
+
+    return {
+      user: currentUser,
+      logout: logoutMock,
+      refreshUser: async () => {
+        refreshUserMock()
+        setCurrentUser(userAfterRefresh)
+      },
+    }
+  })
 }
 
 function givenCourse() {
@@ -109,12 +121,24 @@ async function renderLoadedLayout(path) {
   return view
 }
 
+// The gate's week list appears once its own schedule has loaded
+async function renderGatedLayout(path) {
+  const view = renderLayout(path)
+  await screen.findByText('This week')
+  return view
+}
+
 describe('AppLayout', () => {
   beforeEach(() => {
     apiMock.getCourse.mockReset()
+    apiMock.getMySchedule.mockReset()
+    apiMock.getMySchedule.mockResolvedValue([])
+    apiMock.clockIn.mockReset()
+    apiMock.clockIn.mockResolvedValue({})
     useAuthMock.mockReset()
     logoutMock.mockReset()
     logoutMock.mockResolvedValue()
+    refreshUserMock.mockReset()
     // Only Date is faked, so timers and promises keep working normally
     vi.useFakeTimers({ toFake: ['Date'] })
     vi.setSystemTime(TODAY)
@@ -243,6 +267,90 @@ describe('AppLayout', () => {
       expect(await screen.findByRole('alert')).toHaveTextContent(LOGOUT_ERROR_MESSAGE)
       expect(screen.getByText('Schedule content')).toBeInTheDocument()
       expect(screen.queryByText(LOGIN_PAGE_TEXT)).not.toBeInTheDocument()
+    })
+  })
+
+  describe('the clock-in gate', () => {
+    it('shows the gate, with no page and no course request, to staff who are not clocked in', async () => {
+      givenLoggedInAs(GATE_USER)
+
+      await renderGatedLayout()
+
+      expect(screen.getByRole('dialog', { name: GATE_DIALOG_NAME })).toBeInTheDocument()
+      expect(screen.queryByText('Schedule content')).not.toBeInTheDocument()
+      expect(apiMock.getCourse).not.toHaveBeenCalled()
+      expect(screen.getByText(APP_NAME)).toBeInTheDocument()
+      expect(screen.queryByText(COURSE_NAME)).not.toBeInTheDocument()
+    })
+
+    it.each(NAV_ITEMS)('holds back the $label page behind the gate', async (item) => {
+      givenLoggedInAs(GATE_USER)
+
+      await renderGatedLayout(item.path)
+
+      expect(screen.getByRole('dialog', { name: GATE_DIALOG_NAME })).toBeInTheDocument()
+      expect(screen.queryByText(contentFor(item))).not.toBeInTheDocument()
+    })
+
+    it('lets staff who are clocked in straight through', async () => {
+      givenLoggedInAs(CLOCKED_IN_USER)
+
+      await renderLoadedLayout()
+
+      expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+      expect(screen.getByText('Schedule content')).toBeInTheDocument()
+      expect(apiMock.getMySchedule).not.toHaveBeenCalled()
+    })
+
+    it('does not hold back an admin who is not clocked in', async () => {
+      givenLoggedInAs(ADMIN_OFF_THE_CLOCK)
+
+      await renderLoadedLayout()
+
+      expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+      expect(screen.getByText('Schedule content')).toBeInTheDocument()
+      expect(apiMock.getMySchedule).not.toHaveBeenCalled()
+    })
+
+    it('clocks in, then shows the page and loads the course', async () => {
+      givenLoggedInAs(GATE_USER, CLOCKED_IN_USER)
+      await renderGatedLayout()
+
+      await userEvent.click(screen.getByRole('button', { name: 'Clock in' }))
+
+      expect(await screen.findByText('Schedule content')).toBeInTheDocument()
+      expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+      expect(await screen.findByText(COURSE_NAME)).toBeInTheDocument()
+      expect(apiMock.clockIn).toHaveBeenCalledTimes(1)
+      expect(refreshUserMock).toHaveBeenCalledTimes(1)
+      expect(apiMock.getCourse).toHaveBeenCalledTimes(1)
+      // The server has to hear about the clock-in before the app asks who is clocked in
+      expect(apiMock.clockIn.mock.invocationCallOrder[0]).toBeLessThan(
+        refreshUserMock.mock.invocationCallOrder[0]
+      )
+    })
+
+    it('keeps the gate up, and says why, when clocking in fails', async () => {
+      givenLoggedInAs(GATE_USER, CLOCKED_IN_USER)
+      apiMock.clockIn.mockRejectedValue(new Error(FAILURE_MESSAGE))
+      await renderGatedLayout()
+
+      await userEvent.click(screen.getByRole('button', { name: 'Clock in' }))
+
+      expect(await screen.findByRole('alert')).toHaveTextContent(FAILURE_MESSAGE)
+      expect(screen.getByRole('dialog', { name: GATE_DIALOG_NAME })).toBeInTheDocument()
+      expect(screen.queryByText('Schedule content')).not.toBeInTheDocument()
+      expect(refreshUserMock).not.toHaveBeenCalled()
+    })
+
+    it('logs out from the gate and goes to the login page', async () => {
+      givenLoggedInAs(GATE_USER)
+      await renderGatedLayout()
+
+      await userEvent.click(within(screen.getByRole('dialog')).getByRole('button', { name: 'Log out' }))
+
+      expect(logoutMock).toHaveBeenCalledTimes(1)
+      expect(await screen.findByText(LOGIN_PAGE_TEXT)).toBeInTheDocument()
     })
   })
 })

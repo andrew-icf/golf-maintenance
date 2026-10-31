@@ -2,6 +2,8 @@ import { useEffect, useState } from 'react'
 import { Outlet, useLocation, useNavigate } from 'react-router-dom'
 import { api } from '../../api'
 import { useAuth } from '../../features/auth/AuthContext'
+import { ClockGate } from '../../features/clock/ClockGate'
+import { isGated } from '../../features/clock/clockStatus'
 import { summarizeCourse } from '../../features/course/courseSummary'
 import { todayDateString } from '../../features/schedule/scheduleDates'
 import { SideNav } from './SideNav'
@@ -10,12 +12,18 @@ import { findNavItem } from './navItems'
 import './AppLayout.css'
 
 export function AppLayout() {
-  const { user, logout } = useAuth()
+  const { user, logout, refreshUser } = useAuth()
   const { pathname } = useLocation()
   const navigate = useNavigate()
   const [course, setCourse] = useState(null)
+  const behindTheGate = isGated(user)
 
+  // The course details are work information, so they load only once the person may work
   useEffect(() => {
+    if (behindTheGate) {
+      return undefined
+    }
+
     let isCurrent = true
 
     api
@@ -32,7 +40,12 @@ export function AppLayout() {
     return () => {
       isCurrent = false
     }
-  }, [])
+  }, [behindTheGate])
+
+  async function handleClockIn() {
+    await api.clockIn()
+    await refreshUser()
+  }
 
   async function handleLogout() {
     await logout()
@@ -49,10 +62,18 @@ export function AppLayout() {
         <TopBar title={ navItem?.title ?? '' } user={ user } onLogout={ handleLogout } />
         <main className="app-layout-content">
           <div className={ `app-layout-page app-layout-page-${pageWidth}` }>
-            <Outlet />
+            { !behindTheGate && <Outlet /> }
           </div>
         </main>
       </div>
+      { behindTheGate && (
+        <ClockGate
+          user={ user }
+          todayDate={ todayDateString() }
+          onClockIn={ handleClockIn }
+          onLogout={ handleLogout }
+        />
+      )}
     </div>
   )
 }

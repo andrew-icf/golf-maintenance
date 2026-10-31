@@ -12,13 +12,7 @@ import (
 )
 
 // Test data
-const (
-	gateStaffEmail      = "staff@example.com"
-	gateOtherStaffEmail = "other.staff@example.com"
-	gateAdminEmail      = "admin@example.com"
-	gatePassword        = "password123"
-	forbiddenRoleText   = "insufficient permissions"
-)
+const forbiddenRoleText = "insufficient permissions"
 
 type gateRequest struct {
 	label  string
@@ -60,21 +54,9 @@ var openRouteSteps = []struct {
 	{"clock in", http.MethodPost, "/clock-in", http.StatusCreated},
 }
 
-// Scenarios
-type gateUser struct {
-	id     string
-	cookie *http.Cookie
-}
-
-func newGateUser(t *testing.T, email, role string) gateUser {
-	t.Helper()
-	userID := testutil.CreateUser(t, email, gatePassword, role)
-	return gateUser{id: userID, cookie: testutil.SessionCookie(t, userID)}
-}
-
 // Actions
-func sendAs(handler http.Handler, user gateUser, request gateRequest) *httptest.ResponseRecorder {
-	return sendRequest(handler, request.method, request.path, request.body, user.cookie)
+func sendAs(handler http.Handler, person testPerson, request gateRequest) *httptest.ResponseRecorder {
+	return sendRequest(handler, request.method, request.path, request.body, person.cookie)
 }
 
 func expectClockInRefusal(t *testing.T, request gateRequest, recorder *httptest.ResponseRecorder) {
@@ -112,89 +94,73 @@ func TestClockGate_RequiresASessionFirst(t *testing.T) {
 }
 
 func TestClockGate_RefusesStaffWhoAreNotClockedIn(t *testing.T) {
-	testutil.SetupTestDB(t)
-	staff := newGateUser(t, gateStaffEmail, "staff")
-	handler := router.New()
+	staff := setUpStaff(t)
 
 	for _, request := range gatedRoutes {
-		expectClockInRefusal(t, request, sendAs(handler, staff, request))
+		expectClockInRefusal(t, request, sendAs(staff.handler, staff.testPerson, request))
 	}
 }
 
 func TestClockGate_LetsClockedInStaffThrough(t *testing.T) {
-	testutil.SetupTestDB(t)
-	staff := newGateUser(t, gateStaffEmail, "staff")
-	testutil.ClockIn(t, staff.id)
-	handler := router.New()
+	staff := setUpClockedInStaff(t)
 
 	for _, request := range gatedRoutes {
-		expectPastTheGate(t, request, sendAs(handler, staff, request))
+		expectPastTheGate(t, request, sendAs(staff.handler, staff.testPerson, request))
 	}
 }
 
 func TestClockGate_RefusesStaffAgainAfterClockingOut(t *testing.T) {
-	testutil.SetupTestDB(t)
-	staff := newGateUser(t, gateStaffEmail, "staff")
-	testutil.ClockIn(t, staff.id)
+	staff := setUpClockedInStaff(t)
 	testutil.ClockOut(t, staff.id)
-	handler := router.New()
 
 	for _, request := range gatedRoutes {
-		expectClockInRefusal(t, request, sendAs(handler, staff, request))
+		expectClockInRefusal(t, request, sendAs(staff.handler, staff.testPerson, request))
 	}
 }
 
 func TestClockGate_ExemptsAdminsWhoAreNotClockedIn(t *testing.T) {
-	testutil.SetupTestDB(t)
-	admin := newGateUser(t, gateAdminEmail, "admin")
-	handler := router.New()
+	admin := setUpAdmin(t)
 
 	for _, request := range gatedRoutes {
-		expectPastTheGate(t, request, sendAs(handler, admin, request))
+		expectPastTheGate(t, request, sendAs(admin.handler, admin.testPerson, request))
 	}
 }
 
 func TestClockGate_OnlyCountsYourOwnClockEntry(t *testing.T) {
-	testutil.SetupTestDB(t)
-	staff := newGateUser(t, gateStaffEmail, "staff")
-	otherStaff := newGateUser(t, gateOtherStaffEmail, "staff")
+	staff := setUpStaff(t)
+	otherStaff := newPerson(t, "other.staff@example.com", "staff")
 	testutil.ClockIn(t, otherStaff.id)
-	handler := router.New()
 
 	for _, request := range gatedRoutes {
-		expectClockInRefusal(t, request, sendAs(handler, staff, request))
-		expectPastTheGate(t, request, sendAs(handler, otherStaff, request))
+		expectClockInRefusal(t, request, sendAs(staff.handler, staff.testPerson, request))
+		expectPastTheGate(t, request, sendAs(staff.handler, otherStaff, request))
 	}
 }
 
 func TestClockGate_TakesEffectOnTheNextRequest(t *testing.T) {
-	testutil.SetupTestDB(t)
-	staff := newGateUser(t, gateStaffEmail, "staff")
-	handler := router.New()
+	staff := setUpStaff(t)
 	clockIn := gateRequest{"clock in", http.MethodPost, "/clock-in", ""}
 	clockOut := gateRequest{"clock out", http.MethodPost, "/clock-out", ""}
 
-	expectClockInRefusal(t, equipmentListRequest, sendAs(handler, staff, equipmentListRequest))
+	expectClockInRefusal(t, equipmentListRequest, sendAs(staff.handler, staff.testPerson, equipmentListRequest))
 
-	if recorder := sendAs(handler, staff, clockIn); recorder.Code != http.StatusCreated {
+	if recorder := sendAs(staff.handler, staff.testPerson, clockIn); recorder.Code != http.StatusCreated {
 		t.Fatalf("clock in: expected 201, got %d", recorder.Code)
 	}
-	expectPastTheGate(t, equipmentListRequest, sendAs(handler, staff, equipmentListRequest))
+	expectPastTheGate(t, equipmentListRequest, sendAs(staff.handler, staff.testPerson, equipmentListRequest))
 
-	if recorder := sendAs(handler, staff, clockOut); recorder.Code != http.StatusOK {
+	if recorder := sendAs(staff.handler, staff.testPerson, clockOut); recorder.Code != http.StatusOK {
 		t.Fatalf("clock out: expected 200, got %d", recorder.Code)
 	}
-	expectClockInRefusal(t, equipmentListRequest, sendAs(handler, staff, equipmentListRequest))
+	expectClockInRefusal(t, equipmentListRequest, sendAs(staff.handler, staff.testPerson, equipmentListRequest))
 }
 
 func TestClockGate_LeavesTheOpenRoutesOpen(t *testing.T) {
-	testutil.SetupTestDB(t)
-	staff := newGateUser(t, gateStaffEmail, "staff")
-	handler := router.New()
+	staff := setUpStaff(t)
 
 	// Each step builds on the previous one: clocking out before clocking in has to come first
 	for _, step := range openRouteSteps {
-		recorder := sendRequest(handler, step.method, step.path, "", staff.cookie)
+		recorder := sendRequest(staff.handler, step.method, step.path, "", staff.cookie)
 
 		if recorder.Code != step.expectedStatus {
 			t.Fatalf("%s: expected %d, got %d (body: %s)",
@@ -202,18 +168,16 @@ func TestClockGate_LeavesTheOpenRoutesOpen(t *testing.T) {
 		}
 	}
 
-	if recorder := sendRequest(handler, http.MethodGet, "/health", "", nil); recorder.Code != http.StatusOK {
+	if recorder := sendRequest(staff.handler, http.MethodGet, "/health", "", nil); recorder.Code != http.StatusOK {
 		t.Errorf("health check without a session: expected 200, got %d", recorder.Code)
 	}
 }
 
 func TestClockGate_RoleErrorComesBeforeTheClockRule(t *testing.T) {
-	testutil.SetupTestDB(t)
-	staff := newGateUser(t, gateStaffEmail, "staff")
-	handler := router.New()
+	staff := setUpStaff(t)
 
 	for _, request := range adminOnlyRoutes {
-		recorder := sendAs(handler, staff, request)
+		recorder := sendAs(staff.handler, staff.testPerson, request)
 		body := recorder.Body.String()
 
 		if recorder.Code != http.StatusForbidden || !strings.Contains(body, forbiddenRoleText) {
@@ -226,11 +190,9 @@ func TestClockGate_RoleErrorComesBeforeTheClockRule(t *testing.T) {
 }
 
 func TestClockGate_AdminRoutesWorkForAdminsWhoAreNotClockedIn(t *testing.T) {
-	testutil.SetupTestDB(t)
-	admin := newGateUser(t, gateAdminEmail, "admin")
-	handler := router.New()
+	admin := setUpAdmin(t)
 
 	for _, request := range adminOnlyRoutes {
-		expectPastTheGate(t, request, sendAs(handler, admin, request))
+		expectPastTheGate(t, request, sendAs(admin.handler, admin.testPerson, request))
 	}
 }

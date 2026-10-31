@@ -15,16 +15,6 @@ func schedulePath(start, end string) string {
 	return fmt.Sprintf("/api/schedule?start=%s&end=%s", start, end)
 }
 
-func shiftDates(t *testing.T, responseBody []byte) []string {
-	t.Helper()
-	dates := []string{}
-	for _, shift := range decodeJSONList(t, responseBody) {
-		date, _ := shift["shift_date"].(string)
-		dates = append(dates, date)
-	}
-	return dates
-}
-
 func TestGetSchedules_RangeIncludesBothEndsAndNothingOutside(t *testing.T) {
 	staff := setUpClockedInStaff(t)
 

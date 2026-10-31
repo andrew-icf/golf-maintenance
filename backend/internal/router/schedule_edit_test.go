@@ -1,57 +1,17 @@
 package router_test
 
 import (
-	"context"
 	"fmt"
 	"net/http"
 	"testing"
 
-	"golf-maintenance/backend/internal/db"
 	"golf-maintenance/backend/internal/router"
 	"golf-maintenance/backend/internal/testutil"
 )
 
-type storedShift struct {
-	UserID    string
-	ShiftDate string
-	StartTime string
-	EndTime   string
-}
-
-func insertShift(t *testing.T, userID, shiftDate, startTime, endTime string) string {
-	t.Helper()
-	var shiftID string
-	err := db.Pool.QueryRow(
-		context.Background(),
-		`INSERT INTO schedules (user_id, shift_date, start_time, end_time)
-		 VALUES ($1, $2, $3, $4) RETURNING id`,
-		userID, shiftDate, startTime, endTime,
-	).Scan(&shiftID)
-	if err != nil {
-		t.Fatalf("could not insert shift: %v", err)
-	}
-	return shiftID
-}
-
-func loadShift(t *testing.T, shiftID string) storedShift {
-	t.Helper()
-	var shift storedShift
-	err := db.Pool.QueryRow(
-		context.Background(),
-		`SELECT user_id::text, shift_date::text, start_time::text, end_time::text
-		 FROM schedules WHERE id = $1`,
-		shiftID,
-	).Scan(&shift.UserID, &shift.ShiftDate, &shift.StartTime, &shift.EndTime)
-	if err != nil {
-		t.Fatalf("could not load shift %s: %v", shiftID, err)
-	}
-	return shift
-}
-
 func updateBody(shiftDate, startTime, endTime string) string {
 	return fmt.Sprintf(`{"shift_date":%q,"start_time":%q,"end_time":%q}`, shiftDate, startTime, endTime)
 }
-
 func TestUpdateSchedule_ChangesOnlyTheTargetedShift(t *testing.T) {
 	testutil.SetupTestDB(t)
 	adminID := testutil.CreateUser(t, "admin@example.com", "password123", "admin")

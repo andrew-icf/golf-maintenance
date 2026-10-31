@@ -17,9 +17,6 @@ const (
 	foreignKeyViolation = "23503"
 )
 
-// A well-formed id that belongs to nothing
-const nonexistentID = "00000000-0000-0000-0000-000000000000"
-
 // Actions
 func tryInsertLayout(courseID, name string, code *string, position int, frontHoleCount *int) error {
 	return execSQL(

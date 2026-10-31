@@ -8,3 +8,10 @@ export function isGated(user) {
 
   return user.role !== 'admin' && user.clocked_in !== true
 }
+
+// Staff are logged out when they clock out. Clocking out would put them behind the clock-in
+// screen, where the next person to pick up a shared tablet would see their name and could
+// clock in as them. Admins are exempt from that screen, so they stay logged in.
+export function logsOutOnClockOut(user) {
+  return isGated({ ...user, clocked_in: false })
+}

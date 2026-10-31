@@ -1,0 +1,81 @@
+.clock-control {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+}
+
+.clock-control-status {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 600;
+  color: #2f4d38;
+}
+
+.clock-control-button {
+  min-height: 44px;
+  padding: 0 16px;
+  border: 1px solid #dce8d7;
+  border-radius: 10px;
+  background: #ffffff;
+  color: #2f6b3c;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.clock-control-button:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+.clock-control-button:focus-visible {
+  outline: 2px solid #2f6b3c;
+  outline-offset: 2px;
+}
+
+.clock-control-error {
+  flex-basis: 100%;
+  margin: 0;
+  font-size: 14px;
+  color: #b3261e;
+}
+
+.clock-out-confirm {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.clock-out-confirm p {
+  margin: 0;
+  color: #2f4d38;
+}
+
+.clock-out-confirm-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+}
+
+.clock-out-confirm-actions button {
+  min-height: 44px;
+  padding: 0 18px;
+  border: 1px solid #dce8d7;
+  border-radius: 10px;
+  background: #ffffff;
+  color: #4d7a55;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.clock-out-confirm-actions .clock-out-confirm-button {
+  border-color: #2f6b3c;
+  background: #2f6b3c;
+  color: #ffffff;
+}
+
+.clock-out-confirm-actions button:disabled {
+  opacity: 0.6;
+  cursor: default;
+}

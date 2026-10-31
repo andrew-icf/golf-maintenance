@@ -65,11 +65,19 @@ describe('useAsyncAction', () => {
     expect(result.current.isRunning).toBe(false)
   })
 
-  it('does not throw when the action fails', async () => {
+  it('tells the caller the action worked', async () => {
+    const { result } = renderAction(vi.fn().mockResolvedValue())
+
+    await act(async () => {
+      await expect(result.current.run()).resolves.toBe(true)
+    })
+  })
+
+  it('tells the caller the action failed, without throwing', async () => {
     const { result } = renderAction(vi.fn().mockRejectedValue(new Error(FAILURE_MESSAGE)))
 
     await act(async () => {
-      await expect(result.current.run()).resolves.toBeUndefined()
+      await expect(result.current.run()).resolves.toBe(false)
     })
   })
 

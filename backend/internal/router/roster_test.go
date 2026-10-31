@@ -1,14 +1,12 @@
 package router_test
 
 import (
-	"context"
 	"net/http"
 	"reflect"
 	"sort"
 	"strings"
 	"testing"
 
-	"golf-maintenance/backend/internal/db"
 	"golf-maintenance/backend/internal/testutil"
 )
 
@@ -19,18 +17,6 @@ const (
 	alexName  = "Alex Rivera"
 	alexTitle = "mechanic"
 )
-
-func setJobTitle(t *testing.T, userID, jobTitle string) {
-	t.Helper()
-	_, err := db.Pool.Exec(
-		context.Background(),
-		`UPDATE users SET job_title = $1 WHERE id = $2`,
-		jobTitle, userID,
-	)
-	if err != nil {
-		t.Fatalf("could not set job title: %v", err)
-	}
-}
 
 func TestRoster_ListsOnlyStaffSortedByName(t *testing.T) {
 	admin := setUpAdmin(t)

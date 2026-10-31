@@ -81,6 +81,18 @@ func setFullName(t *testing.T, userID, fullName string) {
 	}
 }
 
+func setJobTitle(t *testing.T, userID, jobTitle string) {
+	t.Helper()
+	_, err := db.Pool.Exec(
+		context.Background(),
+		`UPDATE users SET job_title = $1 WHERE id = $2`,
+		jobTitle, userID,
+	)
+	if err != nil {
+		t.Fatalf("could not set job title: %v", err)
+	}
+}
+
 // A signed-in person together with a router, ready to send requests
 type signedIn struct {
 	testPerson
@@ -274,6 +286,11 @@ func shiftDates(t *testing.T, responseBody []byte) []string {
 		dates = append(dates, date)
 	}
 	return dates
+}
+
+func countSchedules(t *testing.T) int {
+	t.Helper()
+	return countRows(t, `SELECT COUNT(*) FROM schedules`)
 }
 
 // ---- Shared test data ----

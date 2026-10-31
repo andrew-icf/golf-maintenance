@@ -69,12 +69,13 @@ const (
 )
 
 // Actions
-// A staff member who is on the clock, since the course is only open to people who are
+// A staff member who is on the clock, since the course is only open to people who are.
+// It adds to the current database, so it can run after a club has been built.
 func loggedInStaffCookie(t *testing.T) *http.Cookie {
 	t.Helper()
-	userID := testutil.CreateUser(t, "staff@example.com", "password123", "staff")
-	testutil.ClockIn(t, userID)
-	return testutil.SessionCookie(t, userID)
+	staff := newPerson(t, "staff@example.com", "staff")
+	testutil.ClockIn(t, staff.id)
+	return staff.cookie
 }
 
 func fetchCourse(t *testing.T, cookie *http.Cookie) courseResponse {

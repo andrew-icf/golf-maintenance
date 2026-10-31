@@ -21,10 +21,7 @@ func TestClock_RequiresSession(t *testing.T) {
 }
 
 func TestClock_EnforcesStateRules(t *testing.T) {
-	testutil.SetupTestDB(t)
-	userID := testutil.CreateUser(t, "staff@example.com", "password123", "staff")
-	cookie := testutil.SessionCookie(t, userID)
-	handler := router.New()
+	staff := setUpStaff(t)
 
 	// Each step builds on the previous one, so the order matters.
 	steps := []struct {
@@ -41,7 +38,7 @@ func TestClock_EnforcesStateRules(t *testing.T) {
 	}
 
 	for _, step := range steps {
-		recorder := sendRequest(handler, http.MethodPost, step.path, "", cookie)
+		recorder := sendRequest(staff.handler, http.MethodPost, step.path, "", staff.cookie)
 		if recorder.Code != step.expectedStatus {
 			t.Fatalf("%s: expected %d, got %d (body: %s)",
 				step.description, step.expectedStatus, recorder.Code, recorder.Body.String())

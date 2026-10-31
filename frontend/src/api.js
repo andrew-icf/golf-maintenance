@@ -18,6 +18,11 @@ async function request(path, options = {}) {
   return response.json()
 }
 
+// "?start=2026-10-04&end=2026-10-10", or nothing unless both dates are given
+function dateRangeQuery(startDate, endDate) {
+  return startDate && endDate ? `?start=${startDate}&end=${endDate}` : ''
+}
+
 export const api = {
   login: (email, password) =>
     request('/login', { method: 'POST', body: JSON.stringify({ email, password }) }),
@@ -38,23 +43,25 @@ export const api = {
     request(`/api/equipment/${id}`, {
       method: 'PUT',
       body: JSON.stringify({ status }),
-  }),
+    }),
 
   getUsers: () => request('/api/users'),
-  
-  getSchedules: (startDate, endDate) => {
-    const query = startDate && endDate ? `?start=${startDate}&end=${endDate}` : ''
-    return request(`/api/schedule${query}`)
-  },
+
+  getSchedules: (startDate, endDate) =>
+    request(`/api/schedule${dateRangeQuery(startDate, endDate)}`),
+
+  // Only the logged-in person's own shifts. Unlike getSchedules, it works before clock-in.
+  getMySchedule: (startDate, endDate) =>
+    request(`/api/my-schedule${dateRangeQuery(startDate, endDate)}`),
 
   getRoster: () => request('/api/roster'),
-  
+
   createSchedule: (shift) =>
     request('/api/schedule', {
       method: 'POST',
       body: JSON.stringify(shift),
     }),
-  
+
   repeatSchedule: (pattern) =>
     request('/api/schedule/repeat', {
       method: 'POST',

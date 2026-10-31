@@ -55,6 +55,7 @@ var openRouteSteps = []struct {
 	expectedStatus int
 }{
 	{"check who is logged in", http.MethodGet, "/me", http.StatusOK},
+	{"view your own schedule", http.MethodGet, "/api/my-schedule", http.StatusOK},
 	{"clock out when not clocked in", http.MethodPost, "/clock-out", http.StatusConflict},
 	{"clock in", http.MethodPost, "/clock-in", http.StatusCreated},
 }

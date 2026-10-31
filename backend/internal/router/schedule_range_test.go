@@ -112,22 +112,9 @@ func TestGetSchedules_RejectsInvalidRanges(t *testing.T) {
 	cookie := testutil.SessionCookie(t, staffID)
 	handler := router.New()
 
-	testCases := []struct {
-		name string
-		path string
-	}{
-		{"start without end", "/api/schedule?start=2026-10-04"},
-		{"end without start", "/api/schedule?end=2026-10-10"},
-		{"malformed start", schedulePath("banana", "2026-10-10")},
-		{"malformed end", schedulePath("2026-10-04", "banana")},
-		{"date without zero padding", schedulePath("2026-10-4", "2026-10-10")},
-		{"end before start", schedulePath("2026-10-10", "2026-10-04")},
-		{"range of 63 days", schedulePath("2026-01-01", "2026-03-05")},
-	}
-
-	for _, testCase := range testCases {
+	for _, testCase := range invalidRangeQueries {
 		t.Run(testCase.name, func(t *testing.T) {
-			recorder := sendRequest(handler, http.MethodGet, testCase.path, "", cookie)
+			recorder := sendRequest(handler, http.MethodGet, "/api/schedule?"+testCase.query, "", cookie)
 			if recorder.Code != http.StatusBadRequest {
 				t.Errorf("expected 400, got %d (body: %s)", recorder.Code, recorder.Body.String())
 			}

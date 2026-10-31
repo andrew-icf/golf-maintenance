@@ -293,6 +293,17 @@ func countSchedules(t *testing.T) int {
 	return countRows(t, `SELECT COUNT(*) FROM schedules`)
 }
 
+// ---- Clock entries ----
+
+// Opens a clock entry that started at a known moment, written as an RFC 3339 timestamp
+func clockInAt(t *testing.T, userID, startedAt string) {
+	t.Helper()
+	mustExec(t,
+		`INSERT INTO clock_entries (user_id, clock_in) VALUES ($1, $2::text::timestamptz)`,
+		userID, startedAt,
+	)
+}
+
 // ---- Shared test data ----
 
 // Date ranges every schedule endpoint must refuse with a 400, as the query string that

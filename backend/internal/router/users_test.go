@@ -10,7 +10,6 @@ import (
 
 	"golf-maintenance/backend/internal/db"
 	"golf-maintenance/backend/internal/models"
-	"golf-maintenance/backend/internal/router"
 	"golf-maintenance/backend/internal/testutil"
 )
 
@@ -35,11 +34,13 @@ func storedRoleAndTitle(t *testing.T, email string) (string, string) {
 	return role, jobTitle
 }
 
+func countUsers(t *testing.T) int {
+	t.Helper()
+	return countRows(t, `SELECT COUNT(*) FROM users`)
+}
+
 func TestCreateUser_DerivesRoleFromJobTitle(t *testing.T) {
-	testutil.SetupTestDB(t)
-	adminID := testutil.CreateUser(t, "admin@example.com", "password123", "admin")
-	adminCookie := testutil.SessionCookie(t, adminID)
-	handler := router.New()
+	admin := setUpAdmin(t)
 
 	// Written out independently of the Go map, so the test checks the business rule itself
 	testCases := []struct {
@@ -59,8 +60,8 @@ func TestCreateUser_DerivesRoleFromJobTitle(t *testing.T) {
 	for _, testCase := range testCases {
 		t.Run(testCase.jobTitle, func(t *testing.T) {
 			email := testCase.jobTitle + "@example.com"
-			recorder := sendRequest(handler, http.MethodPost, "/users",
-				createUserBody(email, testCase.jobTitle), adminCookie)
+			recorder := sendRequest(admin.handler, http.MethodPost, "/users",
+				createUserBody(email, testCase.jobTitle), admin.cookie)
 
 			if recorder.Code != http.StatusCreated {
 				t.Fatalf("expected 201, got %d (body: %s)", recorder.Code, recorder.Body.String())
@@ -78,13 +79,10 @@ func TestCreateUser_DerivesRoleFromJobTitle(t *testing.T) {
 }
 
 func TestCreateUser_IgnoresRoleSentByClient(t *testing.T) {
-	testutil.SetupTestDB(t)
-	adminID := testutil.CreateUser(t, "admin@example.com", "password123", "admin")
-	adminCookie := testutil.SessionCookie(t, adminID)
-	handler := router.New()
+	admin := setUpAdmin(t)
 
 	body := `{"email":"sneaky@example.com","password":"password123","full_name":"Sneaky","job_title":"landscaper","role":"admin"}`
-	recorder := sendRequest(handler, http.MethodPost, "/users", body, adminCookie)
+	recorder := sendRequest(admin.handler, http.MethodPost, "/users", body, admin.cookie)
 
 	if recorder.Code != http.StatusCreated {
 		t.Fatalf("expected 201, got %d (body: %s)", recorder.Code, recorder.Body.String())
@@ -95,21 +93,8 @@ func TestCreateUser_IgnoresRoleSentByClient(t *testing.T) {
 	}
 }
 
-func countUsers(t *testing.T) int {
-	t.Helper()
-	var count int
-	err := db.Pool.QueryRow(context.Background(), `SELECT COUNT(*) FROM users`).Scan(&count)
-	if err != nil {
-		t.Fatalf("could not count users: %v", err)
-	}
-	return count
-}
-
 func TestCreateUser_RejectsMissingOrInvalidJobTitle(t *testing.T) {
-	testutil.SetupTestDB(t)
-	adminID := testutil.CreateUser(t, "admin@example.com", "password123", "admin")
-	adminCookie := testutil.SessionCookie(t, adminID)
-	handler := router.New()
+	admin := setUpAdmin(t)
 
 	testCases := []struct {
 		name     string
@@ -124,8 +109,8 @@ func TestCreateUser_RejectsMissingOrInvalidJobTitle(t *testing.T) {
 
 	for _, testCase := range testCases {
 		t.Run(testCase.name, func(t *testing.T) {
-			recorder := sendRequest(handler, http.MethodPost, "/users",
-				createUserBody("new@example.com", testCase.jobTitle), adminCookie)
+			recorder := sendRequest(admin.handler, http.MethodPost, "/users",
+				createUserBody("new@example.com", testCase.jobTitle), admin.cookie)
 
 			if recorder.Code != http.StatusBadRequest {
 				t.Errorf("expected 400, got %d (body: %s)", recorder.Code, recorder.Body.String())
@@ -140,29 +125,19 @@ func TestCreateUser_RejectsMissingOrInvalidJobTitle(t *testing.T) {
 }
 
 func TestMe_ReturnsJobTitle(t *testing.T) {
-	testutil.SetupTestDB(t)
-	userID := testutil.CreateUser(t, "staff@example.com", "password123", "staff")
-	cookie := testutil.SessionCookie(t, userID)
-	handler := router.New()
+	staff := setUpStaff(t)
 
 	// A user created before job titles existed has none
-	recorder := sendRequest(handler, http.MethodGet, "/me", "", cookie)
+	recorder := sendRequest(staff.handler, http.MethodGet, "/me", "", staff.cookie)
 	profile := decodeJSONObject(t, recorder.Body.Bytes())
 	value, present := profile["job_title"]
 	if !present || value != nil {
 		t.Errorf("expected job_title to be present and null, got %v (present: %v)", value, present)
 	}
 
-	_, err := db.Pool.Exec(
-		context.Background(),
-		`UPDATE users SET job_title = 'mechanic' WHERE id = $1`,
-		userID,
-	)
-	if err != nil {
-		t.Fatalf("could not set job title: %v", err)
-	}
+	setJobTitle(t, staff.id, "mechanic")
 
-	recorder = sendRequest(handler, http.MethodGet, "/me", "", cookie)
+	recorder = sendRequest(staff.handler, http.MethodGet, "/me", "", staff.cookie)
 	profile = decodeJSONObject(t, recorder.Body.Bytes())
 	if profile["job_title"] != "mechanic" {
 		t.Errorf("expected job_title mechanic, got %v", profile["job_title"])

@@ -5,12 +5,7 @@ import (
 	"fmt"
 	"net/http"
 	"testing"
-
-	"golf-maintenance/backend/internal/router"
-	"golf-maintenance/backend/internal/testutil"
 )
-
-const unknownShiftID = "00000000-0000-0000-0000-000000000000"
 
 func deleteBody(shiftIDs ...string) string {
 	encoded, _ := json.Marshal(map[string][]string{"ids": shiftIDs})
@@ -18,19 +13,16 @@ func deleteBody(shiftIDs ...string) string {
 }
 
 func TestDeleteSchedules_DeletesOnlyTheSelectedShifts(t *testing.T) {
-	testutil.SetupTestDB(t)
-	adminID := testutil.CreateUser(t, "admin@example.com", "password123", "admin")
-	staffID := testutil.CreateUser(t, "staff@example.com", "password123", "staff")
-	adminCookie := testutil.SessionCookie(t, adminID)
-	handler := router.New()
+	admin := setUpAdmin(t)
+	staff := newPerson(t, "staff@example.com", "staff")
 
-	firstID := insertShift(t, staffID, "2026-10-05", "07:00", "15:00")
-	secondID := insertShift(t, staffID, "2026-10-06", "07:00", "15:00")
-	keptID := insertShift(t, staffID, "2026-10-07", "07:00", "15:00")
+	firstID := insertShift(t, staff.id, "2026-10-05", "07:00", "15:00")
+	secondID := insertShift(t, staff.id, "2026-10-06", "07:00", "15:00")
+	keptID := insertShift(t, staff.id, "2026-10-07", "07:00", "15:00")
 	keptBefore := loadShift(t, keptID)
 
-	recorder := sendRequest(handler, http.MethodDelete, "/api/schedule",
-		deleteBody(firstID, secondID), adminCookie)
+	recorder := sendRequest(admin.handler, http.MethodDelete, "/api/schedule",
+		deleteBody(firstID, secondID), admin.cookie)
 
 	if recorder.Code != http.StatusOK {
 		t.Fatalf("expected 200, got %d (body: %s)", recorder.Code, recorder.Body.String())
@@ -48,16 +40,13 @@ func TestDeleteSchedules_DeletesOnlyTheSelectedShifts(t *testing.T) {
 }
 
 func TestDeleteSchedules_AListOfOneDeletesASingleShift(t *testing.T) {
-	testutil.SetupTestDB(t)
-	adminID := testutil.CreateUser(t, "admin@example.com", "password123", "admin")
-	staffID := testutil.CreateUser(t, "staff@example.com", "password123", "staff")
-	adminCookie := testutil.SessionCookie(t, adminID)
-	handler := router.New()
+	admin := setUpAdmin(t)
+	staff := newPerson(t, "staff@example.com", "staff")
 
-	targetID := insertShift(t, staffID, "2026-10-05", "07:00", "15:00")
-	insertShift(t, staffID, "2026-10-06", "07:00", "15:00")
+	targetID := insertShift(t, staff.id, "2026-10-05", "07:00", "15:00")
+	insertShift(t, staff.id, "2026-10-06", "07:00", "15:00")
 
-	recorder := sendRequest(handler, http.MethodDelete, "/api/schedule", deleteBody(targetID), adminCookie)
+	recorder := sendRequest(admin.handler, http.MethodDelete, "/api/schedule", deleteBody(targetID), admin.cookie)
 
 	if recorder.Code != http.StatusOK {
 		t.Fatalf("expected 200, got %d (body: %s)", recorder.Code, recorder.Body.String())
@@ -68,16 +57,13 @@ func TestDeleteSchedules_AListOfOneDeletesASingleShift(t *testing.T) {
 }
 
 func TestDeleteSchedules_SkipsIdsThatDoNotExistAndDeletesTheRest(t *testing.T) {
-	testutil.SetupTestDB(t)
-	adminID := testutil.CreateUser(t, "admin@example.com", "password123", "admin")
-	staffID := testutil.CreateUser(t, "staff@example.com", "password123", "staff")
-	adminCookie := testutil.SessionCookie(t, adminID)
-	handler := router.New()
+	admin := setUpAdmin(t)
+	staff := newPerson(t, "staff@example.com", "staff")
 
-	existingID := insertShift(t, staffID, "2026-10-05", "07:00", "15:00")
+	existingID := insertShift(t, staff.id, "2026-10-05", "07:00", "15:00")
 
-	recorder := sendRequest(handler, http.MethodDelete, "/api/schedule",
-		deleteBody(existingID, unknownShiftID), adminCookie)
+	recorder := sendRequest(admin.handler, http.MethodDelete, "/api/schedule",
+		deleteBody(existingID, nonexistentID), admin.cookie)
 
 	if recorder.Code != http.StatusOK {
 		t.Fatalf("expected 200, got %d (body: %s)", recorder.Code, recorder.Body.String())
@@ -92,15 +78,12 @@ func TestDeleteSchedules_SkipsIdsThatDoNotExistAndDeletesTheRest(t *testing.T) {
 }
 
 func TestDeleteSchedules_ReturnsNotFoundWhenNothingMatches(t *testing.T) {
-	testutil.SetupTestDB(t)
-	adminID := testutil.CreateUser(t, "admin@example.com", "password123", "admin")
-	staffID := testutil.CreateUser(t, "staff@example.com", "password123", "staff")
-	adminCookie := testutil.SessionCookie(t, adminID)
-	handler := router.New()
+	admin := setUpAdmin(t)
+	staff := newPerson(t, "staff@example.com", "staff")
 
-	insertShift(t, staffID, "2026-10-05", "07:00", "15:00")
+	insertShift(t, staff.id, "2026-10-05", "07:00", "15:00")
 
-	recorder := sendRequest(handler, http.MethodDelete, "/api/schedule", deleteBody(unknownShiftID), adminCookie)
+	recorder := sendRequest(admin.handler, http.MethodDelete, "/api/schedule", deleteBody(nonexistentID), admin.cookie)
 
 	if recorder.Code != http.StatusNotFound {
 		t.Errorf("expected 404, got %d", recorder.Code)
@@ -111,13 +94,10 @@ func TestDeleteSchedules_ReturnsNotFoundWhenNothingMatches(t *testing.T) {
 }
 
 func TestDeleteSchedules_RejectsInvalidRequests(t *testing.T) {
-	testutil.SetupTestDB(t)
-	adminID := testutil.CreateUser(t, "admin@example.com", "password123", "admin")
-	staffID := testutil.CreateUser(t, "staff@example.com", "password123", "staff")
-	adminCookie := testutil.SessionCookie(t, adminID)
-	handler := router.New()
+	admin := setUpAdmin(t)
+	staff := newPerson(t, "staff@example.com", "staff")
 
-	validID := insertShift(t, staffID, "2026-10-05", "07:00", "15:00")
+	validID := insertShift(t, staff.id, "2026-10-05", "07:00", "15:00")
 
 	tooManyIDs := make([]string, 201)
 	for index := range tooManyIDs {
@@ -138,7 +118,7 @@ func TestDeleteSchedules_RejectsInvalidRequests(t *testing.T) {
 
 	for _, testCase := range testCases {
 		t.Run(testCase.name, func(t *testing.T) {
-			recorder := sendRequest(handler, http.MethodDelete, "/api/schedule", testCase.body, adminCookie)
+			recorder := sendRequest(admin.handler, http.MethodDelete, "/api/schedule", testCase.body, admin.cookie)
 			if recorder.Code != http.StatusBadRequest {
 				t.Errorf("expected 400, got %d (body: %s)", recorder.Code, recorder.Body.String())
 			}
@@ -152,20 +132,17 @@ func TestDeleteSchedules_RejectsInvalidRequests(t *testing.T) {
 }
 
 func TestDeleteSchedules_RequiresAdmin(t *testing.T) {
-	testutil.SetupTestDB(t)
-	staffID := testutil.CreateUser(t, "staff@example.com", "password123", "staff")
-	staffCookie := testutil.SessionCookie(t, staffID)
-	handler := router.New()
+	staff := setUpStaff(t)
 
-	shiftID := insertShift(t, staffID, "2026-10-05", "07:00", "15:00")
+	shiftID := insertShift(t, staff.id, "2026-10-05", "07:00", "15:00")
 	body := deleteBody(shiftID)
 
-	noSession := sendRequest(handler, http.MethodDelete, "/api/schedule", body, nil)
+	noSession := sendRequest(staff.handler, http.MethodDelete, "/api/schedule", body, nil)
 	if noSession.Code != http.StatusUnauthorized {
 		t.Errorf("no session: expected 401, got %d", noSession.Code)
 	}
 
-	asStaff := sendRequest(handler, http.MethodDelete, "/api/schedule", body, staffCookie)
+	asStaff := sendRequest(staff.handler, http.MethodDelete, "/api/schedule", body, staff.cookie)
 	if asStaff.Code != http.StatusForbidden {
 		t.Errorf("staff: expected 403, got %d", asStaff.Code)
 	}

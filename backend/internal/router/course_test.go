@@ -69,10 +69,13 @@ const (
 )
 
 // Actions
+// A staff member who is on the clock, since the course is only open to people who are.
+// It adds to the current database, so it can run after a club has been built.
 func loggedInStaffCookie(t *testing.T) *http.Cookie {
 	t.Helper()
-	userID := testutil.CreateUser(t, "staff@example.com", "password123", "staff")
-	return testutil.SessionCookie(t, userID)
+	staff := newPerson(t, "staff@example.com", "staff")
+	testutil.ClockIn(t, staff.id)
+	return staff.cookie
 }
 
 func fetchCourse(t *testing.T, cookie *http.Cookie) courseResponse {
@@ -314,6 +317,7 @@ func TestGetCourse_Access(t *testing.T) {
 	buildClub(t, []int{9})
 	staffID := testutil.CreateUser(t, "staff@example.com", "password123", "staff")
 	adminID := testutil.CreateUser(t, "admin@example.com", "password123", "admin")
+	testutil.ClockIn(t, staffID)
 	handler := router.New()
 
 	testCases := []struct {
@@ -322,7 +326,7 @@ func TestGetCourse_Access(t *testing.T) {
 		expectedStatus int
 	}{
 		{"no session", nil, http.StatusUnauthorized},
-		{"staff user", testutil.SessionCookie(t, staffID), http.StatusOK},
+		{"staff user on the clock", testutil.SessionCookie(t, staffID), http.StatusOK},
 		{"admin user", testutil.SessionCookie(t, adminID), http.StatusOK},
 	}
 

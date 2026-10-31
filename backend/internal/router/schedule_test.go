@@ -1,31 +1,16 @@
 package router_test
 
 import (
-	"context"
 	"encoding/json"
 	"fmt"
 	"net/http"
 	"reflect"
 	"testing"
-
-	"golf-maintenance/backend/internal/db"
-	"golf-maintenance/backend/internal/router"
-	"golf-maintenance/backend/internal/testutil"
 )
 
 type repeatResponse struct {
 	Created []string `json:"created"`
 	Skipped []string `json:"skipped"`
-}
-
-func countSchedules(t *testing.T) int {
-	t.Helper()
-	var count int
-	err := db.Pool.QueryRow(context.Background(), `SELECT COUNT(*) FROM schedules`).Scan(&count)
-	if err != nil {
-		t.Fatalf("could not count schedules: %v", err)
-	}
-	return count
 }
 
 func repeatBody(userID, startDate string, weeks int, daysJSON, startTime, endTime string) string {
@@ -45,15 +30,12 @@ func decodeRepeatResponse(t *testing.T, responseBody []byte) repeatResponse {
 }
 
 func TestRepeatSchedule_CreatesShiftsOnSelectedWeekdays(t *testing.T) {
-	testutil.SetupTestDB(t)
-	adminID := testutil.CreateUser(t, "admin@example.com", "password123", "admin")
-	staffID := testutil.CreateUser(t, "staff@example.com", "password123", "staff")
-	adminCookie := testutil.SessionCookie(t, adminID)
-	handler := router.New()
+	admin := setUpAdmin(t)
+	staff := newPerson(t, "staff@example.com", "staff")
 
 	// 2026-10-05 is a Monday
-	body := repeatBody(staffID, "2026-10-05", 2, `["monday","wednesday","friday"]`, "07:00", "15:00")
-	recorder := sendRequest(handler, http.MethodPost, "/api/schedule/repeat", body, adminCookie)
+	body := repeatBody(staff.id, "2026-10-05", 2, `["monday","wednesday","friday"]`, "07:00", "15:00")
+	recorder := sendRequest(admin.handler, http.MethodPost, "/api/schedule/repeat", body, admin.cookie)
 
 	if recorder.Code != http.StatusOK {
 		t.Fatalf("expected 200, got %d (body: %s)", recorder.Code, recorder.Body.String())
@@ -76,16 +58,13 @@ func TestRepeatSchedule_CreatesShiftsOnSelectedWeekdays(t *testing.T) {
 }
 
 func TestRepeatSchedule_StartDateNeedNotMatchSelectedDay(t *testing.T) {
-	testutil.SetupTestDB(t)
-	adminID := testutil.CreateUser(t, "admin@example.com", "password123", "admin")
-	staffID := testutil.CreateUser(t, "staff@example.com", "password123", "staff")
-	adminCookie := testutil.SessionCookie(t, adminID)
-	handler := router.New()
+	admin := setUpAdmin(t)
+	staff := newPerson(t, "staff@example.com", "staff")
 
 	// Starts on a Wednesday but only Mondays are selected, so the first
 	// shift must be the following Monday, not the start date itself.
-	body := repeatBody(staffID, "2026-10-07", 2, `["monday"]`, "07:00", "15:00")
-	recorder := sendRequest(handler, http.MethodPost, "/api/schedule/repeat", body, adminCookie)
+	body := repeatBody(staff.id, "2026-10-07", 2, `["monday"]`, "07:00", "15:00")
+	recorder := sendRequest(admin.handler, http.MethodPost, "/api/schedule/repeat", body, admin.cookie)
 
 	if recorder.Code != http.StatusOK {
 		t.Fatalf("expected 200, got %d (body: %s)", recorder.Code, recorder.Body.String())
@@ -99,24 +78,12 @@ func TestRepeatSchedule_StartDateNeedNotMatchSelectedDay(t *testing.T) {
 }
 
 func TestRepeatSchedule_SkipsDatesThatAlreadyHaveAShift(t *testing.T) {
-	testutil.SetupTestDB(t)
-	adminID := testutil.CreateUser(t, "admin@example.com", "password123", "admin")
-	staffID := testutil.CreateUser(t, "staff@example.com", "password123", "staff")
-	adminCookie := testutil.SessionCookie(t, adminID)
-	handler := router.New()
+	admin := setUpAdmin(t)
+	staff := newPerson(t, "staff@example.com", "staff")
+	insertShift(t, staff.id, "2026-10-07", "09:00", "17:00")
 
-	_, err := db.Pool.Exec(
-		context.Background(),
-		`INSERT INTO schedules (user_id, shift_date, start_time, end_time)
-		 VALUES ($1, '2026-10-07', '09:00', '17:00')`,
-		staffID,
-	)
-	if err != nil {
-		t.Fatalf("could not seed existing shift: %v", err)
-	}
-
-	body := repeatBody(staffID, "2026-10-05", 2, `["monday","wednesday","friday"]`, "07:00", "15:00")
-	recorder := sendRequest(handler, http.MethodPost, "/api/schedule/repeat", body, adminCookie)
+	body := repeatBody(staff.id, "2026-10-05", 2, `["monday","wednesday","friday"]`, "07:00", "15:00")
+	recorder := sendRequest(admin.handler, http.MethodPost, "/api/schedule/repeat", body, admin.cookie)
 
 	response := decodeRepeatResponse(t, recorder.Body.Bytes())
 	if !reflect.DeepEqual(response.Skipped, []string{"2026-10-07"}) {
@@ -132,15 +99,12 @@ func TestRepeatSchedule_SkipsDatesThatAlreadyHaveAShift(t *testing.T) {
 }
 
 func TestRepeatSchedule_RunningTwiceCreatesNoDuplicates(t *testing.T) {
-	testutil.SetupTestDB(t)
-	adminID := testutil.CreateUser(t, "admin@example.com", "password123", "admin")
-	staffID := testutil.CreateUser(t, "staff@example.com", "password123", "staff")
-	adminCookie := testutil.SessionCookie(t, adminID)
-	handler := router.New()
+	admin := setUpAdmin(t)
+	staff := newPerson(t, "staff@example.com", "staff")
 
-	body := repeatBody(staffID, "2026-10-05", 2, `["monday","wednesday","friday"]`, "07:00", "15:00")
-	sendRequest(handler, http.MethodPost, "/api/schedule/repeat", body, adminCookie)
-	secondRun := sendRequest(handler, http.MethodPost, "/api/schedule/repeat", body, adminCookie)
+	body := repeatBody(staff.id, "2026-10-05", 2, `["monday","wednesday","friday"]`, "07:00", "15:00")
+	sendRequest(admin.handler, http.MethodPost, "/api/schedule/repeat", body, admin.cookie)
+	secondRun := sendRequest(admin.handler, http.MethodPost, "/api/schedule/repeat", body, admin.cookie)
 
 	response := decodeRepeatResponse(t, secondRun.Body.Bytes())
 	if len(response.Created) != 0 {
@@ -155,26 +119,23 @@ func TestRepeatSchedule_RunningTwiceCreatesNoDuplicates(t *testing.T) {
 }
 
 func TestRepeatSchedule_RejectsInvalidRequests(t *testing.T) {
-	testutil.SetupTestDB(t)
-	adminID := testutil.CreateUser(t, "admin@example.com", "password123", "admin")
-	staffID := testutil.CreateUser(t, "staff@example.com", "password123", "staff")
-	adminCookie := testutil.SessionCookie(t, adminID)
-	handler := router.New()
+	admin := setUpAdmin(t)
+	staff := newPerson(t, "staff@example.com", "staff")
 
 	testCases := []struct {
 		name string
 		body string
 	}{
-		{"end time before start time", repeatBody(staffID, "2026-10-05", 2, `["monday"]`, "15:00", "07:00")},
-		{"end time equal to start time", repeatBody(staffID, "2026-10-05", 2, `["monday"]`, "07:00", "07:00")},
-		{"unknown day name", repeatBody(staffID, "2026-10-05", 2, `["funday"]`, "07:00", "15:00")},
-		{"no days selected", repeatBody(staffID, "2026-10-05", 2, `[]`, "07:00", "15:00")},
-		{"malformed start date", repeatBody(staffID, "10/05/2026", 2, `["monday"]`, "07:00", "15:00")},
+		{"end time before start time", repeatBody(staff.id, "2026-10-05", 2, `["monday"]`, "15:00", "07:00")},
+		{"end time equal to start time", repeatBody(staff.id, "2026-10-05", 2, `["monday"]`, "07:00", "07:00")},
+		{"unknown day name", repeatBody(staff.id, "2026-10-05", 2, `["funday"]`, "07:00", "15:00")},
+		{"no days selected", repeatBody(staff.id, "2026-10-05", 2, `[]`, "07:00", "15:00")},
+		{"malformed start date", repeatBody(staff.id, "10/05/2026", 2, `["monday"]`, "07:00", "15:00")},
 	}
 
 	for _, testCase := range testCases {
 		t.Run(testCase.name, func(t *testing.T) {
-			recorder := sendRequest(handler, http.MethodPost, "/api/schedule/repeat", testCase.body, adminCookie)
+			recorder := sendRequest(admin.handler, http.MethodPost, "/api/schedule/repeat", testCase.body, admin.cookie)
 			if recorder.Code != http.StatusBadRequest {
 				t.Errorf("expected 400, got %d (body: %s)", recorder.Code, recorder.Body.String())
 			}
@@ -187,13 +148,10 @@ func TestRepeatSchedule_RejectsInvalidRequests(t *testing.T) {
 }
 
 func TestRepeatSchedule_ForbiddenForStaff(t *testing.T) {
-	testutil.SetupTestDB(t)
-	staffID := testutil.CreateUser(t, "staff@example.com", "password123", "staff")
-	staffCookie := testutil.SessionCookie(t, staffID)
-	handler := router.New()
+	staff := setUpStaff(t)
 
-	body := repeatBody(staffID, "2026-10-05", 2, `["monday"]`, "07:00", "15:00")
-	recorder := sendRequest(handler, http.MethodPost, "/api/schedule/repeat", body, staffCookie)
+	body := repeatBody(staff.id, "2026-10-05", 2, `["monday"]`, "07:00", "15:00")
+	recorder := sendRequest(staff.handler, http.MethodPost, "/api/schedule/repeat", body, staff.cookie)
 
 	if recorder.Code != http.StatusForbidden {
 		t.Errorf("expected 403, got %d", recorder.Code)
@@ -204,13 +162,10 @@ func TestRepeatSchedule_ForbiddenForStaff(t *testing.T) {
 }
 
 func TestRepeatSchedule_UnknownUserCreatesNothing(t *testing.T) {
-	testutil.SetupTestDB(t)
-	adminID := testutil.CreateUser(t, "admin@example.com", "password123", "admin")
-	adminCookie := testutil.SessionCookie(t, adminID)
-	handler := router.New()
+	admin := setUpAdmin(t)
 
-	body := repeatBody("00000000-0000-0000-0000-000000000000", "2026-10-05", 2, `["monday"]`, "07:00", "15:00")
-	recorder := sendRequest(handler, http.MethodPost, "/api/schedule/repeat", body, adminCookie)
+	body := repeatBody(nonexistentID, "2026-10-05", 2, `["monday"]`, "07:00", "15:00")
+	recorder := sendRequest(admin.handler, http.MethodPost, "/api/schedule/repeat", body, admin.cookie)
 
 	if recorder.Code == http.StatusOK {
 		t.Errorf("expected a failure status, got 200 (body: %s)", recorder.Body.String())

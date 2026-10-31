@@ -10,8 +10,6 @@ import (
 	"golf-maintenance/backend/internal/testutil"
 )
 
-const unknownShiftID = "00000000-0000-0000-0000-000000000000"
-
 func deleteBody(shiftIDs ...string) string {
 	encoded, _ := json.Marshal(map[string][]string{"ids": shiftIDs})
 	return string(encoded)
@@ -77,7 +75,7 @@ func TestDeleteSchedules_SkipsIdsThatDoNotExistAndDeletesTheRest(t *testing.T) {
 	existingID := insertShift(t, staffID, "2026-10-05", "07:00", "15:00")
 
 	recorder := sendRequest(handler, http.MethodDelete, "/api/schedule",
-		deleteBody(existingID, unknownShiftID), adminCookie)
+		deleteBody(existingID, nonexistentID), adminCookie)
 
 	if recorder.Code != http.StatusOK {
 		t.Fatalf("expected 200, got %d (body: %s)", recorder.Code, recorder.Body.String())
@@ -100,7 +98,7 @@ func TestDeleteSchedules_ReturnsNotFoundWhenNothingMatches(t *testing.T) {
 
 	insertShift(t, staffID, "2026-10-05", "07:00", "15:00")
 
-	recorder := sendRequest(handler, http.MethodDelete, "/api/schedule", deleteBody(unknownShiftID), adminCookie)
+	recorder := sendRequest(handler, http.MethodDelete, "/api/schedule", deleteBody(nonexistentID), adminCookie)
 
 	if recorder.Code != http.StatusNotFound {
 		t.Errorf("expected 404, got %d", recorder.Code)

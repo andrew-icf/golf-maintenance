@@ -2,6 +2,7 @@ package router_test
 
 import (
 	"errors"
+	"fmt"
 	"testing"
 
 	"github.com/jackc/pgx/v5/pgconn"
@@ -193,17 +194,13 @@ func TestCourseRules_HoleChangesTheDatabaseRefuses(t *testing.T) {
 
 func TestCourseRules_HoleNumbersHaveNoUpperLimit(t *testing.T) {
 	for _, holeNumber := range []int{18, 36, 100} {
-		t.Run(testCaseLabel(holeNumber), func(t *testing.T) {
+		t.Run(fmt.Sprintf("hole number %d", holeNumber), func(t *testing.T) {
 			testutil.SetupTestDB(t)
 			club := buildClub(t, []int{1})
 
 			expectAccepted(t, tryInsertHole(club.LayoutIDs[0], holeNumber))
 		})
 	}
-}
-
-func testCaseLabel(holeNumber int) string {
-	return "hole number " + string(rune('0'+holeNumber/100%10)) + string(rune('0'+holeNumber/10%10)) + string(rune('0'+holeNumber%10))
 }
 
 func TestCourseRules_HoleNumbersRepeatAcrossCoursesAndClubs(t *testing.T) {

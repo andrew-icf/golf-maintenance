@@ -81,8 +81,8 @@ func TestUpdateSchedule_ReturnsNotFoundForUnknownShift(t *testing.T) {
 	handler := router.New()
 
 	unknownIDs := []string{
-		"00000000-0000-0000-0000-000000000000", // valid UUID, no such shift
-		"not-a-uuid",                           // not a UUID at all
+		"nonexistentID", // valid UUID, no such shift
+		"not-a-uuid",    // not a UUID at all
 	}
 
 	for _, unknownID := range unknownIDs {

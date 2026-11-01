@@ -192,13 +192,7 @@ func Me(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var clockedIn bool
-	err = db.Pool.QueryRow(
-		r.Context(),
-		`SELECT EXISTS(SELECT 1 FROM clock_entries WHERE user_id = $1 AND clock_out IS NULL)`,
-		userID,
-	).Scan(&clockedIn)
-
+	clockedInSince, err := openClockInTime(r.Context(), userID)
 	if err != nil {
 		log.Printf("error checking clock status: %v", err)
 		http.Error(w, "internal server error", http.StatusInternalServerError)
@@ -206,12 +200,13 @@ func Me(w http.ResponseWriter, r *http.Request) {
 	}
 
 	json.NewEncoder(w).Encode(map[string]interface{}{
-		"id":         userID,
-		"email":      email,
-		"full_name":  fullName,
-		"role":       role,
-		"job_title":  jobTitle,
-		"clocked_in": clockedIn,
+		"id":               userID,
+		"email":            email,
+		"full_name":        fullName,
+		"role":             role,
+		"job_title":        jobTitle,
+		"clocked_in":       clockedInSince != nil,
+		"clocked_in_since": clockedInSince,
 	})
 }
 

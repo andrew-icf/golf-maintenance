@@ -13,6 +13,7 @@ const UNKNOWN_ICON_CASES = [
   { label: 'an empty name', name: '' },
   { label: 'no name', name: undefined },
   { label: 'a name every object inherits', name: 'constructor' },
+  { label: 'the retired clock icon', name: 'clock' },
 ]
 
 // Actions

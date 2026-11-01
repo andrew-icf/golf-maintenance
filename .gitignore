@@ -1,2 +1,5 @@
 .env
 .DS_Store
+
+# curl cookie files hold live session tokens
+*cookies.txt

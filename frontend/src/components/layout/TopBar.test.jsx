@@ -26,8 +26,13 @@ function createDeferred() {
 }
 
 // Actions
-function renderTopBar({ title = 'Schedule', user = MON_MOTHMA, onLogout = vi.fn().mockResolvedValue() } = {}) {
-  const view = render(<TopBar title={ title } user={ user } onLogout={ onLogout } />)
+function renderTopBar({
+  title = 'Schedule',
+  user = MON_MOTHMA,
+  onLogout = vi.fn().mockResolvedValue(),
+  clockControl,
+} = {}) {
+  const view = render(<TopBar title={ title } user={ user } onLogout={ onLogout } clockControl={ clockControl } />)
   return { onLogout, ...view }
 }
 
@@ -75,6 +80,12 @@ describe('TopBar', () => {
 
       expect(screen.getByText(MARKUP_NAME)).toBeInTheDocument()
       expect(container.querySelector('b')).toBeNull()
+    })
+
+    it('shows the clock control it is given', () => {
+      renderTopBar({ clockControl: <p>Clock control stand-in</p> })
+
+      expect(screen.getByText('Clock control stand-in')).toBeInTheDocument()
     })
   })
 

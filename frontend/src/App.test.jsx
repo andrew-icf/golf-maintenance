@@ -13,8 +13,8 @@ const { apiMock, useAuthMock } = vi.hoisted(() => ({
 vi.mock('./api', () => ({ api: apiMock }))
 vi.mock('./features/auth/AuthContext', () => ({ useAuth: useAuthMock }))
 
-// Stand-ins for the login form and the four pages. Each has its own tests,
-// so here they only need to be recognizable on screen.
+// Stand-ins for the login form and the pages. Each has its own tests, so here they only need
+// to be recognizable on screen.
 vi.mock('./features/auth/LoginForm', async () => {
   const { createElement } = await import('react')
   return { LoginForm: () => createElement('p', null, 'Login form') }
@@ -31,18 +31,13 @@ vi.mock('./features/course/CourseView', async () => {
 })
 
 vi.mock('./features/hole/HoleDetailsView', async () => {
-    const { createElement } = await import('react')
-    return { HoleDetailsView: () => createElement('p', null, 'Hole details page') }
+  const { createElement } = await import('react')
+  return { HoleDetailsView: () => createElement('p', null, 'Hole details page') }
 })
 
 vi.mock('./features/equipment/EquipmentView', async () => {
   const { createElement } = await import('react')
   return { EquipmentView: () => createElement('p', null, 'Equipment page') }
-})
-
-vi.mock('./features/clock/ClockPanel', async () => {
-  const { createElement } = await import('react')
-  return { ClockPanel: () => createElement('p', null, 'Clock page') }
 })
 
 // Test data
@@ -53,11 +48,14 @@ const MON_MOTHMA = {
   role: 'admin',
 }
 const COURSE_NAME = 'Dagobah Pines Golf Club'
-   const COURSE_RESPONSE = { id: 'course-1', name: COURSE_NAME, layouts: [], amenities: [] }
+const COURSE_RESPONSE = { id: 'course-1', name: COURSE_NAME, layouts: [], amenities: [] }
 
 const LOGIN_TEXT = 'Login form'
 const LOADING_TEXT = 'Loading...'
 const APP_NAME = 'Golf Maintenance'
+const HOLE_DETAILS_PATH = '/course/holes/hole-C7'
+const HOLE_DETAILS_TEXT = 'Hole details page'
+const RETIRED_CLOCK_PATH = '/clock'
 
 function itemAt(path) {
   return NAV_ITEMS.find((item) => item.path === path)
@@ -66,7 +64,6 @@ function itemAt(path) {
 const LANDING_ITEM = itemAt(LANDING_PATH)
 const COURSE_ITEM = itemAt('/course')
 const EQUIPMENT_ITEM = itemAt('/equipment')
-const CLOCK_ITEM = itemAt('/clock')
 
 // Each page stand-in above says "<label> page"
 function pageText(item) {
@@ -78,16 +75,13 @@ const LOADING_CASES = [
   { label: 'a user is already known', user: MON_MOTHMA },
 ]
 
-const HOLE_DETAILS_PATH = '/course/holes/hole-C7'
-const HOLE_DETAILS_TEXT = 'Hole details page'
-
 const LOGGED_OUT_PATHS = [
   { label: 'the site root', path: '/' },
   { label: 'the login page itself', path: '/login' },
   { label: 'the schedule page', path: '/schedule' },
   { label: 'the course page', path: '/course' },
   { label: 'the equipment page', path: '/equipment' },
-  { label: 'the clock page', path: '/clock' },
+  { label: 'the retired clock page', path: RETIRED_CLOCK_PATH },
   { label: 'a hole details page', path: HOLE_DETAILS_PATH },
   { label: 'an unknown page', path: '/unknown' },
 ]
@@ -95,6 +89,7 @@ const LOGGED_OUT_PATHS = [
 const LOGGED_IN_REDIRECT_PATHS = [
   { label: 'the site root', path: '/' },
   { label: 'the login page', path: '/login' },
+  { label: 'the retired clock page', path: RETIRED_CLOCK_PATH },
   { label: 'an unknown page', path: '/unknown' },
   { label: 'a sub-page of a page', path: '/schedule/extra' },
 ]
@@ -200,11 +195,11 @@ describe('App', () => {
     })
 
     it('shows a hole details page inside the layout, under the Course heading', async () => {
-        await renderLoadedApp(HOLE_DETAILS_PATH)
+      await renderLoadedApp(HOLE_DETAILS_PATH)
 
-        expect(within(screen.getByRole('main')).getByText(HOLE_DETAILS_TEXT)).toBeInTheDocument()
-        expect(screen.getByRole('heading', { level: 1, name: COURSE_ITEM.title })).toBeInTheDocument()
-        expect(screen.getByRole('link', { name: COURSE_ITEM.label })).toHaveAttribute('aria-current', 'page')
+      expect(within(screen.getByRole('main')).getByText(HOLE_DETAILS_TEXT)).toBeInTheDocument()
+      expect(screen.getByRole('heading', { level: 1, name: COURSE_ITEM.title })).toBeInTheDocument()
+      expect(screen.getByRole('link', { name: COURSE_ITEM.label })).toHaveAttribute('aria-current', 'page')
     })
 
     it('keeps one layout while moving between pages, asking for the course only once', async () => {
@@ -213,8 +208,8 @@ describe('App', () => {
       await userEvent.click(screen.getByRole('link', { name: EQUIPMENT_ITEM.label }))
       expect(screen.getByText(pageText(EQUIPMENT_ITEM))).toBeInTheDocument()
 
-      await userEvent.click(screen.getByRole('link', { name: CLOCK_ITEM.label }))
-      expect(screen.getByText(pageText(CLOCK_ITEM))).toBeInTheDocument()
+      await userEvent.click(screen.getByRole('link', { name: COURSE_ITEM.label }))
+      expect(screen.getByText(pageText(COURSE_ITEM))).toBeInTheDocument()
 
       expect(screen.getByText(COURSE_NAME)).toBeInTheDocument()
       expect(apiMock.getCourse).toHaveBeenCalledTimes(1)

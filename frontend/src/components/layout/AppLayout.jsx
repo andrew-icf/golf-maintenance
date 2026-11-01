@@ -2,8 +2,9 @@ import { useEffect, useState } from 'react'
 import { Outlet, useLocation, useNavigate } from 'react-router-dom'
 import { api } from '../../api'
 import { useAuth } from '../../features/auth/AuthContext'
+import { ClockControl } from '../../features/clock/ClockControl'
 import { ClockGate } from '../../features/clock/ClockGate'
-import { isGated } from '../../features/clock/clockStatus'
+import { isGated, logsOutOnClockOut } from '../../features/clock/clockStatus'
 import { summarizeCourse } from '../../features/course/courseSummary'
 import { todayDateString } from '../../features/schedule/scheduleDates'
 import { SideNav } from './SideNav'
@@ -47,6 +48,26 @@ export function AppLayout() {
     await refreshUser()
   }
 
+  // Staff are logged out as well as clocked out, so the next person to pick up a shared tablet
+  // doesn't find them signed in. Admins stay logged in.
+  async function handleClockOut() {
+    await api.clockOut()
+
+    if (!logsOutOnClockOut(user)) {
+      await refreshUser()
+      return
+    }
+
+    try {
+      await logout()
+    } catch {
+      // Clocking out worked, so show the clock-in screen even though logging out did not
+      await refreshUser()
+      return
+    }
+    navigate('/login')
+  }
+
   async function handleLogout() {
     await logout()
     navigate('/login')
@@ -59,7 +80,16 @@ export function AppLayout() {
     <div className="app-layout">
       <SideNav course={ course } todayDate={ todayDateString() } />
       <div className="app-layout-main">
-        <TopBar title={ navItem?.title ?? '' } user={ user } onLogout={ handleLogout } />
+        <TopBar
+          title={ navItem?.title ?? '' }
+          user={ user }
+          onLogout={ handleLogout }
+          clockControl={
+            behindTheGate ? null : (
+              <ClockControl user={ user } onClockIn={ handleClockIn } onClockOut={ handleClockOut } />
+            )
+          }
+        />
         <main className="app-layout-content">
           <div className={ `app-layout-page app-layout-page-${pageWidth}` }>
             { !behindTheGate && <Outlet /> }

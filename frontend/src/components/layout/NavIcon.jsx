@@ -17,12 +17,6 @@ const ICON_SHAPES = {
       <path d="M9 8V6a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2M3 13h18" />
     </>
   ),
-  clock: (
-    <>
-      <circle cx="12" cy="12" r="9" />
-      <path d="M12 7v5l3 2" />
-    </>
-  ),
 }
 
 export function NavIcon({ name, size = 20 }) {

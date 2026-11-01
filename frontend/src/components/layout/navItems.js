@@ -7,7 +7,6 @@ export const NAV_ITEMS = [
   { path: '/schedule', label: 'Schedule', title: 'Schedule', icon: 'schedule', width: 'full' },
   { path: '/course', label: 'Course', title: 'Course', icon: 'course', width: 'full' },
   { path: '/equipment', label: 'Equipment', title: 'Equipment', icon: 'equipment', width: 'reading' },
-  { path: '/clock', label: 'Clock', title: 'Clock', icon: 'clock', width: 'reading' },
 ]
 
 // Finds the nav item for the page being shown, given the URL's path.

@@ -17,7 +17,8 @@ const NOT_PAGES = [
   { label: 'the login page', pathname: '/login' },
   { label: 'an unknown page', pathname: '/unknown' },
   { label: 'a path that only starts like a page', pathname: '/schedulefoo' },
-  { label: 'a longer word containing a page name', pathname: '/clocks' },
+  { label: 'a longer word containing a page name', pathname: '/courses' },
+  { label: 'the retired clock page', pathname: '/clock' },
   { label: 'an empty path', pathname: '' },
 ]
 

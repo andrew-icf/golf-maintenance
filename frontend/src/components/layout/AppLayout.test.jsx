@@ -4,13 +4,20 @@ import { act, render, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { MemoryRouter, Route, Routes } from 'react-router-dom'
 import { FAILURE_MESSAGE } from '../../test/fixtures/asyncActionCases'
+import {
+  ADMIN_OFF_THE_CLOCK,
+  CHIP_NOW,
+  CLOCKED_IN_ADMIN,
+  CLOCKED_IN_STAFF,
+  STAFF_OFF_THE_CLOCK,
+} from '../../test/fixtures/clockControlCases'
 import { CLOCKED_IN_USER, GATE_DIALOG_NAME, GATE_USER } from '../../test/fixtures/clockGateCases'
 import { createDeferred } from '../../test/helpers'
 import { AppLayout } from './AppLayout'
 import { NAV_ITEMS } from './navItems'
 
 const { apiMock, useAuthMock } = vi.hoisted(() => ({
-  apiMock: { getCourse: vi.fn(), getMySchedule: vi.fn(), clockIn: vi.fn() },
+  apiMock: { getCourse: vi.fn(), getMySchedule: vi.fn(), clockIn: vi.fn(), clockOut: vi.fn() },
   useAuthMock: vi.fn(),
 }))
 
@@ -28,7 +35,6 @@ const MON_MOTHMA = {
   job_title: 'superintendent',
   role: 'admin',
 }
-const ADMIN_OFF_THE_CLOCK = { ...MON_MOTHMA, clocked_in: false }
 const JOB_TITLE_LABEL = 'Superintendent'
 
 const COURSE_NAME = 'Dagobah Pines Golf Club'
@@ -67,6 +73,9 @@ const NOT_IN_NAV_PATH = '/elsewhere'
 const NOT_IN_NAV_CONTENT = 'Elsewhere content'
 const LOGIN_PAGE_TEXT = 'Login page'
 const LOGOUT_ERROR_MESSAGE = 'Could not log out. Try again.'
+
+const EQUIPMENT_ITEM = NAV_ITEMS.find((item) => item.path === '/equipment')
+const COURSE_ITEM = NAV_ITEMS.find((item) => item.path === '/course')
 
 function contentFor(item) {
   return `${item.label} content`
@@ -128,6 +137,18 @@ async function renderGatedLayout(path) {
   return view
 }
 
+// The clock-out question, which both the page and the question have a Clock out button for,
+// so the question's own is found inside it
+async function openClockOutQuestion() {
+  await userEvent.click(screen.getByRole('button', { name: 'Clock out' }))
+  return screen.getByRole('dialog', { name: 'Clock out?' })
+}
+
+async function confirmClockOut() {
+  const dialog = await openClockOutQuestion()
+  await userEvent.click(within(dialog).getByRole('button', { name: 'Clock out' }))
+}
+
 describe('AppLayout', () => {
   beforeEach(() => {
     apiMock.getCourse.mockReset()
@@ -135,6 +156,8 @@ describe('AppLayout', () => {
     apiMock.getMySchedule.mockResolvedValue([])
     apiMock.clockIn.mockReset()
     apiMock.clockIn.mockResolvedValue({})
+    apiMock.clockOut.mockReset()
+    apiMock.clockOut.mockResolvedValue({})
     useAuthMock.mockReset()
     logoutMock.mockReset()
     logoutMock.mockResolvedValue()
@@ -228,10 +251,10 @@ describe('AppLayout', () => {
     it('asks for the course once, even when moving between pages', async () => {
       await renderLoadedLayout('/schedule')
 
-      await userEvent.click(screen.getByRole('link', { name: 'Equipment' }))
-      await userEvent.click(screen.getByRole('link', { name: 'Clock' }))
+      await userEvent.click(screen.getByRole('link', { name: EQUIPMENT_ITEM.label }))
+      await userEvent.click(screen.getByRole('link', { name: COURSE_ITEM.label }))
 
-      expect(screen.getByText(contentFor(NAV_ITEMS[3]))).toBeInTheDocument()
+      expect(screen.getByText(contentFor(COURSE_ITEM))).toBeInTheDocument()
       expect(apiMock.getCourse).toHaveBeenCalledTimes(1)
     })
 
@@ -351,6 +374,122 @@ describe('AppLayout', () => {
 
       expect(logoutMock).toHaveBeenCalledTimes(1)
       expect(await screen.findByText(LOGIN_PAGE_TEXT)).toBeInTheDocument()
+    })
+  })
+
+  describe('the clock control in the top bar', () => {
+    it('shows how long staff have been on the clock', async () => {
+      vi.setSystemTime(CHIP_NOW)
+      givenLoggedInAs(CLOCKED_IN_STAFF)
+
+      await renderLoadedLayout()
+
+      expect(screen.getByText('On the clock · 3h 12m')).toBeInTheDocument()
+      expect(screen.getByRole('button', { name: 'Clock out' })).toBeInTheDocument()
+    })
+
+    it('offers an admin who is not clocked in a way to clock in', async () => {
+      givenLoggedInAs(ADMIN_OFF_THE_CLOCK)
+
+      await renderLoadedLayout()
+
+      expect(screen.getByText('Not on the clock')).toBeInTheDocument()
+      expect(screen.getByRole('button', { name: 'Clock in' })).toBeInTheDocument()
+      expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+    })
+
+    it('clocks an admin in from the top bar, and the control then offers Clock out', async () => {
+      givenLoggedInAs(ADMIN_OFF_THE_CLOCK, CLOCKED_IN_ADMIN)
+      await renderLoadedLayout()
+
+      await userEvent.click(screen.getByRole('button', { name: 'Clock in' }))
+
+      expect(await screen.findByRole('button', { name: 'Clock out' })).toBeInTheDocument()
+      expect(apiMock.clockIn).toHaveBeenCalledTimes(1)
+      expect(refreshUserMock).toHaveBeenCalledTimes(1)
+      expect(screen.getByText('Schedule content')).toBeInTheDocument()
+    })
+
+    it('shows no clock control while the gate is up, so there is only one way to clock in', async () => {
+      givenLoggedInAs(GATE_USER)
+
+      await renderGatedLayout()
+
+      expect(screen.queryByText(/on the clock/i)).not.toBeInTheDocument()
+      expect(screen.getAllByRole('button', { name: 'Clock in' })).toHaveLength(1)
+    })
+
+    it('clocks staff out, then logs them out and goes to the login page', async () => {
+      givenLoggedInAs(CLOCKED_IN_STAFF)
+      await renderLoadedLayout()
+
+      const dialog = await openClockOutQuestion()
+      expect(within(dialog).getByText('You will be logged out.')).toBeInTheDocument()
+      await userEvent.click(within(dialog).getByRole('button', { name: 'Clock out' }))
+
+      expect(await screen.findByText(LOGIN_PAGE_TEXT)).toBeInTheDocument()
+      expect(apiMock.clockOut).toHaveBeenCalledTimes(1)
+      expect(logoutMock).toHaveBeenCalledTimes(1)
+      expect(refreshUserMock).not.toHaveBeenCalled()
+      // They must be clocked out before they are logged out
+      expect(apiMock.clockOut.mock.invocationCallOrder[0]).toBeLessThan(
+        logoutMock.mock.invocationCallOrder[0]
+      )
+    })
+
+    it('clocks an admin out and leaves them logged in, with the control offering Clock in', async () => {
+      givenLoggedInAs(CLOCKED_IN_ADMIN, ADMIN_OFF_THE_CLOCK)
+      await renderLoadedLayout()
+
+      const dialog = await openClockOutQuestion()
+      expect(within(dialog).getByText('You can keep using the app.')).toBeInTheDocument()
+      await userEvent.click(within(dialog).getByRole('button', { name: 'Clock out' }))
+
+      expect(await screen.findByText('Not on the clock')).toBeInTheDocument()
+      expect(apiMock.clockOut).toHaveBeenCalledTimes(1)
+      expect(refreshUserMock).toHaveBeenCalledTimes(1)
+      expect(logoutMock).not.toHaveBeenCalled()
+      expect(screen.getByText('Schedule content')).toBeInTheDocument()
+      expect(screen.queryByText(LOGIN_PAGE_TEXT)).not.toBeInTheDocument()
+    })
+
+    it('clocks nobody out when the question is cancelled', async () => {
+      givenLoggedInAs(CLOCKED_IN_STAFF)
+      await renderLoadedLayout()
+
+      const dialog = await openClockOutQuestion()
+      await userEvent.click(within(dialog).getByRole('button', { name: 'Cancel' }))
+
+      expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+      expect(apiMock.clockOut).not.toHaveBeenCalled()
+      expect(logoutMock).not.toHaveBeenCalled()
+    })
+
+    it('keeps staff logged in, and says why, when clocking out fails', async () => {
+      givenLoggedInAs(CLOCKED_IN_STAFF)
+      apiMock.clockOut.mockRejectedValue(new Error(FAILURE_MESSAGE))
+      await renderLoadedLayout()
+
+      await confirmClockOut()
+
+      expect(await screen.findByRole('alert')).toHaveTextContent(FAILURE_MESSAGE)
+      expect(screen.getByRole('dialog', { name: 'Clock out?' })).toBeInTheDocument()
+      expect(logoutMock).not.toHaveBeenCalled()
+      expect(refreshUserMock).not.toHaveBeenCalled()
+      expect(screen.getByText('Schedule content')).toBeInTheDocument()
+    })
+
+    it('brings back the clock-in screen when clocking out worked but logging out did not', async () => {
+      givenLoggedInAs(CLOCKED_IN_STAFF, STAFF_OFF_THE_CLOCK)
+      logoutMock.mockRejectedValue(new Error('network down'))
+      await renderLoadedLayout()
+
+      await confirmClockOut()
+
+      expect(await screen.findByRole('dialog', { name: GATE_DIALOG_NAME })).toBeInTheDocument()
+      expect(refreshUserMock).toHaveBeenCalledTimes(1)
+      expect(screen.queryByText(LOGIN_PAGE_TEXT)).not.toBeInTheDocument()
+      expect(screen.queryByText('Schedule content')).not.toBeInTheDocument()
     })
   })
 })

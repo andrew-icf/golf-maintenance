@@ -68,6 +68,12 @@ export function AppLayout() {
     navigate('/login')
   }
 
+  // The same for everyone logged in, on the clock or not. The person stays signed in here
+  // and their other devices are signed out by the server.
+  async function handleChangePassword(currentPassword, newPassword) {
+    await api.changePassword(currentPassword, newPassword)
+  }
+
   async function handleLogout() {
     await logout()
     navigate('/login')
@@ -84,6 +90,8 @@ export function AppLayout() {
           title={ navItem?.title ?? '' }
           user={ user }
           onLogout={ handleLogout }
+          // While the clock-in screen is up it offers this itself, so the top bar doesn't
+          onChangePassword={ behindTheGate ? undefined : handleChangePassword }
           clockControl={
             behindTheGate ? null : (
               <ClockControl user={ user } onClockIn={ handleClockIn } onClockOut={ handleClockOut } />
@@ -101,6 +109,7 @@ export function AppLayout() {
           user={ user }
           todayDate={ todayDateString() }
           onClockIn={ handleClockIn }
+          onChangePassword={ handleChangePassword }
           onLogout={ handleLogout }
         />
       )}

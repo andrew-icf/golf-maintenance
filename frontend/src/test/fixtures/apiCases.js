@@ -62,3 +62,7 @@ export const UNAUTHORIZED_CASES = [
   { label: 'null', error: null, expected: false },
   { label: 'undefined', error: undefined, expected: false },
 ]
+
+// The change-password call
+export const PASSWORD_CHANGE_ARGS = { current: 'password123', replacement: 'tatooine-sunset-42' }
+export const WRONG_PASSWORD_TEXT = 'current password is incorrect\n'

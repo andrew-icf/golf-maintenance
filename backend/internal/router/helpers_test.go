@@ -122,6 +122,14 @@ func setUpAdmin(t *testing.T) signedIn {
 	return signedIn{testPerson: newPerson(t, "admin@example.com", "admin"), handler: router.New()}
 }
 
+// ---- Logging in ----
+
+// The status a login attempt gets: 200 when the email and password are right
+func loginStatus(handler http.Handler, email, password string) int {
+	body, _ := json.Marshal(map[string]string{"email": email, "password": password})
+	return sendRequest(handler, http.MethodPost, "/login", string(body), nil).Code
+}
+
 // ---- Running SQL directly ----
 
 func execSQL(sql string, args ...any) error {

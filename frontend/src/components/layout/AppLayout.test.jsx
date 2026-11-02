@@ -1,8 +1,9 @@
 import { useState } from 'react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { act, render, screen, within } from '@testing-library/react'
+import { act, fireEvent, render, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { MemoryRouter, Route, Routes } from 'react-router-dom'
+import { ApiError } from '../../api'
 import { FAILURE_MESSAGE } from '../../test/fixtures/asyncActionCases'
 import {
   ADMIN_OFF_THE_CLOCK,
@@ -12,16 +13,27 @@ import {
   STAFF_OFF_THE_CLOCK,
 } from '../../test/fixtures/clockControlCases'
 import { CLOCKED_IN_USER, GATE_DIALOG_NAME, GATE_USER } from '../../test/fixtures/clockGateCases'
+import { CURRENT_PASSWORD, NEW_PASSWORD } from '../../test/fixtures/passwordCases'
 import { createDeferred } from '../../test/helpers'
 import { AppLayout } from './AppLayout'
 import { NAV_ITEMS } from './navItems'
 
 const { apiMock, useAuthMock } = vi.hoisted(() => ({
-  apiMock: { getCourse: vi.fn(), getMySchedule: vi.fn(), clockIn: vi.fn(), clockOut: vi.fn() },
+  apiMock: {
+    getCourse: vi.fn(),
+    getMySchedule: vi.fn(),
+    clockIn: vi.fn(),
+    clockOut: vi.fn(),
+    changePassword: vi.fn(),
+  },
   useAuthMock: vi.fn(),
 }))
 
-vi.mock('../../api', () => ({ api: apiMock }))
+// The real error class stays, since the change-password form recognizes the errors it makes
+vi.mock('../../api', async (importOriginal) => ({
+  ...(await importOriginal()),
+  api: apiMock,
+}))
 vi.mock('../../features/auth/AuthContext', () => ({ useAuth: useAuthMock }))
 
 // Test data. Today is Wednesday 2026-10-21.
@@ -149,6 +161,15 @@ async function confirmClockOut() {
   await userEvent.click(within(dialog).getByRole('button', { name: 'Clock out' }))
 }
 
+// Fills in and submits the change-password form, whichever dialog it is open in
+async function changePasswordFromTheForm() {
+  fireEvent.change(screen.getByLabelText('Current password'), { target: { value: CURRENT_PASSWORD } })
+  fireEvent.change(screen.getByLabelText('New password'), { target: { value: NEW_PASSWORD } })
+  fireEvent.change(screen.getByLabelText('Confirm new password'), { target: { value: NEW_PASSWORD } })
+  const form = screen.getByRole('dialog', { name: 'Change password' })
+  await userEvent.click(within(form).getByRole('button', { name: 'Change password' }))
+}
+
 describe('AppLayout', () => {
   beforeEach(() => {
     apiMock.getCourse.mockReset()
@@ -158,6 +179,8 @@ describe('AppLayout', () => {
     apiMock.clockIn.mockResolvedValue({})
     apiMock.clockOut.mockReset()
     apiMock.clockOut.mockResolvedValue({})
+    apiMock.changePassword.mockReset()
+    apiMock.changePassword.mockResolvedValue({})
     useAuthMock.mockReset()
     logoutMock.mockReset()
     logoutMock.mockResolvedValue()
@@ -490,6 +513,70 @@ describe('AppLayout', () => {
       expect(refreshUserMock).toHaveBeenCalledTimes(1)
       expect(screen.queryByText(LOGIN_PAGE_TEXT)).not.toBeInTheDocument()
       expect(screen.queryByText('Schedule content')).not.toBeInTheDocument()
+    })
+  })
+
+  describe('changing the password', () => {
+    it('is offered in the top bar to people past the gate, and works from there', async () => {
+      givenLoggedInAs(CLOCKED_IN_STAFF)
+      await renderLoadedLayout()
+
+      await userEvent.click(screen.getByRole('button', { name: 'Change password' }))
+      await changePasswordFromTheForm()
+
+      expect(await screen.findByRole('dialog', { name: 'Password changed' })).toBeInTheDocument()
+      expect(apiMock.changePassword).toHaveBeenCalledTimes(1)
+      expect(apiMock.changePassword).toHaveBeenCalledWith(CURRENT_PASSWORD, NEW_PASSWORD)
+    })
+
+    it('is offered to an admin who is not clocked in, with no gate in the way', async () => {
+      givenLoggedInAs(ADMIN_OFF_THE_CLOCK)
+      await renderLoadedLayout()
+
+      expect(screen.getByRole('button', { name: 'Change password' })).toBeInTheDocument()
+    })
+
+    it('is offered on the clock-in screen, so staff can change it before clocking in', async () => {
+      givenLoggedInAs(GATE_USER)
+      await renderGatedLayout()
+
+      await userEvent.click(screen.getByRole('button', { name: 'Change password' }))
+      await changePasswordFromTheForm()
+
+      expect(await screen.findByRole('dialog', { name: 'Password changed' })).toBeInTheDocument()
+      expect(apiMock.changePassword).toHaveBeenCalledWith(CURRENT_PASSWORD, NEW_PASSWORD)
+    })
+
+    it('offers it in one place at a time: the clock-in screen when held, the top bar otherwise', async () => {
+      givenLoggedInAs(GATE_USER)
+      await renderGatedLayout()
+
+      expect(screen.getAllByRole('button', { name: 'Change password' })).toHaveLength(1)
+    })
+
+    it('keeps the person signed in and on the clock after changing it', async () => {
+      givenLoggedInAs(CLOCKED_IN_STAFF)
+      await renderLoadedLayout()
+      await userEvent.click(screen.getByRole('button', { name: 'Change password' }))
+      await changePasswordFromTheForm()
+      await userEvent.click(await screen.findByRole('button', { name: 'Done' }))
+
+      expect(logoutMock).not.toHaveBeenCalled()
+      expect(refreshUserMock).not.toHaveBeenCalled()
+      expect(screen.getByText('Schedule content')).toBeInTheDocument()
+      expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+    })
+
+    it("shows the server's refusal in the form, and does not log anyone out", async () => {
+      givenLoggedInAs(CLOCKED_IN_STAFF)
+      apiMock.changePassword.mockRejectedValue(new ApiError('current password is incorrect', 403))
+      await renderLoadedLayout()
+      await userEvent.click(screen.getByRole('button', { name: 'Change password' }))
+
+      await changePasswordFromTheForm()
+
+      expect(await screen.findByText('Your current password is incorrect.')).toBeInTheDocument()
+      expect(logoutMock).not.toHaveBeenCalled()
     })
   })
 })

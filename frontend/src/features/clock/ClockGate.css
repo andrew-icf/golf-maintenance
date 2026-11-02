@@ -101,6 +101,7 @@
   outline-offset: 2px;
 }
 
+.clock-gate-link,
 .clock-gate-logout {
   align-self: center;
   min-height: 44px;
@@ -113,9 +114,16 @@
   cursor: pointer;
 }
 
+.clock-gate-link:disabled,
 .clock-gate-logout:disabled {
   opacity: 0.6;
   cursor: default;
+}
+
+.clock-gate-link:focus-visible,
+.clock-gate-logout:focus-visible {
+  outline: 2px solid #2f6b3c;
+  outline-offset: 2px;
 }
 
 .clock-gate-error {

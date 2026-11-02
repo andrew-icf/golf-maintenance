@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { act, render, screen, waitFor } from '@testing-library/react'
+import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { FAILURE_MESSAGE } from '../../test/fixtures/asyncActionCases'
 import {
@@ -21,6 +21,7 @@ import {
 import { LUKE_WEEK_SHIFTS, SPLIT_DAY_SHIFTS, TODAY } from '../../test/fixtures/myShiftsCases'
 import { createDeferred } from '../../test/helpers'
 import { ClockGate } from './ClockGate'
+import { CURRENT_PASSWORD, NEW_PASSWORD } from '../../test/fixtures/passwordCases'
 
 const { apiMock } = vi.hoisted(() => ({
   apiMock: { getMySchedule: vi.fn() },
@@ -34,11 +35,12 @@ function renderGate({
   today = TODAY,
   onClockIn = vi.fn().mockResolvedValue(),
   onLogout = vi.fn().mockResolvedValue(),
+  onChangePassword = vi.fn().mockResolvedValue(),
 } = {}) {
   const view = render(
-    <ClockGate user={ user } todayDate={ today } onClockIn={ onClockIn } onLogout={ onLogout } />
+    <ClockGate user={ user } todayDate={ today } onClockIn={ onClockIn } onLogout={ onLogout } onChangePassword={ onChangePassword } />
   )
-  return { onClockIn, onLogout, ...view }
+  return { onClockIn, onLogout, onChangePassword, ...view }
 }
 
 // Waits for the week list, which only appears once the schedule has loaded
@@ -55,6 +57,10 @@ function clockInButton() {
 
 function logOutButton() {
   return screen.getByRole('button', { name: /log(ging)? out/i })
+}
+
+function changePasswordLink() {
+  return screen.getByRole('button', { name: 'Change password' })
 }
 
 function weekRows() {
@@ -112,7 +118,7 @@ describe('ClockGate', () => {
       await screen.findAllByRole('listitem')
 
       rerender(
-        <ClockGate user={ GATE_USER } todayDate={ NEXT_WEEK_TODAY } onClockIn={ onClockIn } onLogout={ onLogout } />
+        <ClockGate user={ GATE_USER } todayDate={ NEXT_WEEK_TODAY } onClockIn={ onClockIn } onLogout={ onLogout } onChangePassword />
       )
 
       await waitFor(() => {
@@ -236,6 +242,64 @@ describe('ClockGate', () => {
 
       expect(await screen.findByRole('alert')).toHaveTextContent(FAILURE_MESSAGE)
       expect(screen.getByRole('button', { name: 'Log out' })).toBeEnabled()
+    })
+  })
+
+    describe('changing the password', () => {
+    it('offers Change password between Clock in and Log out', async () => {
+      await renderLoadedGate()
+
+      const order = screen
+        .getAllByRole('button')
+        .map((button) => button.textContent)
+        .filter((text) => ['Clock in', 'Change password', 'Log out'].includes(text))
+
+      expect(order).toEqual(['Clock in', 'Change password', 'Log out'])
+    })
+
+    it('opens the form without clocking in or logging out', async () => {
+      const { onClockIn, onLogout } = await renderLoadedGate()
+
+      await userEvent.click(changePasswordLink())
+
+      expect(screen.getByRole('dialog', { name: 'Change password' })).toBeInTheDocument()
+      expect(onClockIn).not.toHaveBeenCalled()
+      expect(onLogout).not.toHaveBeenCalled()
+    })
+
+    it('hands the form the action it was given, and passes both passwords on', async () => {
+      const { onChangePassword } = await renderLoadedGate()
+      await userEvent.click(changePasswordLink())
+
+      fireEvent.change(screen.getByLabelText('Current password'), { target: { value: CURRENT_PASSWORD } })
+      fireEvent.change(screen.getByLabelText('New password'), { target: { value: NEW_PASSWORD } })
+      fireEvent.change(screen.getByLabelText('Confirm new password'), { target: { value: NEW_PASSWORD } })
+      const form = screen.getByRole('dialog', { name: 'Change password' })
+      await userEvent.click(within(form).getByRole('button', { name: 'Change password' }))
+
+      expect(onChangePassword).toHaveBeenCalledTimes(1)
+      expect(onChangePassword).toHaveBeenCalledWith(CURRENT_PASSWORD, NEW_PASSWORD)
+    })
+
+    it('goes back to the clock-in screen when the form is cancelled, which is still there', async () => {
+      await renderLoadedGate()
+      await userEvent.click(changePasswordLink())
+
+      await userEvent.click(screen.getByRole('button', { name: 'Cancel' }))
+
+      expect(screen.queryByRole('dialog', { name: 'Change password' })).not.toBeInTheDocument()
+      expect(screen.getByRole('dialog', { name: GATE_DIALOG_NAME })).toBeInTheDocument()
+      expect(clockInButton()).toBeInTheDocument()
+    })
+
+    it('stays open behind the form, and cannot be dismissed from there either', async () => {
+      await renderLoadedGate()
+      await userEvent.click(changePasswordLink())
+
+      await userEvent.keyboard('{Escape}')
+      await userEvent.keyboard('{Escape}')
+
+      expect(screen.getByRole('dialog', { name: GATE_DIALOG_NAME })).toBeInTheDocument()
     })
   })
 })

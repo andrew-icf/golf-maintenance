@@ -27,6 +27,7 @@ func New() http.Handler {
 		// Open to anyone logged in, on the clock or not
 		r.Get("/me", handlers.Me)
 		r.Get("/api/my-schedule", handlers.GetMySchedule)
+		r.Post("/api/change-password", handlers.ChangePassword)
 		r.Post("/clock-in", handlers.ClockIn)
 		r.Post("/clock-out", handlers.ClockOut)
 

@@ -9,6 +9,7 @@ export const JOB_TITLE_LABELS = {
   office_admin: 'Office Admin',
 }
 
+// hasOwn, so a name every object has, like "constructor", is not mistaken for a job title
 export function formatJobTitle(jobTitle) {
-  return JOB_TITLE_LABELS[jobTitle] || ''
+  return Object.hasOwn(JOB_TITLE_LABELS, jobTitle) ? JOB_TITLE_LABELS[jobTitle] : ''
 }

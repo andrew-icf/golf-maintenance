@@ -10,6 +10,8 @@ import {
   SHIFTS,
   START_DATE,
   UNAUTHORIZED_CASES,
+  PASSWORD_CHANGE_ARGS,
+  WRONG_PASSWORD_TEXT,
 } from './test/fixtures/apiCases'
 
 // Both schedule calls build their date range the same way
@@ -146,6 +148,59 @@ describe('api', () => {
   describe('isUnauthorized', () => {
     it.each(UNAUTHORIZED_CASES)('says $expected for $label', ({ error, expected }) => {
       expect(isUnauthorized(error)).toBe(expected)
+    })
+  })
+
+    describe('changePassword', () => {
+    it('sends the two passwords to the change-password address as a POST', async () => {
+      respondWith(okResponse({ message: 'password changed' }))
+
+      await api.changePassword(PASSWORD_CHANGE_ARGS.current, PASSWORD_CHANGE_ARGS.replacement)
+
+      const [, options] = fetchMock.mock.calls[0]
+      expect(calledUrl().pathname).toBe('/api/change-password')
+      expect(options.method).toBe('POST')
+      expect(JSON.parse(options.body)).toEqual({
+        current_password: PASSWORD_CHANGE_ARGS.current,
+        new_password: PASSWORD_CHANGE_ARGS.replacement,
+      })
+    })
+
+    it('sends nothing but the two passwords', async () => {
+      respondWith(okResponse({ message: 'password changed' }))
+
+      await api.changePassword(PASSWORD_CHANGE_ARGS.current, PASSWORD_CHANGE_ARGS.replacement)
+
+      const sentKeys = Object.keys(JSON.parse(fetchMock.mock.calls[0][1].body)).sort()
+      expect(sentKeys).toEqual(['current_password', 'new_password'])
+    })
+
+    it('sends the session cookie along', async () => {
+      respondWith(okResponse({ message: 'password changed' }))
+
+      await api.changePassword(PASSWORD_CHANGE_ARGS.current, PASSWORD_CHANGE_ARGS.replacement)
+
+      expect(fetchMock.mock.calls[0][1].credentials).toBe('include')
+    })
+
+    it('throws an error carrying the status when the current password is wrong', async () => {
+      respondWith(failedResponse(403, WRONG_PASSWORD_TEXT))
+
+      const failure = await failureOf(() => api.changePassword('wrong', PASSWORD_CHANGE_ARGS.replacement))
+
+      expect(failure).toBeInstanceOf(ApiError)
+      expect(failure.status).toBe(403)
+      expect(failure.message).toBe('current password is incorrect')
+    })
+
+    it('does not mistake a wrong password for a request to clock in', async () => {
+      const handler = vi.fn()
+      setClockInRequiredHandler(handler)
+      respondWith(failedResponse(403, WRONG_PASSWORD_TEXT))
+
+      await failureOf(() => api.changePassword('wrong', PASSWORD_CHANGE_ARGS.replacement))
+
+      expect(handler).not.toHaveBeenCalled()
     })
   })
 

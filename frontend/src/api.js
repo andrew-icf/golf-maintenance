@@ -88,6 +88,13 @@ export const api = {
 
   clockOut: () => request('/clock-out', { method: 'POST' }),
 
+  // Replaces the logged-in person's own password. Works on or off the clock.
+  changePassword: (currentPassword, newPassword) =>
+    request('/api/change-password', {
+      method: 'POST',
+      body: JSON.stringify({ current_password: currentPassword, new_password: newPassword }),
+  }),
+
   getCourse: () => request('/api/course'),
 
   getEquipment: () => request('/api/equipment'),

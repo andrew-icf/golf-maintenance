@@ -3,6 +3,7 @@ import { api } from '../../api'
 import { Modal } from '../../components/Modal'
 import { formatJobTitle } from '../../constants/jobTitles'
 import { useAsyncAction } from '../../hooks/useAsyncAction'
+import { ChangePasswordForm } from '../auth/ChangePasswordForm'
 import { formatShortDate, getWeekDates, getWeekStart } from '../schedule/scheduleDates'
 import { buildShiftDays, todaysShifts } from './myShifts'
 import './ClockGate.css'
@@ -15,15 +16,18 @@ function describeToday(days) {
 
 // The screen a staff member meets until they clock in. It cannot be dismissed. It shows
 // today's shift and the week from the person's own schedule, and a failure to load the
-// schedule never keeps anyone from clocking in.
-// onClockIn and onLogout do the work and throw when they fail, so the buttons can say why.
-export function ClockGate({ user, todayDate, onClockIn, onLogout }) {
+// schedule never keeps anyone from clocking in. A person can also change their password here,
+// since they might not get past this screen without it.
+// onClockIn, onChangePassword, and onLogout do the work and throw when they fail, so the
+// screen can say why. onChangePassword is given the current and the new password.
+export function ClockGate({ user, todayDate, onClockIn, onChangePassword, onLogout }) {
   const weekStart = getWeekStart(todayDate)
   const weekDates = getWeekDates(weekStart)
   const weekEnd = weekDates[weekDates.length - 1]
 
   const [shifts, setShifts] = useState(null)
   const [scheduleFailed, setScheduleFailed] = useState(false)
+  const [isChangingPassword, setIsChangingPassword] = useState(false)
   const clockIn = useAsyncAction(onClockIn, 'Could not clock in. Try again.')
   const logout = useAsyncAction(onLogout, 'Could not log out. Try again.')
 
@@ -101,6 +105,10 @@ export function ClockGate({ user, todayDate, onClockIn, onLogout }) {
           </button>
           { clockIn.error && <p role="alert" className="clock-gate-error">{ clockIn.error }</p> }
 
+          <button type="button" className="clock-gate-link" onClick={ () => setIsChangingPassword(true) }>
+            Change password
+          </button>
+
           <button
             type="button"
             className="clock-gate-logout"
@@ -112,6 +120,10 @@ export function ClockGate({ user, todayDate, onClockIn, onLogout }) {
           { logout.error && <p role="alert" className="clock-gate-error">{ logout.error }</p> }
         </div>
       </div>
+
+      { isChangingPassword && (
+        <ChangePasswordForm onSubmit={ onChangePassword } onClose={ () => setIsChangingPassword(false) } />
+      )}
     </Modal>
   )
 }

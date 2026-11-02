@@ -1,7 +1,9 @@
 import { describe, expect, it, vi } from 'vitest'
-import { act, render, screen } from '@testing-library/react'
+import { act, fireEvent, render, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { JOB_TITLE_LABELS } from '../../constants/jobTitles'
+import { CURRENT_PASSWORD, NEW_PASSWORD } from '../../test/fixtures/passwordCases'
+import { createDeferred } from '../../test/helpers'
 import { TopBar } from './TopBar'
 
 // Test data
@@ -17,23 +19,24 @@ const JOB_TITLE_CASES = Object.entries(JOB_TITLE_LABELS).map(([value, label]) =>
 
 const LOGOUT_ERROR_MESSAGE = 'Could not log out. Try again.'
 
-function createDeferred() {
-  let resolve
-  const promise = new Promise((resolvePromise) => {
-    resolve = resolvePromise
-  })
-  return { promise, resolve }
-}
-
 // Actions
 function renderTopBar({
   title = 'Schedule',
   user = MON_MOTHMA,
   onLogout = vi.fn().mockResolvedValue(),
+  onChangePassword,
   clockControl,
 } = {}) {
-  const view = render(<TopBar title={ title } user={ user } onLogout={ onLogout } clockControl={ clockControl } />)
-  return { onLogout, ...view }
+  const view = render(
+    <TopBar
+      title={ title }
+      user={ user }
+      onLogout={ onLogout }
+      onChangePassword={ onChangePassword }
+      clockControl={ clockControl }
+    />
+  )
+  return { onLogout, onChangePassword, ...view }
 }
 
 // The button's name changes while logging out, so find it by either wording
@@ -156,6 +159,55 @@ describe('TopBar', () => {
 
       expect(screen.queryByRole('alert')).not.toBeInTheDocument()
       expect(onLogout).toHaveBeenCalledTimes(2)
+    })
+  })
+
+  describe('changing the password', () => {
+    it('offers no Change password button when no action is given', () => {
+      renderTopBar()
+
+      expect(screen.queryByRole('button', { name: 'Change password' })).not.toBeInTheDocument()
+    })
+
+    it('offers Change password beside Log out when an action is given', () => {
+      renderTopBar({ onChangePassword: vi.fn() })
+
+      const labels = screen.getAllByRole('button').map((button) => button.textContent)
+
+      expect(labels).toEqual(['Change password', 'Log out'])
+    })
+
+    it('opens the form without logging out', async () => {
+      const { onLogout } = renderTopBar({ onChangePassword: vi.fn() })
+
+      await userEvent.click(screen.getByRole('button', { name: 'Change password' }))
+
+      expect(screen.getByRole('dialog', { name: 'Change password' })).toBeInTheDocument()
+      expect(onLogout).not.toHaveBeenCalled()
+    })
+
+    it('passes both passwords to the action it was given', async () => {
+      const onChangePassword = vi.fn().mockResolvedValue()
+      renderTopBar({ onChangePassword })
+      await userEvent.click(screen.getByRole('button', { name: 'Change password' }))
+
+      fireEvent.change(screen.getByLabelText('Current password'), { target: { value: CURRENT_PASSWORD } })
+      fireEvent.change(screen.getByLabelText('New password'), { target: { value: NEW_PASSWORD } })
+      fireEvent.change(screen.getByLabelText('Confirm new password'), { target: { value: NEW_PASSWORD } })
+      await userEvent.click(within(screen.getByRole('dialog')).getByRole('button', { name: 'Change password' }))
+
+      expect(onChangePassword).toHaveBeenCalledTimes(1)
+      expect(onChangePassword).toHaveBeenCalledWith(CURRENT_PASSWORD, NEW_PASSWORD)
+    })
+
+    it('closes the form from Cancel and leaves the top bar as it was', async () => {
+      renderTopBar({ onChangePassword: vi.fn() })
+      await userEvent.click(screen.getByRole('button', { name: 'Change password' }))
+
+      await userEvent.click(screen.getByRole('button', { name: 'Cancel' }))
+
+      expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+      expect(screen.getByRole('button', { name: 'Log out' })).toBeInTheDocument()
     })
   })
 })

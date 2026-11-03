@@ -14,15 +14,22 @@ export const NOW = atTime(6, 12)
 // A person besides the ones in the permission cases
 export const HAN_SOLO = { id: 'user-han', full_name: 'Han Solo', role: 'staff', job_title: 'operator' }
 
+const DAILY = { type: 'daily' }
+
+export function bunkerSection(bunkerNumber) {
+  return { key: `bunker-${bunkerNumber}`, title: `Bunker ${bunkerNumber}`, order: bunkerNumber }
+}
+
 export function makeChecklistItem({
   id,
   feature = 'green',
   name = 'A task',
   duty = 'greens',
-  bunkerNumber = null,
+  section = null,
   allowedJobTitles = ['operator'],
+  frequency = DAILY,
 }) {
-  return { id, templateId: id, feature, name, allowedJobTitles, duty, bunkerNumber }
+  return { id, templateId: id, feature, name, allowedJobTitles, duty, frequency, section }
 }
 
 export function doneMark(byId, byName, at) {
@@ -33,24 +40,25 @@ export function notTodayMark(byId, byName, at) {
   return { status: 'not_today', byId, byName, at }
 }
 
-// The task list, written out by hand so it is checked against the code
+// The task list, written out by hand so it is checked against the code. section is the key of
+// the section the task sits in, and everyOtherDay marks the tasks that are not due daily.
 export const EXPECTED_TASKS = [
-  { id: 't-boxes-cleared', feature: 'tee_box', name: 'T-boxes cleared', duty: 'greenskeeper', titles: ['greenskeeper'] },
-  { id: 't-boxes-mowed', feature: 'tee_box', name: 'T-boxes mowed', duty: 'tees_and_fairways', titles: ['operator'] },
-  { id: 'par-3-t-boxes-cleared', feature: 'tee_box', name: 'Par 3 T-boxes cleared', duty: 'greenskeeper', titles: ['greenskeeper'] },
-  { id: 'par-3-t-boxes-mowed', feature: 'tee_box', name: 'Par 3 T-boxes mowed', duty: 'tees_and_fairways', titles: ['operator'] },
-  { id: 'fairway-mowed', feature: 'fairway', name: 'Fairway mowed', duty: 'tees_and_fairways', titles: ['operator'] },
-  { id: 'cart-signs', feature: 'fairway', name: 'Cart signs removed and replaced', duty: 'greenskeeper', titles: ['greenskeeper'] },
-  { id: 'fairway-sprayed', feature: 'fairway', name: 'Fairway sprayed', duty: 'spraying', titles: ['operator'] },
-  { id: 'rough-mowed', feature: 'rough', name: 'Rough mowed', duty: 'rough', titles: ['operator'] },
-  { id: 'bunker-raked-machine', feature: 'bunker', name: 'Raked by machine', duty: 'bunkers', titles: ['operator'] },
-  { id: 'bunker-raked-hand', feature: 'bunker', name: 'Raked by hand', duty: 'greenskeeper', titles: ['greenskeeper'] },
-  { id: 'hole-placement-moved', feature: 'green', name: 'Hole placement moved', duty: 'greenskeeper', titles: ['greenskeeper'] },
-  { id: 'ball-marks', feature: 'green', name: 'Ball marks', duty: 'greenskeeper', titles: ['greenskeeper'] },
-  { id: 'top-dress', feature: 'green', name: 'Top dress', duty: 'greenskeeper', titles: ['greenskeeper'] },
-  { id: 'green-mowed', feature: 'green', name: 'Mowed', duty: 'greens', titles: ['operator'] },
-  { id: 'green-rolled', feature: 'green', name: 'Rolled', duty: 'rolling', titles: ['operator'] },
-  { id: 'green-sprayed', feature: 'green', name: 'Sprayed', duty: 'spraying', titles: ['operator'] },
+  { id: 'tee-box-greenskeeper', feature: 'tee_box', name: 'Greenskeeper', duty: 'greenskeeper', titles: ['greenskeeper'], section: 'tee-box', everyOtherDay: false },
+  { id: 'tee-box-operator', feature: 'tee_box', name: 'Operator', duty: 'tees_and_fairways', titles: ['operator'], section: 'tee-box', everyOtherDay: true },
+  { id: 'par-3-tee-box-greenskeeper', feature: 'tee_box', name: 'Greenskeeper', duty: 'greenskeeper', titles: ['greenskeeper'], section: 'par-3-tee-box', everyOtherDay: false },
+  { id: 'par-3-tee-box-operator', feature: 'tee_box', name: 'Operator', duty: 'tees_and_fairways', titles: ['operator'], section: 'par-3-tee-box', everyOtherDay: true },
+  { id: 'fairway-mowed', feature: 'fairway', name: 'Fairway mowed', duty: 'tees_and_fairways', titles: ['operator'], section: null, everyOtherDay: false },
+  { id: 'cart-signs', feature: 'fairway', name: 'Cart signs removed and replaced', duty: 'greenskeeper', titles: ['greenskeeper'], section: null, everyOtherDay: false },
+  { id: 'fairway-sprayed', feature: 'fairway', name: 'Fairway sprayed', duty: 'spraying', titles: ['operator'], section: null, everyOtherDay: false },
+  { id: 'rough-mowed', feature: 'rough', name: 'Rough mowed', duty: 'rough', titles: ['operator'], section: null, everyOtherDay: false },
+  { id: 'bunker-raked-machine', feature: 'bunker', name: 'Raked by machine', duty: 'bunkers', titles: ['operator'], section: null, everyOtherDay: false },
+  { id: 'bunker-raked-hand', feature: 'bunker', name: 'Raked by hand', duty: 'greenskeeper', titles: ['greenskeeper'], section: null, everyOtherDay: false },
+  { id: 'hole-placement-moved', feature: 'green', name: 'Hole placement moved', duty: 'greenskeeper', titles: ['greenskeeper'], section: null, everyOtherDay: false },
+  { id: 'ball-marks', feature: 'green', name: 'Ball marks', duty: 'greenskeeper', titles: ['greenskeeper'], section: null, everyOtherDay: false },
+  { id: 'top-dress', feature: 'green', name: 'Top dress', duty: 'greenskeeper', titles: ['greenskeeper'], section: null, everyOtherDay: false },
+  { id: 'green-mowed', feature: 'green', name: 'Mowed', duty: 'greens', titles: ['operator'], section: null, everyOtherDay: false },
+  { id: 'green-rolled', feature: 'green', name: 'Rolled', duty: 'rolling', titles: ['operator'], section: null, everyOtherDay: false },
+  { id: 'green-sprayed', feature: 'green', name: 'Sprayed', duty: 'spraying', titles: ['operator'], section: null, everyOtherDay: false },
 ]
 
 // 14 tasks outside the bunkers, plus two for each bunker
@@ -82,6 +90,19 @@ export const FEATURE_COUNT_CASES = [
   { feature: 'green', count: 6 },
 ]
 
+// How many tasks are on the checklist for a day. The tee-box operator tasks are due every other
+// day, starting 2026-11-02. With no day, or one that cannot be read, every task is.
+export const DAY_FILTER_CASES = [
+  { label: 'a day the tee-box operator tasks are due', day: '2026-11-02', expected: 20 },
+  { label: 'a day they are not due', day: '2026-11-03', expected: 18 },
+  { label: 'the next day they are due', day: '2026-11-04', expected: 20 },
+  { label: 'no day at all', day: undefined, expected: 20 },
+  { label: 'a day that cannot be read', day: 'banana', expected: 20 },
+]
+export const OFF_DAY = '2026-11-03'
+// Sorted, the way the test sorts what it finds
+export const EXPECTED_OFF_DAY_MISSING_IDS = ['par-3-tee-box-operator', 'tee-box-operator']
+
 // The layout of the sample hole's checklist: each area, its sections, and the tasks in them
 const BUNKER_SECTIONS = [1, 2, 3].map((bunkerNumber) => ({
   title: `Bunker ${bunkerNumber}`,
@@ -92,10 +113,8 @@ export const EXPECTED_GROUPS = [
   {
     title: 'Tee box',
     sections: [
-      {
-        title: null,
-        names: ['T-boxes cleared', 'T-boxes mowed', 'Par 3 T-boxes cleared', 'Par 3 T-boxes mowed'],
-      },
+      { title: 'Tee box', names: ['Greenskeeper', 'Operator'] },
+      { title: 'Par 3 tee box', names: ['Greenskeeper', 'Operator'] },
     ],
   },
   {
@@ -123,12 +142,12 @@ export const NO_ITEMS_CASES = [
 
 // Bunker tasks that arrive out of order: each bunker's tasks keep the order they arrived in
 export const OUT_OF_ORDER_BUNKER_ITEMS = [
-  makeChecklistItem({ id: 'b3-hand', feature: 'bunker', name: 'Raked by hand', bunkerNumber: 3 }),
-  makeChecklistItem({ id: 'b1-machine', feature: 'bunker', name: 'Raked by machine', bunkerNumber: 1 }),
-  makeChecklistItem({ id: 'b2-hand', feature: 'bunker', name: 'Raked by hand', bunkerNumber: 2 }),
-  makeChecklistItem({ id: 'b1-hand', feature: 'bunker', name: 'Raked by hand', bunkerNumber: 1 }),
-  makeChecklistItem({ id: 'b3-machine', feature: 'bunker', name: 'Raked by machine', bunkerNumber: 3 }),
-  makeChecklistItem({ id: 'b2-machine', feature: 'bunker', name: 'Raked by machine', bunkerNumber: 2 }),
+  makeChecklistItem({ id: 'b3-hand', feature: 'bunker', name: 'Raked by hand', section: bunkerSection(3) }),
+  makeChecklistItem({ id: 'b1-machine', feature: 'bunker', name: 'Raked by machine', section: bunkerSection(1) }),
+  makeChecklistItem({ id: 'b2-hand', feature: 'bunker', name: 'Raked by hand', section: bunkerSection(2) }),
+  makeChecklistItem({ id: 'b1-hand', feature: 'bunker', name: 'Raked by hand', section: bunkerSection(1) }),
+  makeChecklistItem({ id: 'b3-machine', feature: 'bunker', name: 'Raked by machine', section: bunkerSection(3) }),
+  makeChecklistItem({ id: 'b2-machine', feature: 'bunker', name: 'Raked by machine', section: bunkerSection(2) }),
 ]
 export const EXPECTED_OUT_OF_ORDER_SECTIONS = [
   { title: 'Bunker 1', ids: ['b1-machine', 'b1-hand'] },
@@ -136,17 +155,33 @@ export const EXPECTED_OUT_OF_ORDER_SECTIONS = [
   { title: 'Bunker 3', ids: ['b3-hand', 'b3-machine'] },
 ]
 
-// A bunker area that has a task with no bunker number, which goes first, untitled
-export const MIXED_BUNKER_ITEMS = [
-  makeChecklistItem({ id: 'two', feature: 'bunker', bunkerNumber: 2 }),
-  makeChecklistItem({ id: 'general', feature: 'bunker', bunkerNumber: null }),
-  makeChecklistItem({ id: 'one', feature: 'bunker', bunkerNumber: 1 }),
+// An area that has a task with no section, which goes first, untitled
+export const MIXED_SECTION_ITEMS = [
+  makeChecklistItem({ id: 'two', feature: 'bunker', section: bunkerSection(2) }),
+  makeChecklistItem({ id: 'general', feature: 'bunker', section: null }),
+  makeChecklistItem({ id: 'one', feature: 'bunker', section: bunkerSection(1) }),
 ]
 export const EXPECTED_MIXED_SECTIONS = [
   { title: null, ids: ['general'] },
   { title: 'Bunker 1', ids: ['one'] },
   { title: 'Bunker 2', ids: ['two'] },
 ]
+
+// Sections with no order follow the ones that have one, in the order they arrived
+export const UNORDERED_SECTION_ITEMS = [
+  makeChecklistItem({ id: 'late-b', feature: 'bunker', section: { key: 'b', title: 'B' } }),
+  makeChecklistItem({ id: 'ordered', feature: 'bunker', section: { key: 'o', title: 'O', order: 1 } }),
+  makeChecklistItem({ id: 'late-a', feature: 'bunker', section: { key: 'a', title: 'A' } }),
+]
+export const EXPECTED_UNORDERED_SECTION_TITLES = ['O', 'B', 'A']
+
+// A section with no usable key is no section, so these tasks go in the untitled section
+export const NO_KEY_SECTION_ITEMS = [
+  makeChecklistItem({ id: 'nameless', feature: 'bunker', section: { title: 'Nameless' } }),
+  makeChecklistItem({ id: 'empty-key', feature: 'bunker', section: { key: '', title: 'Empty key' } }),
+  makeChecklistItem({ id: 'text-section', feature: 'bunker', section: 'tee-box' }),
+]
+export const EXPECTED_NO_KEY_SECTIONS = [{ title: null, ids: ['nameless', 'empty-key', 'text-section'] }]
 
 // An area the page does not know follows the known ones, under its own name
 export const UNKNOWN_FEATURE_ITEMS = [
@@ -168,8 +203,8 @@ export const EXPECTED_OTHER_IDS = ['no-area', 'blank-area']
 
 // Frozen, so any attempt to reorder or change them in place throws
 export const FROZEN_ITEMS = Object.freeze([
-  Object.freeze(makeChecklistItem({ id: 'b2-hand', feature: 'bunker', bunkerNumber: 2 })),
-  Object.freeze(makeChecklistItem({ id: 'b1-hand', feature: 'bunker', bunkerNumber: 1 })),
+  Object.freeze(makeChecklistItem({ id: 'b2-hand', feature: 'bunker', section: bunkerSection(2) })),
+  Object.freeze(makeChecklistItem({ id: 'b1-hand', feature: 'bunker', section: bunkerSection(1) })),
   Object.freeze(makeChecklistItem({ id: 'green-task', feature: 'green' })),
 ])
 
@@ -286,8 +321,8 @@ export const INVALID_TIME_CASES = [
 
 // What the page says under each of the sample marks, for someone who made none of them
 export const SAMPLE_MARK_DESCRIPTIONS = [
-  { id: 't-boxes-cleared', expected: 'Yoda · 5:48am' },
-  { id: 'par-3-t-boxes-cleared', expected: 'Yoda · 5:50am' },
+  { id: 'tee-box-greenskeeper', expected: 'Yoda · 5:48am' },
+  { id: 'par-3-tee-box-greenskeeper', expected: 'Yoda · 5:50am' },
   { id: 'hole-placement-moved', expected: 'Padmé Amidala · 5:40am' },
   { id: 'fairway-mowed', expected: 'Chewbacca · 6:40am' },
   { id: 'bunker-raked-machine:1', expected: 'Chewbacca · 6:55am' },

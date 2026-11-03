@@ -35,8 +35,8 @@ import {
 
 // Test data
 const ITEMS = buildChecklistItems()
-const GREENSKEEPER_ITEM = ITEMS.find((item) => item.id === 't-boxes-cleared')
-const OPERATOR_ITEM = ITEMS.find((item) => item.id === 't-boxes-mowed')
+const GREENSKEEPER_ITEM = ITEMS.find((item) => item.id === 'tee-box-greenskeeper')
+const OPERATOR_ITEM = ITEMS.find((item) => item.id === 'tee-box-operator')
 const OTHER_OPERATOR_ITEM = ITEMS.find((item) => item.id === 'rough-mowed')
 
 // Actions

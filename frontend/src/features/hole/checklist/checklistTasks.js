@@ -1,4 +1,5 @@
 import { lookupLabel } from '../../../constants/lookupLabel'
+import { DAILY, isDueOn } from './checklistFrequency'
 
 const GREENSKEEPER = ['greenskeeper']
 const OPERATOR = ['operator']
@@ -39,25 +40,82 @@ const DUTY_TITLES = {
 // How many bunkers the sample hole has
 export const SAMPLE_BUNKER_COUNT = 3
 
-// Prince Waikiki's task list. Each task names the job titles that may check it off and the duty
-// whose owner is answerable for it. A task in the bunker area repeats for every bunker.
+// The tee-box operator work is done every other day at Prince Waikiki. The anchor is a day it was
+// due, and a superintendent will be able to choose both the schedule and the anchor.
+const EVERY_OTHER_DAY = { type: 'every_n_days', every: 2, anchor: '2026-11-02' }
+
+// A tee box has its own section on the page, and the par 3 tee box a second one after it
+const TEE_BOX_SECTION = { key: 'tee-box', title: 'Tee box', order: 1 }
+const PAR_3_TEE_BOX_SECTION = { key: 'par-3-tee-box', title: 'Par 3 tee box', order: 2 }
+
+// Prince Waikiki's task list. Each task names the job titles that may check it off, the duty whose
+// owner is answerable for it, and how often it is due. A task that repeats for every bunker makes
+// its own section for each one.
 export const TASK_TEMPLATES = [
-  { id: 't-boxes-cleared', feature: 'tee_box', name: 'T-boxes cleared', allowedJobTitles: GREENSKEEPER, duty: 'greenskeeper' },
-  { id: 't-boxes-mowed', feature: 'tee_box', name: 'T-boxes mowed', allowedJobTitles: OPERATOR, duty: 'tees_and_fairways' },
-  { id: 'par-3-t-boxes-cleared', feature: 'tee_box', name: 'Par 3 T-boxes cleared', allowedJobTitles: GREENSKEEPER, duty: 'greenskeeper' },
-  { id: 'par-3-t-boxes-mowed', feature: 'tee_box', name: 'Par 3 T-boxes mowed', allowedJobTitles: OPERATOR, duty: 'tees_and_fairways' },
-  { id: 'fairway-mowed', feature: 'fairway', name: 'Fairway mowed', allowedJobTitles: OPERATOR, duty: 'tees_and_fairways' },
-  { id: 'cart-signs', feature: 'fairway', name: 'Cart signs removed and replaced', allowedJobTitles: GREENSKEEPER, duty: 'greenskeeper' },
-  { id: 'fairway-sprayed', feature: 'fairway', name: 'Fairway sprayed', allowedJobTitles: OPERATOR, duty: 'spraying' },
-  { id: 'rough-mowed', feature: 'rough', name: 'Rough mowed', allowedJobTitles: OPERATOR, duty: 'rough' },
-  { id: 'bunker-raked-machine', feature: 'bunker', name: 'Raked by machine', allowedJobTitles: OPERATOR, duty: 'bunkers' },
-  { id: 'bunker-raked-hand', feature: 'bunker', name: 'Raked by hand', allowedJobTitles: GREENSKEEPER, duty: 'greenskeeper' },
-  { id: 'hole-placement-moved', feature: 'green', name: 'Hole placement moved', allowedJobTitles: GREENSKEEPER, duty: 'greenskeeper' },
-  { id: 'ball-marks', feature: 'green', name: 'Ball marks', allowedJobTitles: GREENSKEEPER, duty: 'greenskeeper' },
-  { id: 'top-dress', feature: 'green', name: 'Top dress', allowedJobTitles: GREENSKEEPER, duty: 'greenskeeper' },
-  { id: 'green-mowed', feature: 'green', name: 'Mowed', allowedJobTitles: OPERATOR, duty: 'greens' },
-  { id: 'green-rolled', feature: 'green', name: 'Rolled', allowedJobTitles: OPERATOR, duty: 'rolling' },
-  { id: 'green-sprayed', feature: 'green', name: 'Sprayed', allowedJobTitles: OPERATOR, duty: 'spraying' },
+  {
+    id: 'tee-box-greenskeeper', feature: 'tee_box', section: TEE_BOX_SECTION,
+    name: 'Greenskeeper', allowedJobTitles: GREENSKEEPER, duty: 'greenskeeper', frequency: DAILY,
+  },
+  {
+    id: 'tee-box-operator', feature: 'tee_box', section: TEE_BOX_SECTION,
+    name: 'Operator', allowedJobTitles: OPERATOR, duty: 'tees_and_fairways', frequency: EVERY_OTHER_DAY,
+  },
+  {
+    id: 'par-3-tee-box-greenskeeper', feature: 'tee_box', section: PAR_3_TEE_BOX_SECTION,
+    name: 'Greenskeeper', allowedJobTitles: GREENSKEEPER, duty: 'greenskeeper', frequency: DAILY,
+  },
+  {
+    id: 'par-3-tee-box-operator', feature: 'tee_box', section: PAR_3_TEE_BOX_SECTION,
+    name: 'Operator', allowedJobTitles: OPERATOR, duty: 'tees_and_fairways', frequency: EVERY_OTHER_DAY,
+  },
+  {
+    id: 'fairway-mowed', feature: 'fairway', section: null,
+    name: 'Fairway mowed', allowedJobTitles: OPERATOR, duty: 'tees_and_fairways', frequency: DAILY,
+  },
+  {
+    id: 'cart-signs', feature: 'fairway', section: null,
+    name: 'Cart signs removed and replaced', allowedJobTitles: GREENSKEEPER, duty: 'greenskeeper', frequency: DAILY,
+  },
+  {
+    id: 'fairway-sprayed', feature: 'fairway', section: null,
+    name: 'Fairway sprayed', allowedJobTitles: OPERATOR, duty: 'spraying', frequency: DAILY,
+  },
+  {
+    id: 'rough-mowed', feature: 'rough', section: null,
+    name: 'Rough mowed', allowedJobTitles: OPERATOR, duty: 'rough', frequency: DAILY,
+  },
+  {
+    id: 'bunker-raked-machine', feature: 'bunker', section: null, repeatsPerBunker: true,
+    name: 'Raked by machine', allowedJobTitles: OPERATOR, duty: 'bunkers', frequency: DAILY,
+  },
+  {
+    id: 'bunker-raked-hand', feature: 'bunker', section: null, repeatsPerBunker: true,
+    name: 'Raked by hand', allowedJobTitles: GREENSKEEPER, duty: 'greenskeeper', frequency: DAILY,
+  },
+  {
+    id: 'hole-placement-moved', feature: 'green', section: null,
+    name: 'Hole placement moved', allowedJobTitles: GREENSKEEPER, duty: 'greenskeeper', frequency: DAILY,
+  },
+  {
+    id: 'ball-marks', feature: 'green', section: null,
+    name: 'Ball marks', allowedJobTitles: GREENSKEEPER, duty: 'greenskeeper', frequency: DAILY,
+  },
+  {
+    id: 'top-dress', feature: 'green', section: null,
+    name: 'Top dress', allowedJobTitles: GREENSKEEPER, duty: 'greenskeeper', frequency: DAILY,
+  },
+  {
+    id: 'green-mowed', feature: 'green', section: null,
+    name: 'Mowed', allowedJobTitles: OPERATOR, duty: 'greens', frequency: DAILY,
+  },
+  {
+    id: 'green-rolled', feature: 'green', section: null,
+    name: 'Rolled', allowedJobTitles: OPERATOR, duty: 'rolling', frequency: DAILY,
+  },
+  {
+    id: 'green-sprayed', feature: 'green', section: null,
+    name: 'Sprayed', allowedJobTitles: OPERATOR, duty: 'spraying', frequency: DAILY,
+  },
 ]
 
 export function formatFeatureTitle(feature) {
@@ -69,6 +127,10 @@ export function formatDutyTitle(duty) {
 }
 
 function makeItem(template, bunkerNumber) {
+  const section = bunkerNumber
+    ? { key: `bunker-${bunkerNumber}`, title: `Bunker ${bunkerNumber}`, order: bunkerNumber }
+    : template.section
+
   return {
     id: bunkerNumber ? `${template.id}:${bunkerNumber}` : template.id,
     templateId: template.id,
@@ -76,18 +138,20 @@ function makeItem(template, bunkerNumber) {
     name: template.name,
     allowedJobTitles: [...template.allowedJobTitles],
     duty: template.duty,
-    bunkerNumber: bunkerNumber ?? null,
+    frequency: { ...template.frequency },
+    section: section ? { ...section } : null,
   }
 }
 
-// The tasks on one hole's checklist for a day. A bunker count that is not a whole number above
-// zero counts as no bunkers.
-export function buildChecklistItems(bunkerCount = SAMPLE_BUNKER_COUNT) {
+// The tasks on one hole's checklist. A bunker count that is not a whole number above zero counts
+// as no bunkers. Given a day ('YYYY-MM-DD'), only the tasks due that day are included, and given
+// none, every task is.
+export function buildChecklistItems(bunkerCount = SAMPLE_BUNKER_COUNT, day) {
   const bunkers = Number.isInteger(bunkerCount) && bunkerCount > 0 ? bunkerCount : 0
   const items = []
 
   for (const template of TASK_TEMPLATES) {
-    if (template.feature !== 'bunker') {
+    if (!template.repeatsPerBunker) {
       items.push(makeItem(template, null))
       continue
     }
@@ -96,33 +160,54 @@ export function buildChecklistItems(bunkerCount = SAMPLE_BUNKER_COUNT) {
     }
   }
 
-  return items
+  return day === undefined ? items : items.filter((item) => isDueOn(item.frequency, day))
 }
 
-function isBunkerNumber(value) {
-  return Number.isInteger(value) && value > 0
+// A task belongs to a section only when it names one with a key
+function sectionOf(item) {
+  const section = item.section
+
+  if (section && typeof section === 'object' && typeof section.key === 'string' && section.key !== '') {
+    return section
+  }
+  return null
 }
 
-// Within an area, tasks with no bunker number come first, then each bunker in number order. A
-// task keeps its place in the list within its section.
+function compareOrder(first, second) {
+  if (first === second) {
+    return 0
+  }
+  return first < second ? -1 : 1
+}
+
+// Within an area, tasks with no section come first, then each section by its order. Sections with
+// no order follow the ones that have one, in the order they arrived, and a task keeps its place
+// within its section.
 function buildSections(featureItems) {
-  const unnumbered = featureItems.filter((item) => !isBunkerNumber(item.bunkerNumber))
-  const bunkerNumbers = [
-    ...new Set(featureItems.filter((item) => isBunkerNumber(item.bunkerNumber)).map((item) => item.bunkerNumber)),
-  ].sort((first, second) => first - second)
+  const unsectioned = featureItems.filter((item) => !sectionOf(item))
+  const sectionsByKey = new Map()
 
-  const sections = []
-  if (unnumbered.length > 0) {
-    sections.push({ key: 'all', title: null, items: unnumbered })
+  for (const item of featureItems) {
+    const section = sectionOf(item)
+    if (!section) {
+      continue
+    }
+    if (!sectionsByKey.has(section.key)) {
+      sectionsByKey.set(section.key, {
+        key: section.key,
+        title: typeof section.title === 'string' && section.title ? section.title : null,
+        order: Number.isFinite(section.order) ? section.order : Infinity,
+        items: [],
+      })
+    }
+    sectionsByKey.get(section.key).items.push(item)
   }
-  for (const bunkerNumber of bunkerNumbers) {
-    sections.push({
-      key: `bunker-${bunkerNumber}`,
-      title: `Bunker ${bunkerNumber}`,
-      items: featureItems.filter((item) => item.bunkerNumber === bunkerNumber),
-    })
-  }
-  return sections
+
+  const sections = [...sectionsByKey.values()]
+    .sort((first, second) => compareOrder(first.order, second.order))
+    .map(({ key, title, items }) => ({ key, title, items }))
+
+  return unsectioned.length > 0 ? [{ key: 'all', title: null, items: unsectioned }, ...sections] : sections
 }
 
 // The checklist as the page shows it: areas in order, each with its sections of tasks. An area

@@ -2,7 +2,9 @@ import { useEffect, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { api } from '../../api'
 import { formatAmenityType } from '../../constants/amenities'
+import { useAuth } from '../auth/AuthContext'
 import { formatYardage } from '../course/courseSummary'
+import { ChecklistPreview } from './checklist/ChecklistPreview'
 import { findHoleDetails } from './holeDetails'
 import './HoleDetailsView.css'
 
@@ -16,6 +18,7 @@ function BackLink() {
 
 export function HoleDetailsView() {
   const { holeId } = useParams()
+  const { user } = useAuth()
   const [course, setCourse] = useState(null)
   const [error, setError] = useState('')
 
@@ -72,25 +75,29 @@ export function HoleDetailsView() {
         </div>
       </dl>
 
-      <section className="hole-details-section">
-        <h3 className="hole-details-section-title">Amenities on this hole</h3>
-        { details.amenities.length === 0 ? (
-          <p className="status">No amenities on this hole.</p>
-        ) : (
-          <ul className="hole-details-amenities">
-            {details.amenities.map((amenity) => {
-              const typeLabel = formatAmenityType(amenity.type)
+      <ChecklistPreview user={ user } />
 
-              return (
-                <li key={ amenity.id } className="hole-details-amenity">
-                  <span className="hole-details-amenity-name">{ amenity.name }</span>
-                  { typeLabel && <span className="hole-details-amenity-type">{ typeLabel }</span> }
-                </li>
-              )
-            })}
-          </ul>
-        )}
-      </section>
+      <div className="hole-details-bottom">
+        <section className="hole-details-section">
+          <h3 className="hole-details-section-title">Amenities on this hole</h3>
+          { details.amenities.length === 0 ? (
+            <p className="status">No amenities on this hole.</p>
+          ) : (
+            <ul className="hole-details-amenities">
+              {details.amenities.map((amenity) => {
+                const typeLabel = formatAmenityType(amenity.type)
+
+                return (
+                  <li key={ amenity.id } className="hole-details-amenity">
+                    <span className="hole-details-amenity-name">{ amenity.name }</span>
+                    { typeLabel && <span className="hole-details-amenity-type">{ typeLabel }</span> }
+                  </li>
+                )
+              })}
+            </ul>
+          )}
+        </section>
+      </div>
     </div>
   )
 }

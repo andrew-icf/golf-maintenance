@@ -131,10 +131,10 @@ describe('Checklist', () => {
     it('labels each area, with the sections under it', () => {
       renderChecklist()
 
-      expect(screen.getAllByRole('heading', { level: 3 }).map((heading) => heading.textContent)).toEqual(
+      expect(screen.getAllByRole('heading', { level: 4 }).map((heading) => heading.textContent)).toEqual(
         EXPECTED_AREA_HEADINGS
       )
-      expect(screen.getAllByRole('heading', { level: 4 }).map((heading) => heading.textContent)).toEqual(
+      expect(screen.getAllByRole('heading', { level: 5 }).map((heading) => heading.textContent)).toEqual(
         EXPECTED_SECTION_HEADINGS
       )
     })

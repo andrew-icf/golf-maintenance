@@ -7,7 +7,7 @@ export function ChecklistProgress({ summary, titleId }) {
   return (
     <div className="checklist-top">
       <div className="checklist-top-line">
-        <h2 id={ titleId } className="checklist-title">Today’s checklist</h2>
+        <h3 id={ titleId } className="checklist-title">Today’s checklist</h3>
         { total > 0 && (
           <p className="checklist-count">
             { `${accountedFor} of ${total} ${total === 1 ? 'task' : 'tasks'} accounted for` }

@@ -49,11 +49,11 @@ export function Checklist({ items, marks, user, onCheck, onSkip, onUndo }) {
 
       {areas.map((area) => (
         <div key={ area.key } className="checklist-area">
-          <h3 className="checklist-area-label"><span>{ area.title }</span></h3>
+          <h4 className="checklist-area-label"><span>{ area.title }</span></h4>
           <div className="checklist-area-body">
             {area.sections.map((section) => (
               <div key={ section.key } className="checklist-section">
-                { section.title && <h4 className="checklist-section-title">{ section.title }</h4> }
+                { section.title && <h5 className="checklist-section-title">{ section.title }</h5> }
                 <div className="checklist-cells">
                   {section.cells.map((cell) => {
                     const column = columns.find((candidate) => candidate.key === cell.columnKey)

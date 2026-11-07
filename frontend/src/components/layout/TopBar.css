@@ -77,3 +77,38 @@
   font-size: 14px;
   color: #b3261e;
 }
+
+/* On a phone: the title, then who you are, then the clock, then the two buttons side by side */
+@media (max-width: 820px), (orientation: portrait) and (max-width: 1100px) {
+  .top-bar {
+    padding: 8px 12px;
+    gap: 8px;
+  }
+
+  .top-bar-user {
+    flex: 1 1 100%;
+    justify-content: flex-start;
+    gap: 8px 12px;
+  }
+
+  .top-bar-user-text {
+    order: -1;
+    flex: 1 1 100%;
+    text-align: left;
+  }
+
+  .top-bar-user > .clock-control {
+    flex: 1 1 100%;
+    justify-content: space-between;
+  }
+
+  .top-bar-logout {
+    flex: 1 1 calc(50% - 6px);
+    padding: 0 12px;
+    font-size: 13px;
+  }
+
+  .top-bar-error {
+    text-align: left;
+  }
+}

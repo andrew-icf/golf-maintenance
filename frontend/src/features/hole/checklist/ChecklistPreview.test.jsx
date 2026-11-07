@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { render, screen } from '@testing-library/react'
+import { render, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import {
   ALL_DONE_COUNT_TEXT,
@@ -9,11 +9,15 @@ import {
   PREVIEW_NOTICE,
   SAMPLE_COUNT_TEXT,
 } from '../../../test/fixtures/checklistViewCases'
+import { CHECKLIST_NAME, RESPONSIBLE_NAME } from '../../../test/fixtures/holeChecklistCases'
 import { LUKE, MON_MOTHMA, YODA } from '../../../test/fixtures/taskPermissionCases'
 import { ChecklistPreview } from './ChecklistPreview'
 
 // Test data. Now is 6:12am on Wednesday 2026-10-21.
 const NOW = new Date(2026, 9, 21, 6, 12)
+
+// One sample person for each of the seven duties
+const DUTY_COUNT = 7
 
 // Actions
 function renderPreview(user = LUKE) {
@@ -26,6 +30,10 @@ function box(label) {
 
 function metaTexts() {
   return Array.from(document.querySelectorAll('.checklist-meta')).map((element) => element.textContent)
+}
+
+function responsibleCard() {
+  return screen.getByRole('region', { name: RESPONSIBLE_NAME })
 }
 
 describe('ChecklistPreview', () => {
@@ -143,5 +151,45 @@ describe('ChecklistPreview', () => {
 
     expect(screen.getByText(SAMPLE_COUNT_TEXT)).toBeInTheDocument()
     expect(box('Tee box: Mowed')).not.toBeChecked()
+  })
+
+  describe('who is responsible', () => {
+    it('shows the card first, then the notice, then the checklist', () => {
+      renderPreview(MON_MOTHMA)
+      const notice = screen.getByText(PREVIEW_NOTICE)
+      const checklist = screen.getByRole('region', { name: CHECKLIST_NAME })
+
+      expect(responsibleCard().compareDocumentPosition(notice) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+      expect(notice.compareDocumentPosition(checklist) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+    })
+
+    it('names one sample person for every duty on the checklist', () => {
+      renderPreview(MON_MOTHMA)
+
+      expect(responsibleCard().querySelectorAll('.responsible-tile')).toHaveLength(DUTY_COUNT)
+      expect(within(responsibleCard()).getByText('Yoda')).toBeInTheDocument()
+      expect(within(responsibleCard()).getByText('Wedge Antilles')).toBeInTheDocument()
+    })
+
+    it('puts an operator on the Greens duty, marked as them', () => {
+      renderPreview(LUKE)
+
+      expect(within(responsibleCard()).getByText('Luke Skywalker (you)')).toBeInTheDocument()
+      expect(within(responsibleCard()).queryByText('Wedge Antilles')).not.toBeInTheDocument()
+      expect(within(responsibleCard()).getAllByText(/\(you\)/)).toHaveLength(1)
+    })
+
+    it('puts a greenskeeper on the greenskeeper tasks, marked as them', () => {
+      renderPreview(YODA)
+
+      expect(within(responsibleCard()).getByText('Yoda (you)')).toBeInTheDocument()
+      expect(within(responsibleCard()).getAllByText(/\(you\)/)).toHaveLength(1)
+    })
+
+    it('marks nobody as the viewer when they are an admin', () => {
+      renderPreview(MON_MOTHMA)
+
+      expect(within(responsibleCard()).queryByText(/\(you\)/)).not.toBeInTheDocument()
+    })
   })
 })

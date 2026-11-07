@@ -15,7 +15,7 @@ export function ResponsibleToday({ duties, assignments, user }) {
   return (
     <section className="responsible" aria-labelledby={ titleId }>
       <div>
-        <h2 id={ titleId } className="responsible-title">Responsible today</h2>
+        <h3 id={ titleId } className="responsible-title">Responsible today</h3>
         <p className="responsible-note">
           Each person checks off only their own work. These are the people answerable for this hole.
         </p>

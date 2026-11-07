@@ -2,8 +2,10 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { act, render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { MemoryRouter, Route, Routes } from 'react-router-dom'
+import { PREVIEW_NOTICE } from '../../test/fixtures/checklistViewCases'
 import { holeIdOf } from '../../test/fixtures/course'
 import { MARKUP_NAME } from '../../test/fixtures/courseViewCases'
+import { CHECKLIST_NAME, RESPONSIBLE_NAME, VIEWER_PAGE_CASES } from '../../test/fixtures/holeChecklistCases'
 import {
   AMENITIES_ON_HOLE_CASES,
   HOLE_PAGE_CASES,
@@ -14,14 +16,17 @@ import {
   YARDAGE_CASES,
   YARDAGE_PAGE,
 } from '../../test/fixtures/holeDetailsCases'
+import { LUKE } from '../../test/fixtures/taskPermissionCases'
 import { createDeferred } from '../../test/helpers'
 import { HoleDetailsView } from './HoleDetailsView'
 
-const { apiMock } = vi.hoisted(() => ({
+const { apiMock, useAuthMock } = vi.hoisted(() => ({
   apiMock: { getCourse: vi.fn() },
+  useAuthMock: vi.fn(),
 }))
 
 vi.mock('../../api', () => ({ api: apiMock }))
+vi.mock('../auth/AuthContext', () => ({ useAuth: useAuthMock }))
 
 const LOADING_TEXT = 'Loading hole...'
 const LOAD_ERROR_MESSAGE = 'could not fetch course'
@@ -31,6 +36,12 @@ const COURSE_LIST_TEXT = 'Course list page'
 const BACK_LINK_NAME = '← Course'
 const CLUBHOUSE_NAME = 'Clubhouse'
 const DEFAULT_HOLE_ID = holeIdOf('C', 7)
+
+// Holes the checklist has to show on, with and without amenities
+const CHECKLIST_HOLE_CASES = [
+  { label: 'a hole with amenities', holeId: DEFAULT_HOLE_ID },
+  { label: 'a hole with none', holeId: HOLE_WITH_NO_AMENITIES_ID },
+]
 
 // Actions
 function renderPage(holeId = DEFAULT_HOLE_ID) {
@@ -60,9 +71,15 @@ function textsIn(container, selector) {
   return Array.from(container.querySelectorAll(selector)).map((node) => node.textContent)
 }
 
+function checklistRegion() {
+  return screen.getByRole('region', { name: CHECKLIST_NAME })
+}
+
 describe('HoleDetailsView', () => {
   beforeEach(() => {
     apiMock.getCourse.mockReset()
+    useAuthMock.mockReset()
+    useAuthMock.mockReturnValue({ user: LUKE })
   })
 
   describe('loading the course', () => {
@@ -74,6 +91,7 @@ describe('HoleDetailsView', () => {
 
       expect(screen.getByText(LOADING_TEXT)).toBeInTheDocument()
       expect(screen.queryByRole('link')).not.toBeInTheDocument()
+      expect(screen.queryByRole('region')).not.toBeInTheDocument()
 
       await act(async () => {
         course.resolve(MULTI_AMENITY_PAGE)
@@ -92,6 +110,7 @@ describe('HoleDetailsView', () => {
       expect(screen.getByRole('link', { name: BACK_LINK_NAME })).toBeInTheDocument()
       expect(screen.queryByText(LOADING_TEXT)).not.toBeInTheDocument()
       expect(screen.queryByRole('heading')).not.toBeInTheDocument()
+      expect(screen.queryByRole('region')).not.toBeInTheDocument()
     })
 
     it('asks for the course once', async () => {
@@ -119,6 +138,48 @@ describe('HoleDetailsView', () => {
 
       expect(factValue('Yardage')).toBe(expected === null ? '—' : `${expected} yds`)
     })
+  })
+
+  describe('the checklist', () => {
+    it.each(CHECKLIST_HOLE_CASES)(
+      'shows who is responsible, the preview notice, and the checklist on $label',
+      async ({ holeId }) => {
+        await renderLoadedPage(MULTI_AMENITY_PAGE, holeId)
+
+        expect(screen.getByRole('region', { name: RESPONSIBLE_NAME })).toBeInTheDocument()
+        expect(screen.getByText(PREVIEW_NOTICE)).toBeInTheDocument()
+        expect(checklistRegion()).toBeInTheDocument()
+      }
+    )
+
+    it('puts the facts first, then who is responsible, the notice, the checklist, and the amenities', async () => {
+      const { container } = await renderLoadedPage(MULTI_AMENITY_PAGE)
+      const partsInOrder = [
+        container.querySelector('.hole-details-facts'),
+        screen.getByRole('region', { name: RESPONSIBLE_NAME }),
+        screen.getByText(PREVIEW_NOTICE),
+        checklistRegion(),
+        screen.getByRole('heading', { level: 3, name: 'Amenities on this hole' }),
+      ]
+
+      for (let index = 1; index < partsInOrder.length; index++) {
+        const follows = partsInOrder[index - 1].compareDocumentPosition(partsInOrder[index])
+
+        expect(follows & Node.DOCUMENT_POSITION_FOLLOWING, `part ${index}`).toBeTruthy()
+      }
+    })
+
+    it.each(VIEWER_PAGE_CASES)(
+      'tags the right columns as theirs for $name',
+      async ({ user, expectedYours }) => {
+        useAuthMock.mockReturnValue({ user })
+        const { container } = await renderLoadedPage(MULTI_AMENITY_PAGE)
+
+        const heads = Array.from(container.querySelectorAll('.checklist-head'))
+
+        expect(heads.map((head) => head.textContent.includes('Your tasks'))).toEqual(expectedYours)
+      }
+    )
   })
 
   describe('amenities on the hole', () => {
@@ -158,6 +219,7 @@ describe('HoleDetailsView', () => {
       expect(screen.getByText(NOT_FOUND_TEXT)).toBeInTheDocument()
       expect(screen.getByRole('link', { name: BACK_LINK_NAME })).toBeInTheDocument()
       expect(screen.queryByRole('heading')).not.toBeInTheDocument()
+      expect(screen.queryByRole('region')).not.toBeInTheDocument()
     })
   })
 

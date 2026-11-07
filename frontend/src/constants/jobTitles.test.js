@@ -9,6 +9,9 @@ const RETIRED_TITLE = 'gardener'
 const RENAMED_TITLE = 'greenskeeper'
 const RENAMED_TITLE_LABEL = 'Greenskeeper'
 
+// Names every object has, which are not job titles
+const INHERITED_NAMES = ['constructor', 'toString', '__proto__']
+
 // Every value the backend can send, mirroring the database enum
 const BACKEND_JOB_TITLES = [
   'superintendent',
@@ -47,5 +50,9 @@ describe('formatJobTitle', () => {
     for (const jobTitle of BACKEND_JOB_TITLES) {
       expect(formatJobTitle(jobTitle), `missing label for ${jobTitle}`).not.toBe('')
     }
+  })
+
+  it.each(INHERITED_NAMES)('returns an empty string for the inherited name %s', (name) => {
+    expect(formatJobTitle(name)).toBe('')
   })
 })

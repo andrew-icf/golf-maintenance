@@ -1,14 +1,12 @@
 .app-layout {
   display: flex;
-  flex-wrap: wrap;
   min-height: 100vh;
   background: #f4f7f2;
 }
 
-/* The page area takes whatever the side nav leaves. Below about 800px wide it wraps
-   underneath the nav instead of squeezing. */
+/* The page area takes whatever the side nav leaves */
 .app-layout-main {
-  flex: 999 1 560px;
+  flex: 1 1 0;
   min-width: 0;
   display: flex;
   flex-direction: column;
@@ -26,13 +24,35 @@
   max-width: 720px;
 }
 
-/* Keep the side nav on screen while a long page scrolls, but only when it sits beside the page */
-@media (min-width: 801px) {
+/* Beside the page, the side nav stays on screen while a long page scrolls */
+.app-layout > .side-nav {
+  position: sticky;
+  top: 0;
+  align-self: flex-start;
+  height: 100vh;
+  overflow-y: auto;
+}
+
+/* On a phone, a narrow window, or a tablet held upright, the side nav becomes a strip across
+   the top with the page below. The same condition is in SideNav.css and TopBar.css, so change
+   all three together. */
+@media (max-width: 820px), (orientation: portrait) and (max-width: 1100px) {
+  .app-layout {
+    flex-direction: column;
+  }
+
   .app-layout > .side-nav {
-    position: sticky;
-    top: 0;
-    align-self: flex-start;
-    height: 100vh;
-    overflow-y: auto;
+    position: static;
+    align-self: stretch;
+    height: auto;
+    overflow-y: visible;
+  }
+
+  .app-layout-main {
+    flex: 1 1 auto;
+  }
+
+  .app-layout-content {
+    padding: 16px;
   }
 }

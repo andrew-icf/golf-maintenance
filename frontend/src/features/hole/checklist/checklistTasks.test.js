@@ -1,14 +1,12 @@
 import { describe, expect, it } from 'vitest'
 import { formatJobTitle } from '../../../constants/jobTitles'
 import {
-  DAY_FILTER_CASES,
   DUTY_TITLE_CASES,
   EXPECTED_GROUPS,
   EXPECTED_MISSING_FEATURE_TITLES,
   EXPECTED_MIXED_DUTIES,
   EXPECTED_MIXED_SECTIONS,
   EXPECTED_NO_KEY_SECTIONS,
-  EXPECTED_OFF_DAY_MISSING_IDS,
   EXPECTED_OTHER_IDS,
   EXPECTED_OUT_OF_ORDER_SECTIONS,
   EXPECTED_TASKS,
@@ -28,13 +26,11 @@ import {
   MIXED_SECTION_ITEMS,
   NO_ITEMS_CASES,
   NO_KEY_SECTION_ITEMS,
-  OFF_DAY,
   OUT_OF_ORDER_BUNKER_ITEMS,
   SAMPLE_ITEM_COUNT,
   UNKNOWN_FEATURE_ITEMS,
   UNORDERED_SECTION_ITEMS,
 } from '../../../test/fixtures/checklistCases'
-import { FREQUENCY_TYPES } from './checklistFrequency'
 import {
   DUTY_ORDER,
   FEATURE_ORDER,
@@ -67,15 +63,12 @@ function sectionsOf(groups, title) {
 }
 
 describe('the task list', () => {
-  it('gives every task an id, a name, an area, a duty, a schedule, and who may check it', () => {
-    const knownScheduleTypes = Object.values(FREQUENCY_TYPES)
-
+  it('gives every task an id, a name, an area, a duty, and who may check it', () => {
     for (const template of TASK_TEMPLATES) {
       expect(template.id, template.name).toBeTruthy()
       expect(template.name.trim(), template.id).not.toBe('')
       expect(FEATURE_ORDER, template.id).toContain(template.feature)
       expect(DUTY_ORDER, template.id).toContain(template.duty)
-      expect(knownScheduleTypes, template.id).toContain(template.frequency.type)
       expect(template.allowedJobTitles.length, template.id).toBeGreaterThan(0)
       for (const title of template.allowedJobTitles) {
         expect(formatJobTitle(title), `${template.id} names ${title}`).not.toBe('')
@@ -89,41 +82,34 @@ describe('the task list', () => {
     expect(new Set(ids).size).toBe(ids.length)
   })
 
-  it.each(EXPECTED_TASKS)(
-    'has the task $id',
-    ({ id, feature, name, duty, titles, section, everyOtherDay }) => {
-      const template = TASK_TEMPLATES.find((candidate) => candidate.id === id)
+  it.each(EXPECTED_TASKS)('has the task $id', ({ id, feature, name, duty, titles, section }) => {
+    const template = TASK_TEMPLATES.find((candidate) => candidate.id === id)
 
-      expect(template).toBeDefined()
-      expect(template).toMatchObject({ feature, name, duty, allowedJobTitles: titles })
-      expect(template.section?.key ?? null).toBe(section)
-      expect(template.frequency.type).toBe(everyOtherDay ? 'every_n_days' : 'daily')
-      if (everyOtherDay) {
-        expect(template.frequency.every).toBe(2)
-      }
-    }
-  )
+    expect(template).toBeDefined()
+    expect(template).toMatchObject({ feature, name, duty, allowedJobTitles: titles })
+    expect(template.section?.key ?? null).toBe(section)
+  })
 
   it('has exactly the tasks on the list, no more', () => {
     expect(TASK_TEMPLATES).toHaveLength(EXPECTED_TASKS.length)
   })
 
   it('puts the tee box tasks in two sections, the regular tee box ahead of the par 3', () => {
-    const teeBoxTemplates = TASK_TEMPLATES.filter((template) => template.feature === 'tee_box')
+    const sectionedTemplates = TASK_TEMPLATES.filter((template) => template.feature === 'tee_box' && template.section)
 
-    expect(teeBoxTemplates.map((template) => template.section.key)).toEqual([
+    expect(sectionedTemplates.map((template) => template.section.key)).toEqual([
       'tee-box',
       'tee-box',
       'par-3-tee-box',
       'par-3-tee-box',
     ])
-    expect(teeBoxTemplates.map((template) => template.section.title)).toEqual([
+    expect(sectionedTemplates.map((template) => template.section.title)).toEqual([
       'Tee box',
       'Tee box',
       'Par 3 tee box',
       'Par 3 tee box',
     ])
-    expect(teeBoxTemplates.map((template) => template.section.order)).toEqual([1, 1, 2, 2])
+    expect(sectionedTemplates.map((template) => template.section.order)).toEqual([1, 1, 2, 2])
   })
 })
 
@@ -185,28 +171,15 @@ describe('buildChecklistItems', () => {
     }
   })
 
-  it('does not share its lists, schedule, or section with the task list', () => {
-    const [item] = buildChecklistItems()
+  it('does not share its lists or section with the task list', () => {
+    const item = buildChecklistItems().find((candidate) => candidate.id === 'tee-box-cleared')
     item.allowedJobTitles.push('landscaper')
-    item.frequency.type = 'mystery'
     item.section.title = 'Changed'
 
-    const [freshItem] = buildChecklistItems()
+    const freshItem = buildChecklistItems().find((candidate) => candidate.id === 'tee-box-cleared')
 
     expect(freshItem.allowedJobTitles).toEqual(['greenskeeper'])
-    expect(freshItem.frequency.type).toBe('daily')
     expect(freshItem.section.title).toBe('Tee box')
-  })
-
-  it.each(DAY_FILTER_CASES)('makes $expected tasks for $label', ({ day, expected }) => {
-    expect(buildChecklistItems(3, day)).toHaveLength(expected)
-  })
-
-  it('leaves out only the two tee-box operator tasks on a day they are not due', () => {
-    const everyId = buildChecklistItems(3).map((item) => item.id)
-    const offDayIds = buildChecklistItems(3, OFF_DAY).map((item) => item.id)
-
-    expect(everyId.filter((id) => !offDayIds.includes(id)).sort()).toEqual(EXPECTED_OFF_DAY_MISSING_IDS)
   })
 })
 

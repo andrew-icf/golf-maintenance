@@ -35,8 +35,9 @@ import {
 
 // Test data
 const ITEMS = buildChecklistItems()
-const GREENSKEEPER_ITEM = ITEMS.find((item) => item.id === 'tee-box-greenskeeper')
-const OPERATOR_ITEM = ITEMS.find((item) => item.id === 'tee-box-operator')
+const ITEM_COUNT = 21
+const GREENSKEEPER_ITEM = ITEMS.find((item) => item.id === 'tee-box-cleared')
+const OPERATOR_ITEM = ITEMS.find((item) => item.id === 'tee-box-mowed')
 const OTHER_OPERATOR_ITEM = ITEMS.find((item) => item.id === 'rough-mowed')
 
 // Actions
@@ -241,22 +242,22 @@ describe('summarizeProgress', () => {
     const summary = summarizeProgress(ITEMS, buildSampleMarks(SAMPLE_DAY))
 
     expect(summary).toEqual({
-      total: 20,
+      total: ITEM_COUNT,
       done: 5,
       notToday: 3,
       accountedFor: 8,
-      open: 12,
+      open: 13,
       isComplete: false,
     })
   })
 
   it('has nothing done when nothing is marked', () => {
     expect(summarizeProgress(ITEMS, new Map())).toEqual({
-      total: 20,
+      total: ITEM_COUNT,
       done: 0,
       notToday: 0,
       accountedFor: 0,
-      open: 20,
+      open: ITEM_COUNT,
       isComplete: false,
     })
   })
@@ -273,7 +274,7 @@ describe('summarizeProgress', () => {
 
     expect(summary.isComplete).toBe(true)
     expect(summary.open).toBe(0)
-    expect(summary.accountedFor).toBe(20)
+    expect(summary.accountedFor).toBe(ITEM_COUNT)
   })
 
   it('is not complete while a single task is still open', () => {
@@ -302,7 +303,7 @@ describe('summarizeProgress', () => {
     const summary = summarizeProgress(ITEMS, marks)
 
     expect(summary.done).toBe(0)
-    expect(summary.open).toBe(20)
+    expect(summary.open).toBe(ITEM_COUNT)
   })
 
   it('counts a task set aside for today as accounted for', () => {
@@ -310,7 +311,7 @@ describe('summarizeProgress', () => {
 
     const summary = summarizeProgress(ITEMS, marks)
 
-    expect(summary.notToday).toBe(20)
+    expect(summary.notToday).toBe(ITEM_COUNT)
     expect(summary.isComplete).toBe(true)
   })
 })

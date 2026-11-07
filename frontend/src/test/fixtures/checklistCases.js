@@ -14,8 +14,6 @@ export const NOW = atTime(6, 12)
 // A person besides the ones in the permission cases
 export const HAN_SOLO = { id: 'user-han', full_name: 'Han Solo', role: 'staff', job_title: 'operator' }
 
-const DAILY = { type: 'daily' }
-
 export function bunkerSection(bunkerNumber) {
   return { key: `bunker-${bunkerNumber}`, title: `Bunker ${bunkerNumber}`, order: bunkerNumber }
 }
@@ -27,9 +25,8 @@ export function makeChecklistItem({
   duty = 'greens',
   section = null,
   allowedJobTitles = ['operator'],
-  frequency = DAILY,
 }) {
-  return { id, templateId: id, feature, name, allowedJobTitles, duty, frequency, section }
+  return { id, templateId: id, feature, name, allowedJobTitles, duty, section }
 }
 
 export function doneMark(byId, byName, at) {
@@ -41,36 +38,37 @@ export function notTodayMark(byId, byName, at) {
 }
 
 // The task list, written out by hand so it is checked against the code. section is the key of
-// the section the task sits in, and everyOtherDay marks the tasks that are not due daily.
+// the section the task sits in.
 export const EXPECTED_TASKS = [
-  { id: 'tee-box-greenskeeper', feature: 'tee_box', name: 'Greenskeeper', duty: 'greenskeeper', titles: ['greenskeeper'], section: 'tee-box', everyOtherDay: false },
-  { id: 'tee-box-operator', feature: 'tee_box', name: 'Operator', duty: 'tees_and_fairways', titles: ['operator'], section: 'tee-box', everyOtherDay: true },
-  { id: 'par-3-tee-box-greenskeeper', feature: 'tee_box', name: 'Greenskeeper', duty: 'greenskeeper', titles: ['greenskeeper'], section: 'par-3-tee-box', everyOtherDay: false },
-  { id: 'par-3-tee-box-operator', feature: 'tee_box', name: 'Operator', duty: 'tees_and_fairways', titles: ['operator'], section: 'par-3-tee-box', everyOtherDay: true },
-  { id: 'fairway-mowed', feature: 'fairway', name: 'Fairway mowed', duty: 'tees_and_fairways', titles: ['operator'], section: null, everyOtherDay: false },
-  { id: 'cart-signs', feature: 'fairway', name: 'Cart signs removed and replaced', duty: 'greenskeeper', titles: ['greenskeeper'], section: null, everyOtherDay: false },
-  { id: 'fairway-sprayed', feature: 'fairway', name: 'Fairway sprayed', duty: 'spraying', titles: ['operator'], section: null, everyOtherDay: false },
-  { id: 'rough-mowed', feature: 'rough', name: 'Rough mowed', duty: 'rough', titles: ['operator'], section: null, everyOtherDay: false },
-  { id: 'bunker-raked-machine', feature: 'bunker', name: 'Raked by machine', duty: 'bunkers', titles: ['operator'], section: null, everyOtherDay: false },
-  { id: 'bunker-raked-hand', feature: 'bunker', name: 'Raked by hand', duty: 'greenskeeper', titles: ['greenskeeper'], section: null, everyOtherDay: false },
-  { id: 'hole-placement-moved', feature: 'green', name: 'Hole placement moved', duty: 'greenskeeper', titles: ['greenskeeper'], section: null, everyOtherDay: false },
-  { id: 'ball-marks', feature: 'green', name: 'Ball marks', duty: 'greenskeeper', titles: ['greenskeeper'], section: null, everyOtherDay: false },
-  { id: 'top-dress', feature: 'green', name: 'Top dress', duty: 'greenskeeper', titles: ['greenskeeper'], section: null, everyOtherDay: false },
-  { id: 'green-mowed', feature: 'green', name: 'Mowed', duty: 'greens', titles: ['operator'], section: null, everyOtherDay: false },
-  { id: 'green-rolled', feature: 'green', name: 'Rolled', duty: 'rolling', titles: ['operator'], section: null, everyOtherDay: false },
-  { id: 'green-sprayed', feature: 'green', name: 'Sprayed', duty: 'spraying', titles: ['operator'], section: null, everyOtherDay: false },
+  { id: 'collect-garbage', feature: 'tee_box', name: 'Collect garbage', duty: 'greenskeeper', titles: ['greenskeeper'], section: null },
+  { id: 'tee-box-cleared', feature: 'tee_box', name: 'Cleared', duty: 'greenskeeper', titles: ['greenskeeper'], section: 'tee-box' },
+  { id: 'tee-box-mowed', feature: 'tee_box', name: 'Mowed', duty: 'tees_and_fairways', titles: ['operator'], section: 'tee-box' },
+  { id: 'par-3-tee-box-cleared', feature: 'tee_box', name: 'Cleared', duty: 'greenskeeper', titles: ['greenskeeper'], section: 'par-3-tee-box' },
+  { id: 'par-3-tee-box-mowed', feature: 'tee_box', name: 'Mowed', duty: 'tees_and_fairways', titles: ['operator'], section: 'par-3-tee-box' },
+  { id: 'fairway-mowed', feature: 'fairway', name: 'Fairway mowed', duty: 'tees_and_fairways', titles: ['operator'], section: null },
+  { id: 'cart-signs', feature: 'fairway', name: 'Cart signs', duty: 'greenskeeper', titles: ['greenskeeper'], section: null },
+  { id: 'fairway-sprayed', feature: 'fairway', name: 'Fairway sprayed', duty: 'spraying', titles: ['operator'], section: null },
+  { id: 'rough-mowed', feature: 'rough', name: 'Rough mowed', duty: 'rough', titles: ['operator'], section: null },
+  { id: 'bunker-raked-machine', feature: 'bunker', name: 'Raked by machine', duty: 'bunkers', titles: ['operator'], section: null },
+  { id: 'bunker-raked-hand', feature: 'bunker', name: 'Raked by hand', duty: 'greenskeeper', titles: ['greenskeeper'], section: null },
+  { id: 'pin-placement', feature: 'green', name: 'Pin placement', duty: 'greenskeeper', titles: ['greenskeeper'], section: null },
+  { id: 'ball-marks', feature: 'green', name: 'Ball marks', duty: 'greenskeeper', titles: ['greenskeeper'], section: null },
+  { id: 'top-dress', feature: 'green', name: 'Top dress', duty: 'greenskeeper', titles: ['greenskeeper'], section: null },
+  { id: 'green-mowed', feature: 'green', name: 'Mowed', duty: 'greens', titles: ['operator'], section: null },
+  { id: 'green-rolled', feature: 'green', name: 'Rolled', duty: 'rolling', titles: ['operator'], section: null },
+  { id: 'green-sprayed', feature: 'green', name: 'Sprayed', duty: 'spraying', titles: ['operator'], section: null },
 ]
 
-// 14 tasks outside the bunkers, plus two for each bunker
-export const ITEMS_WITHOUT_BUNKERS = 14
-export const SAMPLE_ITEM_COUNT = 20
+// 15 tasks outside the bunkers, plus two for each bunker
+export const ITEMS_WITHOUT_BUNKERS = 15
+export const SAMPLE_ITEM_COUNT = 21
 
 export const ITEM_COUNT_CASES = [
-  { bunkerCount: 0, expected: 14 },
-  { bunkerCount: 1, expected: 16 },
-  { bunkerCount: 3, expected: 20 },
-  { bunkerCount: 5, expected: 24 },
-  { bunkerCount: 12, expected: 38 },
+  { bunkerCount: 0, expected: 15 },
+  { bunkerCount: 1, expected: 17 },
+  { bunkerCount: 3, expected: 21 },
+  { bunkerCount: 5, expected: 25 },
+  { bunkerCount: 12, expected: 39 },
 ]
 
 export const INVALID_BUNKER_COUNT_CASES = [
@@ -83,25 +81,12 @@ export const INVALID_BUNKER_COUNT_CASES = [
 
 // For the sample hole of three bunkers
 export const FEATURE_COUNT_CASES = [
-  { feature: 'tee_box', count: 4 },
+  { feature: 'tee_box', count: 5 },
   { feature: 'fairway', count: 3 },
   { feature: 'rough', count: 1 },
   { feature: 'bunker', count: 6 },
   { feature: 'green', count: 6 },
 ]
-
-// How many tasks are on the checklist for a day. The tee-box operator tasks are due every other
-// day, starting 2026-11-02. With no day, or one that cannot be read, every task is.
-export const DAY_FILTER_CASES = [
-  { label: 'a day the tee-box operator tasks are due', day: '2026-11-02', expected: 20 },
-  { label: 'a day they are not due', day: '2026-11-03', expected: 18 },
-  { label: 'the next day they are due', day: '2026-11-04', expected: 20 },
-  { label: 'no day at all', day: undefined, expected: 20 },
-  { label: 'a day that cannot be read', day: 'banana', expected: 20 },
-]
-export const OFF_DAY = '2026-11-03'
-// Sorted, the way the test sorts what it finds
-export const EXPECTED_OFF_DAY_MISSING_IDS = ['par-3-tee-box-operator', 'tee-box-operator']
 
 // The layout of the sample hole's checklist: each area, its sections, and the tasks in them
 const BUNKER_SECTIONS = [1, 2, 3].map((bunkerNumber) => ({
@@ -113,13 +98,14 @@ export const EXPECTED_GROUPS = [
   {
     title: 'Tee box',
     sections: [
-      { title: 'Tee box', names: ['Greenskeeper', 'Operator'] },
-      { title: 'Par 3 tee box', names: ['Greenskeeper', 'Operator'] },
+      { title: null, names: ['Collect garbage'] },
+      { title: 'Tee box', names: ['Cleared', 'Mowed'] },
+      { title: 'Par 3 tee box', names: ['Cleared', 'Mowed'] },
     ],
   },
   {
     title: 'Fairway',
-    sections: [{ title: null, names: ['Fairway mowed', 'Cart signs removed and replaced', 'Fairway sprayed'] }],
+    sections: [{ title: null, names: ['Fairway mowed', 'Cart signs', 'Fairway sprayed'] }],
   },
   { title: 'Rough', sections: [{ title: null, names: ['Rough mowed'] }] },
   { title: 'Bunkers', sections: BUNKER_SECTIONS },
@@ -128,7 +114,7 @@ export const EXPECTED_GROUPS = [
     sections: [
       {
         title: null,
-        names: ['Hole placement moved', 'Ball marks', 'Top dress', 'Mowed', 'Rolled', 'Sprayed'],
+        names: ['Pin placement', 'Ball marks', 'Top dress', 'Mowed', 'Rolled', 'Sprayed'],
       },
     ],
   },
@@ -321,9 +307,9 @@ export const INVALID_TIME_CASES = [
 
 // What the page says under each of the sample marks, for someone who made none of them
 export const SAMPLE_MARK_DESCRIPTIONS = [
-  { id: 'tee-box-greenskeeper', expected: 'Yoda · 5:48am' },
-  { id: 'par-3-tee-box-greenskeeper', expected: 'Yoda · 5:50am' },
-  { id: 'hole-placement-moved', expected: 'Padmé Amidala · 5:40am' },
+  { id: 'tee-box-cleared', expected: 'Yoda · 5:48am' },
+  { id: 'par-3-tee-box-cleared', expected: 'Yoda · 5:50am' },
+  { id: 'pin-placement', expected: 'Padmé Amidala · 5:40am' },
   { id: 'fairway-mowed', expected: 'Chewbacca · 6:40am' },
   { id: 'bunker-raked-machine:1', expected: 'Chewbacca · 6:55am' },
   { id: 'fairway-sprayed', expected: 'Not today' },

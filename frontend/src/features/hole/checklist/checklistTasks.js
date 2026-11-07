@@ -1,5 +1,4 @@
 import { lookupLabel } from '../../../constants/lookupLabel'
-import { DAILY, isDueOn } from './checklistFrequency'
 
 const GREENSKEEPER = ['greenskeeper']
 const OPERATOR = ['operator']
@@ -40,81 +39,82 @@ const DUTY_TITLES = {
 // How many bunkers the sample hole has
 export const SAMPLE_BUNKER_COUNT = 3
 
-// The tee-box operator work is done every other day at Prince Waikiki. The anchor is a day it was
-// due, and a superintendent will be able to choose both the schedule and the anchor.
-const EVERY_OTHER_DAY = { type: 'every_n_days', every: 2, anchor: '2026-11-02' }
-
 // A tee box has its own section on the page, and the par 3 tee box a second one after it
 const TEE_BOX_SECTION = { key: 'tee-box', title: 'Tee box', order: 1 }
 const PAR_3_TEE_BOX_SECTION = { key: 'par-3-tee-box', title: 'Par 3 tee box', order: 2 }
 
-// Prince Waikiki's task list. Each task names the job titles that may check it off, the duty whose
-// owner is answerable for it, and how often it is due. A task that repeats for every bunker makes
-// its own section for each one.
+// Prince Waikiki's task list. Each task names the job titles that may check it off and the duty
+// whose owner is answerable for it. A task that repeats for every bunker makes its own section
+// for each one. Every task can happen every day: which ones are on for a given day is decided by
+// the superintendent's plan for the week, not by rules built into the tasks.
 export const TASK_TEMPLATES = [
   {
-    id: 'tee-box-greenskeeper', feature: 'tee_box', section: TEE_BOX_SECTION,
-    name: 'Greenskeeper', allowedJobTitles: GREENSKEEPER, duty: 'greenskeeper', frequency: DAILY,
+    id: 'collect-garbage', feature: 'tee_box', section: null,
+    name: 'Collect garbage', allowedJobTitles: GREENSKEEPER, duty: 'greenskeeper',
   },
   {
-    id: 'tee-box-operator', feature: 'tee_box', section: TEE_BOX_SECTION,
-    name: 'Operator', allowedJobTitles: OPERATOR, duty: 'tees_and_fairways', frequency: EVERY_OTHER_DAY,
+    id: 'tee-box-cleared', feature: 'tee_box', section: TEE_BOX_SECTION,
+    name: 'Cleared', allowedJobTitles: GREENSKEEPER, duty: 'greenskeeper',
   },
   {
-    id: 'par-3-tee-box-greenskeeper', feature: 'tee_box', section: PAR_3_TEE_BOX_SECTION,
-    name: 'Greenskeeper', allowedJobTitles: GREENSKEEPER, duty: 'greenskeeper', frequency: DAILY,
+    id: 'tee-box-mowed', feature: 'tee_box', section: TEE_BOX_SECTION,
+    name: 'Mowed', allowedJobTitles: OPERATOR, duty: 'tees_and_fairways',
   },
   {
-    id: 'par-3-tee-box-operator', feature: 'tee_box', section: PAR_3_TEE_BOX_SECTION,
-    name: 'Operator', allowedJobTitles: OPERATOR, duty: 'tees_and_fairways', frequency: EVERY_OTHER_DAY,
+    id: 'par-3-tee-box-cleared', feature: 'tee_box', section: PAR_3_TEE_BOX_SECTION,
+    name: 'Cleared', allowedJobTitles: GREENSKEEPER, duty: 'greenskeeper',
+  },
+  {
+    id: 'par-3-tee-box-mowed', feature: 'tee_box', section: PAR_3_TEE_BOX_SECTION,
+    name: 'Mowed', allowedJobTitles: OPERATOR, duty: 'tees_and_fairways',
   },
   {
     id: 'fairway-mowed', feature: 'fairway', section: null,
-    name: 'Fairway mowed', allowedJobTitles: OPERATOR, duty: 'tees_and_fairways', frequency: DAILY,
+    name: 'Fairway mowed', allowedJobTitles: OPERATOR, duty: 'tees_and_fairways',
   },
   {
     id: 'cart-signs', feature: 'fairway', section: null,
-    name: 'Cart signs removed and replaced', allowedJobTitles: GREENSKEEPER, duty: 'greenskeeper', frequency: DAILY,
+    name: 'Cart signs', allowedJobTitles: GREENSKEEPER, duty: 'greenskeeper',
   },
   {
     id: 'fairway-sprayed', feature: 'fairway', section: null,
-    name: 'Fairway sprayed', allowedJobTitles: OPERATOR, duty: 'spraying', frequency: DAILY,
+    name: 'Fairway sprayed', allowedJobTitles: OPERATOR, duty: 'spraying',
   },
   {
     id: 'rough-mowed', feature: 'rough', section: null,
-    name: 'Rough mowed', allowedJobTitles: OPERATOR, duty: 'rough', frequency: DAILY,
+    name: 'Rough mowed', allowedJobTitles: OPERATOR, duty: 'rough',
   },
   {
     id: 'bunker-raked-machine', feature: 'bunker', section: null, repeatsPerBunker: true,
-    name: 'Raked by machine', allowedJobTitles: OPERATOR, duty: 'bunkers', frequency: DAILY,
+    name: 'Raked by machine', allowedJobTitles: OPERATOR, duty: 'bunkers',
   },
   {
     id: 'bunker-raked-hand', feature: 'bunker', section: null, repeatsPerBunker: true,
-    name: 'Raked by hand', allowedJobTitles: GREENSKEEPER, duty: 'greenskeeper', frequency: DAILY,
+    name: 'Raked by hand', allowedJobTitles: GREENSKEEPER, duty: 'greenskeeper',
   },
   {
-    id: 'hole-placement-moved', feature: 'green', section: null,
-    name: 'Hole placement moved', allowedJobTitles: GREENSKEEPER, duty: 'greenskeeper', frequency: DAILY,
+    id: 'pin-placement', feature: 'green', section: null,
+    name: 'Pin placement', allowedJobTitles: GREENSKEEPER, duty: 'greenskeeper',
   },
   {
     id: 'ball-marks', feature: 'green', section: null,
-    name: 'Ball marks', allowedJobTitles: GREENSKEEPER, duty: 'greenskeeper', frequency: DAILY,
+    name: 'Ball marks', allowedJobTitles: GREENSKEEPER, duty: 'greenskeeper',
   },
   {
     id: 'top-dress', feature: 'green', section: null,
-    name: 'Top dress', allowedJobTitles: GREENSKEEPER, duty: 'greenskeeper', frequency: DAILY,
+    name: 'Top dress', allowedJobTitles: GREENSKEEPER, duty: 'greenskeeper',
   },
   {
     id: 'green-mowed', feature: 'green', section: null,
-    name: 'Mowed', allowedJobTitles: OPERATOR, duty: 'greens', frequency: DAILY,
+    name: 'Mowed', allowedJobTitles: OPERATOR, duty: 'greens',
   },
   {
     id: 'green-rolled', feature: 'green', section: null,
-    name: 'Rolled', allowedJobTitles: OPERATOR, duty: 'rolling', frequency: DAILY,
+    name: 'Rolled', allowedJobTitles: OPERATOR, duty: 'rolling',
   },
   {
     id: 'green-sprayed', feature: 'green', section: null,
-    name: 'Sprayed', allowedJobTitles: OPERATOR, duty: 'spraying', frequency: DAILY,
+    name: 'Sprayed', allowedJobTitles: OPERATOR, duty: 'spraying',
   },
 ]
 
@@ -138,15 +138,13 @@ function makeItem(template, bunkerNumber) {
     name: template.name,
     allowedJobTitles: [...template.allowedJobTitles],
     duty: template.duty,
-    frequency: { ...template.frequency },
     section: section ? { ...section } : null,
   }
 }
 
 // The tasks on one hole's checklist. A bunker count that is not a whole number above zero counts
-// as no bunkers. Given a day ('YYYY-MM-DD'), only the tasks due that day are included, and given
-// none, every task is.
-export function buildChecklistItems(bunkerCount = SAMPLE_BUNKER_COUNT, day) {
+// as no bunkers.
+export function buildChecklistItems(bunkerCount = SAMPLE_BUNKER_COUNT) {
   const bunkers = Number.isInteger(bunkerCount) && bunkerCount > 0 ? bunkerCount : 0
   const items = []
 
@@ -160,7 +158,7 @@ export function buildChecklistItems(bunkerCount = SAMPLE_BUNKER_COUNT, day) {
     }
   }
 
-  return day === undefined ? items : items.filter((item) => isDueOn(item.frequency, day))
+  return items
 }
 
 // A task belongs to a section only when it names one with a key

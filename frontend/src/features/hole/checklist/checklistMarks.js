@@ -124,9 +124,9 @@ export function buildSampleMarks(day) {
   })
 
   return new Map([
-    ['tee-box-greenskeeper', done('sample-yoda', 'Yoda', 5, 48)],
-    ['par-3-tee-box-greenskeeper', done('sample-yoda', 'Yoda', 5, 50)],
-    ['hole-placement-moved', done('sample-padme', 'Padmé Amidala', 5, 40)],
+    ['tee-box-cleared', done('sample-yoda', 'Yoda', 5, 48)],
+    ['par-3-tee-box-cleared', done('sample-yoda', 'Yoda', 5, 50)],
+    ['pin-placement', done('sample-padme', 'Padmé Amidala', 5, 40)],
     ['fairway-mowed', done('sample-chewbacca', 'Chewbacca', 6, 40)],
     ['bunker-raked-machine:1', done('sample-chewbacca', 'Chewbacca', 6, 55)],
     ['fairway-sprayed', setAside('sample-din', 'Din Djarin')],

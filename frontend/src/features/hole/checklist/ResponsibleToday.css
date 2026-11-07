@@ -1,0 +1,91 @@
+.responsible {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 20px;
+  background: #ffffff;
+  border: 1px solid #dce8d7;
+  border-radius: 12px;
+  color: #17341c;
+}
+
+.responsible-title {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 700;
+}
+
+.responsible-note {
+  margin: 4px 0 0;
+  font-size: 13px;
+  color: #4d7a55;
+}
+
+.responsible-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 10px;
+}
+
+.responsible-tile {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 10px 14px;
+  border: 1px solid #dce8d7;
+  border-radius: 8px;
+}
+
+.responsible-duty {
+  font-size: 13px;
+  color: #4d7a55;
+}
+
+.responsible-people {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.responsible-person {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  font-weight: 600;
+}
+
+.responsible-none {
+  font-weight: 500;
+  color: #5b7a60;
+}
+
+.person-chip {
+  padding: 3px 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 700;
+  background: var(--chip-bg);
+  color: var(--chip-text);
+}
+
+.chip-greenskeeper {
+  --chip-bg: #eaf3e6;
+  --chip-text: #2f6b3c;
+}
+
+.chip-operator {
+  --chip-bg: #fbf4e2;
+  --chip-text: #7a4f00;
+}
+
+.chip-other {
+  --chip-bg: #eef2f8;
+  --chip-text: #34506f;
+}

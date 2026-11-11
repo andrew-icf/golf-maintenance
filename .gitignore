@@ -3,3 +3,6 @@
 
 # curl cookie files hold live session tokens
 *cookies.txt
+
+# Personal Claude Code settings
+.claude/settings.local.json

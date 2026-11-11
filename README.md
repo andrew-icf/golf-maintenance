@@ -12,7 +12,7 @@ Early development, running locally only (not deployed yet). Working end to end, 
 - Equipment tracking with live status updates
 - Scheduling: a weekly roster grid with week navigation, one-off and repeating shifts, and click-to-edit shifts for admins
 
-See [Upcoming features](#upcoming-features) for what's next, and [Product decisions](#product-decisions) for what has already been settled.
+See [Docs](#docs) for what has been decided and what comes next.
 
 ## Tech stack
 
@@ -81,7 +81,7 @@ INSERT INTO users (email, password_hash, full_name, role, job_title)
 VALUES ('admin@example.com', crypt('change-me', gen_salt('bf', 10)), 'Admin User', 'admin', 'superintendent');
 ```
 
-Keep the role consistent with the job title's tier (see [Roles and job titles](#roles-and-job-titles)). The API enforces this when creating users, but a direct insert bypasses it.
+Keep the role consistent with the job title's tier (see [Roles and job titles](docs/DECISIONS.md#2-roles-and-job-titles-built)). The API enforces this when creating users, but a direct insert bypasses it.
 
 ### 6. Seed sample data (optional, dev only)
 
@@ -200,38 +200,8 @@ Each feature folder keeps its components, styles, and tests together.
 - Rules are enforced on the server; the UI only guides
 - Weeks start on Sunday
 
-## Product decisions
+## Docs
 
-Settled during planning; the details may still change when each piece is built.
-
-- **Layout:** a hybrid. Admins get a side-nav shell with wide content, staff get a "My day" screen built for the cart tablet, and everyone gets the course map as a page. Desktop web first, but the cart tablet is the main staff device, so buttons stay touch-friendly and readable in sunlight.
-- **Clock-in gate:** before clocking in, nothing but clock-in is reachable, and the dialog can't be dismissed. Log out stays available inside it. It shows today's shift and a small week view of the person's own shifts. The server enforces the gate too. Still to settle: whether anyone can view the schedule page before clocking in, and whether admins are exempt.
-- **Shifts and time:** a straight 9-hour shift, with no break or lunch punches for now. A clock entry still open after 10 hours is closed automatically and flagged for admin review.
-- **People on holes (v1):** planned positions come from task assignments, and any clocked-in staff member can check in manually to any hole, assigned or not. A manual check-in expires on clock-out, on checking into another hole, or after a timeout (length to be decided). GPS from the cart tablets is a possible later source.
-- **Course map:** v1 is a stylized 2D map drawn from our own hole shapes. Aerial and 3D views come later.
-- **Conditions panel:** weather for today and tomorrow only, height of cut per area (greens, tees, fairways, approaches, rough), and direction of cut. Direction is a line through a clock face that rotates one hour each day (6–12 becomes 7–1, then 8–2).
-- **Equipment:** current status only, with no history.
-
-## Upcoming features
-
-In planned order:
-
-1. **Checkbox multi-select on the schedule grid,** with a delete bar for removing several shifts at once (the backend endpoint is ready)
-2. **App shell and hard clock-in gate:** side nav, top bar, wide layout, non-dismissible clock-in dialog with focus containment, and the server-side check
-3. **Role-based homes:** an admin landing page and the staff "My day" screen
-4. **Tasks:** a task library, a workboard (assign by person, date, and hole), and completion with notes and photos (the first need for file storage)
-5. **Course map:** a drawing tool for hole shapes, the 2D map page, and people on holes
-6. **Conditions panel:** weather, height of cut, and direction of cut
-7. **Everything else:** admin user management UI, cart assignment, timesheets and labor reports, time-off requests, safety and training records, translation, and notes and alerts
-8. **Hardening:** deployment with HTTPS and the `Secure` cookie flag, offline tolerance, backups, and GPS tracking as an add-on
-
-### Housekeeping backlog
-
-- Return `400` instead of `500` when a shift is created for a nonexistent user
-- Add an admin to the dev seed
-- Guard the clock button against double clicks
-- Make `Modal` contain keyboard focus (needed before the clock-in gate)
-- Arrow-key navigation in the schedule grid, instead of one Tab stop per cell
-- Remove the redundant `r.Method` checks in handlers (chi already enforces methods)
-- Scope course and equipment queries by `course_id`
-- Clean up expired session
+- [docs/DECISIONS.md](docs/DECISIONS.md): every product and engineering decision. It is the source of truth.
+- [docs/ROADMAP.md](docs/ROADMAP.md): what is done, the build order, and the backlog.
+- [AGENTS.md](AGENTS.md): commands, architecture, conventions, and testing rules for anyone (or any coding agent) working on the code.

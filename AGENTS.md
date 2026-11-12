@@ -51,9 +51,28 @@ npm run dev                                       # :5173
 npm test                                          # vitest run
 npx vitest run src/features/schedule/WeekGrid.test.jsx -t "test name"   # one file, optionally one test
 npm run lint                                      # oxlint
+npm run test:coverage                             # vitest with coverage; fails below the floors
 ```
 
 Agent hooks, from the repo root: `bash scripts/hooks.test.sh`.
+
+### CI
+
+`.github/workflows/ci.yml` runs on every pull request and every push to `main`, in three jobs:
+
+- **backend:** Postgres 16 as a service, goose migrations, `gofmt -l`, `go vet`, then `go test -count=1 -p 1 -coverpkg=./...` against a coverage floor.
+- **frontend:** `npm ci`, `npm run lint`, `npm run test:coverage`.
+- **hooks:** `bash scripts/hooks.test.sh`.
+
+Coverage floors leave room under today's numbers:
+
+| | Floor | Today |
+|---|---|---|
+| Go statements | 65% (`COVERAGE_FLOOR` in the workflow) | 67.1% in CI (67.3% locally, where `testutil` also runs its `.env` loading) |
+| Frontend statements | 95% (`thresholds` in `frontend/vite.config.js`) | 98.7% |
+| Frontend branches | 95% | 97.9% |
+
+Never lower a floor to get a change through. Raise the backend floor once the gap tests in batch 1 of `docs/test-audit.md` land.
 
 ### Environment variables
 

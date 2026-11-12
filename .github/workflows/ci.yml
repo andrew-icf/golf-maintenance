@@ -1,0 +1,133 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+# A new commit on the same branch or pull request cancels the run still in progress
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  backend:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+    services:
+      postgres:
+        # Same version as docker-compose.yaml
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: golfadmin
+          # Only for this throwaway container, so not a secret
+          POSTGRES_PASSWORD: ci-only-password
+          POSTGRES_DB: golf_maintenance_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U golfadmin -d golf_maintenance_test"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      # There is no backend/.env in CI. testutil.SetupTestDB reads this instead, and still
+      # refuses any database whose name does not end in _test.
+      TEST_DATABASE_URL: postgres://golfadmin:ci-only-password@localhost:5432/golf_maintenance_test?sslmode=disable
+      # Raise this once the gap tests from docs/test-audit.md (batch 1) land. Never lower it.
+      COVERAGE_FLOOR: "65.0"
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-go@v7
+        with:
+          go-version-file: backend/go.mod
+          cache-dependency-path: backend/go.sum
+
+      - name: Install goose
+        run: go install github.com/pressly/goose/v3/cmd/goose@v3.28.0
+
+      - name: Apply migrations to the test database
+        run: goose -dir migrations postgres "$TEST_DATABASE_URL" up
+
+      - name: gofmt
+        run: |
+          unformatted=$(gofmt -l .)
+          if [ -n "$unformatted" ]; then
+            echo "$unformatted"
+            echo "::error::gofmt found unformatted files. Run gofmt -w on them."
+            exit 1
+          fi
+
+      - name: go vet
+        run: go vet ./...
+
+      - name: go test
+        # -p 1 because every package shares the one test database
+        run: go test -count=1 -p 1 -coverpkg=./... -coverprofile=coverage.out ./...
+
+      - name: Coverage floor
+        run: |
+          total=$(go tool cover -func=coverage.out | awk '/^total:/ { sub("%", "", $3); print $3 }')
+          echo "Go coverage: ${total}% (floor ${COVERAGE_FLOOR}%)"
+          if ! awk -v total="$total" -v floor="$COVERAGE_FLOOR" 'BEGIN { exit !(total + 0 >= floor + 0) }'; then
+            echo "::error::Go coverage ${total}% is below the ${COVERAGE_FLOOR}% floor"
+            exit 1
+          fi
+
+  frontend:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: frontend/.nvmrc
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - run: npm ci
+
+      - run: npm run lint
+
+      # Fails below the coverage floors set in vite.config.js
+      - run: npm run test:coverage
+
+  hooks:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          # protect-files.js checks whether a migration is already on main, so it needs main's history
+          fetch-depth: 0
+
+      # A pull request checks out a detached merge commit with no local main branch. The hook
+      # looks at main before origin/main, and its tests expect the "already on main" message.
+      - name: Create a local main branch
+        run: git show-ref --verify --quiet refs/heads/main || git branch main origin/main
+
+      # The lint hook runs gofmt and go vet on Go files
+      - uses: actions/setup-go@v7
+        with:
+          go-version-file: backend/go.mod
+          cache-dependency-path: backend/go.sum
+
+      # ...and oxlint on frontend files
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: frontend/.nvmrc
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - run: npm ci
+        working-directory: frontend
+
+      - run: bash scripts/hooks.test.sh

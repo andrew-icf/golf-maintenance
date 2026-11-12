@@ -39,8 +39,8 @@ jobs:
       # There is no backend/.env in CI. testutil.SetupTestDB reads this instead, and still
       # refuses any database whose name does not end in _test.
       TEST_DATABASE_URL: postgres://golfadmin:ci-only-password@localhost:5432/golf_maintenance_test?sslmode=disable
-      # Raise this once the gap tests from docs/test-audit.md (batch 1) land. Never lower it.
-      COVERAGE_FLOOR: "65.0"
+      # About 2 points under today's total (72.4% locally after audit batch 1). Never lower it.
+      COVERAGE_FLOOR: "70.0"
     steps:
       - uses: actions/checkout@v7
 

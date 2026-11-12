@@ -131,6 +131,7 @@ func TestRepeatSchedule_RejectsInvalidRequests(t *testing.T) {
 		{"unknown day name", repeatBody(staff.id, "2026-10-05", 2, `["funday"]`, "07:00", "15:00")},
 		{"no days selected", repeatBody(staff.id, "2026-10-05", 2, `[]`, "07:00", "15:00")},
 		{"malformed start date", repeatBody(staff.id, "10/05/2026", 2, `["monday"]`, "07:00", "15:00")},
+		{"a body that is not JSON", `{"user_id":`},
 	}
 
 	for _, testCase := range testCases {
@@ -144,6 +145,25 @@ func TestRepeatSchedule_RejectsInvalidRequests(t *testing.T) {
 
 	if count := countSchedules(t); count != 0 {
 		t.Errorf("invalid requests must not create rows, found %d", count)
+	}
+}
+
+// A missing or zero week count still repeats the pattern for one week
+func TestRepeatSchedule_WeeksBelowOneMeansOneWeek(t *testing.T) {
+	admin := setUpAdmin(t)
+	staff := newPerson(t, "staff@example.com", "staff")
+
+	// 2026-10-05 is a Monday
+	body := repeatBody(staff.id, "2026-10-05", 0, `["monday","friday"]`, "07:00", "15:00")
+	recorder := sendRequest(admin.handler, http.MethodPost, "/api/schedule/repeat", body, admin.cookie)
+
+	if recorder.Code != http.StatusOK {
+		t.Fatalf("expected 200, got %d (body: %s)", recorder.Code, recorder.Body.String())
+	}
+
+	expectedDates := []string{"2026-10-05", "2026-10-09"}
+	if created := decodeRepeatResponse(t, recorder.Body.Bytes()).Created; !reflect.DeepEqual(created, expectedDates) {
+		t.Errorf("expected created %v, got %v", expectedDates, created)
 	}
 }
 

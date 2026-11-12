@@ -54,3 +54,25 @@ func TestLogin_RejectsBadCredentialsWithIdenticalResponses(t *testing.T) {
 		t.Error("the two failure responses must be identical so attackers can't tell which emails exist")
 	}
 }
+
+func TestLogin_RequiresEmailAndPassword(t *testing.T) {
+	staff := setUpStaff(t)
+
+	testCases := []struct {
+		name string
+		body string
+	}{
+		{"no email", `{"password":"password123"}`},
+		{"no password", `{"email":"staff@example.com"}`},
+		{"a body that is not JSON", `{"email":`},
+	}
+
+	for _, testCase := range testCases {
+		t.Run(testCase.name, func(t *testing.T) {
+			recorder := sendRequest(staff.handler, http.MethodPost, "/login", testCase.body, nil)
+			if recorder.Code != http.StatusBadRequest {
+				t.Errorf("expected 400, got %d (body: %s)", recorder.Code, recorder.Body.String())
+			}
+		})
+	}
+}

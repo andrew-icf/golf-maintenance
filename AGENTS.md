@@ -68,11 +68,11 @@ Coverage floors leave room under today's numbers:
 
 | | Floor | Today |
 |---|---|---|
-| Go statements | 65% (`COVERAGE_FLOOR` in the workflow) | 67.1% in CI (67.3% locally, where `testutil` also runs its `.env` loading) |
+| Go statements | 70% (`COVERAGE_FLOOR` in the workflow) | 72.4% locally (CI runs about 0.2 points lower, because `testutil` skips its `.env` loading there) |
 | Frontend statements | 95% (`thresholds` in `frontend/vite.config.js`) | 98.7% |
 | Frontend branches | 95% | 97.9% |
 
-Never lower a floor to get a change through. Raise the backend floor once the gap tests in batch 1 of `docs/test-audit.md` land.
+Never lower a floor to get a change through.
 
 ### Environment variables
 

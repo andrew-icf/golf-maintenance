@@ -36,6 +36,20 @@ func GetSchedules(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(schedules)
 }
 
+// Shown as it is in the admin's shift forms
+const personNotFoundMessage = "person not found"
+
+// True when the database refused a shift's user_id: no such person (a foreign key
+// violation) or not a UUID at all. user_id is the only foreign key on schedules and the
+// only UUID the client sends there, so these codes can only mean the person.
+func isUnknownPerson(err error) bool {
+	var pgError *pgconn.PgError
+	if !errors.As(err, &pgError) {
+		return false
+	}
+	return pgError.Code == "23503" || pgError.Code == "22P02"
+}
+
 type createScheduleRequest struct {
 	UserID    string `json:"user_id"`
 	ShiftDate string `json:"shift_date"`
@@ -71,6 +85,10 @@ func CreateSchedule(w http.ResponseWriter, r *http.Request) {
 		req.UserID, req.ShiftDate, req.StartTime, req.EndTime,
 	).Scan(&id)
 
+	if isUnknownPerson(err) {
+		http.Error(w, personNotFoundMessage, http.StatusBadRequest)
+		return
+	}
 	if err != nil {
 		log.Printf("error creating schedule: %v", err)
 		http.Error(w, "could not create schedule", http.StatusInternalServerError)
@@ -173,6 +191,10 @@ func RepeatSchedule(w http.ResponseWriter, r *http.Request) {
 			skippedDates = append(skippedDates, dateString)
 			continue
 		}
+		if isUnknownPerson(err) {
+			http.Error(w, personNotFoundMessage, http.StatusBadRequest)
+			return
+		}
 		if !errors.Is(err, pgx.ErrNoRows) {
 			log.Printf("error checking existing schedule: %v", err)
 			http.Error(w, "internal server error", http.StatusInternalServerError)
@@ -186,6 +208,10 @@ func RepeatSchedule(w http.ResponseWriter, r *http.Request) {
 			 VALUES ($1, $2, $3, $4) RETURNING id`,
 			req.UserID, dateString, req.StartTime, req.EndTime,
 		).Scan(&newID)
+		if isUnknownPerson(err) {
+			http.Error(w, personNotFoundMessage, http.StatusBadRequest)
+			return
+		}
 		if err != nil {
 			log.Printf("error creating schedule: %v", err)
 			http.Error(w, "internal server error", http.StatusInternalServerError)

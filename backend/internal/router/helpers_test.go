@@ -296,6 +296,17 @@ func shiftDates(t *testing.T, responseBody []byte) []string {
 	return dates
 }
 
+// The admin's shift forms show this text as it is, so it is checked exactly
+func expectPersonNotFound(t *testing.T, recorder *httptest.ResponseRecorder) {
+	t.Helper()
+	if recorder.Code != http.StatusBadRequest {
+		t.Errorf("expected 400, got %d (body: %s)", recorder.Code, recorder.Body.String())
+	}
+	if body := strings.TrimSpace(recorder.Body.String()); body != "person not found" {
+		t.Errorf("expected the message %q, got %q", "person not found", body)
+	}
+}
+
 func countSchedules(t *testing.T) int {
 	t.Helper()
 	return countRows(t, `SELECT COUNT(*) FROM schedules`)

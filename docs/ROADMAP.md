@@ -12,7 +12,7 @@ Last updated: 2026-11-11.
 
 ## Current state
 
-- Frontend: **1330 tests in 50 files**. Lint shows one accepted warning (`react(set-state-in-effect)` in `AuthContext.jsx`).
+- Frontend: **1331 tests in 50 files**. Lint shows one accepted warning (`react(set-state-in-effect)` in `AuthContext.jsx`).
 - Backend: **237 router tests and 19 auth tests** (`go test -count=1 -p 1 ./...` from `backend/`).
 - Last finished: step 5 (the checklist preview), plus the phone and upright-tablet layout and the matching Not today and Undo button widths.
 - In progress: nothing. Next is step 6, on a branch called `hole-features`.

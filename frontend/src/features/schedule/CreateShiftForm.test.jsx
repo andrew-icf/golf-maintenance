@@ -43,7 +43,8 @@ const SUMMARY_ALL_SKIPPED = { createdCount: 0, skippedCount: 2 }
 
 const END_BEFORE_START_MESSAGE = 'End time must be after start time'
 const NO_DAYS_MESSAGE = 'Select at least one day of the week'
-const SERVER_ERROR_MESSAGE = 'user not found'
+// The server's text for a person who no longer exists, shown as it is
+const SERVER_ERROR_MESSAGE = 'person not found'
 
 // Scenarios
 function givenEmployeesExist() {
@@ -60,6 +61,10 @@ function givenCreateShiftFails(message) {
 
 function givenRepeatSucceeds(result) {
   apiMock.repeatSchedule.mockResolvedValue(result)
+}
+
+function givenRepeatFails(message) {
+  apiMock.repeatSchedule.mockRejectedValue(new Error(message))
 }
 
 // Actions
@@ -181,6 +186,20 @@ describe('CreateShiftForm', () => {
       await waitFor(() => {
         expect(onCreated).toHaveBeenCalledWith(SUMMARY_WITH_SKIPS)
       })
+    })
+
+    it('shows the server error when repeating the shift fails', async () => {
+      givenRepeatFails(SERVER_ERROR_MESSAGE)
+      const onCreated = await renderForm()
+      await switchToRepeatMode()
+
+      await fillShiftDetails(VALID_SHIFT)
+      await clickButton('Mon')
+      await clickButton('Add shifts')
+
+      expect(await screen.findByText(SERVER_ERROR_MESSAGE)).toBeInTheDocument()
+      expect(onCreated).not.toHaveBeenCalled()
+      expect(screen.getByRole('button', { name: 'Add shifts' })).toBeEnabled()
     })
 
     it('requires at least one day to be selected', async () => {

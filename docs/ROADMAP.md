@@ -13,7 +13,7 @@ Last updated: 2026-11-11.
 ## Current state
 
 - Frontend: **1330 tests in 50 files**. Lint shows one accepted warning (`react(set-state-in-effect)` in `AuthContext.jsx`).
-- Backend: **232 router tests and 19 auth tests** (`go test -count=1 -p 1 ./...` from `backend/`).
+- Backend: **237 router tests and 19 auth tests** (`go test -count=1 -p 1 ./...` from `backend/`).
 - Last finished: step 5 (the checklist preview), plus the phone and upright-tablet layout and the matching Not today and Undo button widths.
 - In progress: nothing. Next is step 6, on a branch called `hole-features`.
 
@@ -114,7 +114,7 @@ Needs from you: the real bunker count for each of the 27 holes (a list like "A1:
 - The schedule grid should fill the screen height.
 - An equipment failure shows an `alert()`. It should be an inline message.
 - An Equipment nav badge for items that need attention.
-- Creating or repeating a shift for a user that doesn't exist returns a 500. It should be a 400.
+- A malformed or impossible date or time returns a 500 where it should be a 400. Creating a shift doesn't check `shift_date` (`banana`, `2026-02-30`), and creating, repeating, and editing don't check `start_time` or `end_time` (`25:00`). Postgres reports these as `22007` and `22008`.
 - Share one "clocked in" helper between `/me` and the gate. They each run their own query.
 - Use the club's timezone for daily boundaries.
 - Scope queries by `course_id`.

@@ -67,6 +67,24 @@ func TestCreateSchedule_RejectsInvalidRequests(t *testing.T) {
 	}
 }
 
+// The person may have been removed after the admin's list loaded. That is the admin's
+// mistake to fix, so it is a 400 the form can show, not a server error
+func TestCreateSchedule_UnknownPersonIsRefused(t *testing.T) {
+	admin := setUpAdmin(t)
+
+	for _, userID := range []string{nonexistentID, "not-a-uuid"} {
+		t.Run(userID, func(t *testing.T) {
+			body := createShiftBody(userID, "2026-10-07", "06:30", "14:30")
+			recorder := sendRequest(admin.handler, http.MethodPost, "/api/schedule", body, admin.cookie)
+			expectPersonNotFound(t, recorder)
+		})
+	}
+
+	if count := countSchedules(t); count != 0 {
+		t.Errorf("a refused request must not create rows, found %d", count)
+	}
+}
+
 // Being on the clock doesn't help: creating shifts is for admins only
 func TestCreateSchedule_ForbiddenForStaff(t *testing.T) {
 	staff := setUpClockedInStaff(t)

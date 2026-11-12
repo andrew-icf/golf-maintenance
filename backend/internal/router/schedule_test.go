@@ -181,15 +181,17 @@ func TestRepeatSchedule_ForbiddenForStaff(t *testing.T) {
 	}
 }
 
-func TestRepeatSchedule_UnknownUserCreatesNothing(t *testing.T) {
+func TestRepeatSchedule_UnknownPersonIsRefusedAndCreatesNothing(t *testing.T) {
 	admin := setUpAdmin(t)
 
-	body := repeatBody(nonexistentID, "2026-10-05", 2, `["monday"]`, "07:00", "15:00")
-	recorder := sendRequest(admin.handler, http.MethodPost, "/api/schedule/repeat", body, admin.cookie)
-
-	if recorder.Code == http.StatusOK {
-		t.Errorf("expected a failure status, got 200 (body: %s)", recorder.Body.String())
+	for _, userID := range []string{nonexistentID, "not-a-uuid"} {
+		t.Run(userID, func(t *testing.T) {
+			body := repeatBody(userID, "2026-10-05", 2, `["monday"]`, "07:00", "15:00")
+			recorder := sendRequest(admin.handler, http.MethodPost, "/api/schedule/repeat", body, admin.cookie)
+			expectPersonNotFound(t, recorder)
+		})
 	}
+
 	if count := countSchedules(t); count != 0 {
 		t.Errorf("failed request must not leave rows behind, found %d", count)
 	}

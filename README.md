@@ -90,7 +90,7 @@ cd backend
 docker exec -i golf-maintenance-db psql -U golfadmin -d golf_maintenance -v ON_ERROR_STOP=1 < seed/dev_seed.sql
 ```
 
-This creates 20 Star Wars crew members (for example `luke.skywalker@example.com`, password `password123`) with four weeks of shifts around the current date. It's safe to rerun: users are created once and the crew's shifts are rebuilt each time. Never run it anywhere real.
+This creates 20 crew members with four weeks of shifts around the current date. It's safe to rerun: users are created once and the crew's shifts are rebuilt each time. Never run it anywhere real.
 
 ### 7. Run the backend
 
@@ -120,26 +120,6 @@ Runs on `http://localhost:5173`.
 - Admins add shifts from the "+ Add shift" dialog, either one-off or repeating weekly for a set number of weeks on chosen days. Repeating skips any date where the person already has a shift, and the dialog confirms how many were added or skipped.
 - Admins click any cell to add, edit, or delete that day's shifts. Staff see a read-only grid.
 - Times display compactly (`6am – 2:30pm`). Dates travel through the app as `YYYY-MM-DD` strings.
-
-### API
-
-| Method | Path | Access | Notes |
-|---|---|---|---|
-| GET | `/health` | public | |
-| POST | `/login`, `/logout` | public | |
-| POST | `/users` | admin | Needs email, password, full name, and job title; the role is derived from the title |
-| GET | `/api/users` | admin | Id, name, role, and job title only |
-| GET | `/me` | logged in | Includes job title and whether the user is clocked in |
-| POST | `/clock-in`, `/clock-out` | logged in | |
-| GET | `/api/course` | logged in | |
-| GET | `/api/equipment` | logged in | |
-| PUT | `/api/equipment/{id}` | logged in | Updates status |
-| GET | `/api/roster` | logged in | Staff only: id, name, job title |
-| GET | `/api/schedule` | logged in | Optional `?start=YYYY-MM-DD&end=YYYY-MM-DD` (both or neither, up to 62 days) |
-| POST | `/api/schedule` | admin | One shift |
-| PUT | `/api/schedule/{id}` | admin | Changes a shift's date and times |
-| DELETE | `/api/schedule` | admin | Body `{"ids": [...]}`, up to 200, all or nothing |
-| POST | `/api/schedule/repeat` | admin | Start date, weeks, days, and times; skips existing dates |
 
 ## Testing
 
@@ -194,7 +174,6 @@ Each feature folder keeps its components, styles, and tests together.
 
 - Descriptive variable names (`event`, `user`, not `e`, `u`); Go's `w`, `r`, and `t` are the exceptions
 - Spaces inside JSX braces: `{ user.name }`
-- Test and dummy data uses Star Wars character names
 - Tests are written alongside each new feature, with test data and scenario helpers at the top of each suite
 - Each new test is proven by breaking the code once and watching it fail
 - Rules are enforced on the server; the UI only guides
@@ -205,3 +184,82 @@ Each feature folder keeps its components, styles, and tests together.
 - [docs/DECISIONS.md](docs/DECISIONS.md): every product and engineering decision. It is the source of truth.
 - [docs/ROADMAP.md](docs/ROADMAP.md): what is done, the build order, and the backlog.
 - [AGENTS.md](AGENTS.md): commands, architecture, conventions, and testing rules for anyone (or any coding agent) working on the code.
+
+## Working with AI agents
+
+This repo is set up for AI coding agents, mainly [Claude Code](https://claude.com/claude-code). The setup has four layers, each stricter than the last:
+
+| Layer | Job | Where |
+|---|---|---|
+| **Rules** | Guide the agent: architecture, commands, conventions, testing rules | [`AGENTS.md`](AGENTS.md), [`CLAUDE.md`](CLAUDE.md) |
+| **Skills** | Make the right workflow repeatable | [`.claude/skills/`](.claude/skills) |
+| **Hooks** | Block what must never happen, on every edit | [`.claude/hooks/`](.claude/hooks), [`.claude/settings.json`](.claude/settings.json) |
+| **CI** | Gate every pull request | [`.github/workflows/ci.yml`](.github/workflows/ci.yml) |
+
+Rules are advisory, skills have to be invoked, and hooks only cover Claude Code's edit tools. CI is the backstop that catches what gets past the other three.
+
+### Setup
+
+- **Claude Code** loads [`CLAUDE.md`](CLAUDE.md) automatically. It imports `AGENTS.md` and adds a few Claude-specific notes.
+- **Other AI tools** read [`AGENTS.md`](AGENTS.md) directly.
+
+No extra setup is needed. Open the repo in Claude Code, and the rules, skills, and hooks are active.
+
+### Rules
+
+[`AGENTS.md`](AGENTS.md) is the single source of truth for how code is written here. Product decisions live in [`docs/DECISIONS.md`](docs/DECISIONS.md), which wins over everything else, and the build order lives in [`docs/ROADMAP.md`](docs/ROADMAP.md).
+
+When the agent repeats a mistake, don't just correct it in chat. Add the rule to `AGENTS.md`, so every future session, and every tool, picks it up.
+
+### Skills
+
+Run a skill in Claude Code by typing its name:
+
+| Skill | Use it when |
+|---|---|
+| [`/add-feature`](.claude/skills/add-feature/SKILL.md) | Building a feature or the next ROADMAP step: a fresh branch, a plan checked against `DECISIONS.md`, and checkpoints for the backend, frontend logic, and components |
+| [`/review-changes`](.claude/skills/review-changes/SKILL.md) | Before committing: reviews the diff against `AGENTS.md`, `DECISIONS.md`, and the contracts between Go and the frontend. Reports only, never edits |
+| [`/fix-flaky-test`](.claude/skills/fix-flaky-test/SKILL.md) | A Vitest or Go test passes or fails intermittently: finds the root cause, and never adds retries, longer timeouts, or skips |
+
+### Hooks
+
+Claude Code runs these automatically ([config](.claude/settings.json)):
+
+- **[protect-files](.claude/hooks/protect-files.js)** (before every edit): blocks edits to `.env` files (except `.env.example`), curl cookie files, and migrations that already exist on `main` or `origin/main`. New migrations on a branch can be edited. Every check ignores capitalization.
+- **[lint-edited-file](.claude/hooks/lint-edited-file.js)** (after every edit): runs `gofmt` and `go vet` on edited Go files, and oxlint on edited frontend files. Errors go back to the agent to fix. Warnings don't block.
+
+The settings also deny Claude's Read tool access to `.env` and cookie files. The hooks only cover the edit tools, so the same rules apply to shell commands.
+
+The hooks have their own tests, which also run in CI:
+
+```bash
+bash scripts/hooks.test.sh
+```
+
+### CI
+
+[`ci.yml`](.github/workflows/ci.yml) runs three jobs on every pull request and every push to `main`:
+
+- **backend:** formatting, `go vet`, and the Go tests against a PostgreSQL service container, with a coverage floor of 70%
+- **frontend:** lint, and the Vitest suite with coverage floors of 95% for statements and branches
+- **hooks:** the hook tests
+
+**Coverage floors** sit a little below today's numbers, so normal changes don't trip them. Raise a floor when coverage goes up. Never lower one to get a pull request through.
+
+**Branch protection:** a ruleset on `main` requires a pull request and passing `backend`, `frontend`, and `hooks` checks before merging. No approving review is required because this is a solo repo. On a team, we'd also require at least one approval.
+
+### How we work
+
+1. **Plan first.** For anything bigger than a one-line change, the agent proposes a plan in plan mode before touching code.
+2. **Review the plan before any code.** Push back on scope, approach, and tests now, while changes are cheap.
+3. **Work in checkpoints.** The agent implements in steps, runs the checks, explains what changed, and stops for review.
+4. **Review every diff.** Read agent-written code the way you'd read a teammate's PR. `/review-changes` is a second opinion, not a replacement.
+5. **A human reviews and merges every PR.** The agent can commit, push, and open PRs when asked.
+
+Commit messages use an area prefix: `(Frontend):`, `(Backend):`, or `(Repo):`.
+
+### Improving the setup
+
+Rules, skills, and hooks are code. Change them through a pull request, like anything else. If a skill or rule keeps producing the wrong result, fix the file instead of working around it in chat.
+
+The latest test audit is in [`docs/test-audit.md`](docs/test-audit.md).

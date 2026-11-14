@@ -25,12 +25,22 @@ type Layout struct {
 	Holes          []Hole  `json:"holes"`
 }
 
+// A hole, with its features: the standard six first, then its bunkers by number
 type Hole struct {
-	ID         string `json:"id"`
-	LayoutID   string `json:"layout_id"`
-	HoleNumber int    `json:"hole_number"`
-	Par        int    `json:"par"`
-	Yardage    *int   `json:"yardage"`
+	ID         string        `json:"id"`
+	LayoutID   string        `json:"layout_id"`
+	HoleNumber int           `json:"hole_number"`
+	Par        int           `json:"par"`
+	Yardage    *int          `json:"yardage"`
+	Features   []HoleFeature `json:"features"`
+}
+
+// One feature of a hole: a tee box, a fairway, a bunker, and so on. Everything has a position of
+// 1 except bunkers, which are numbered from 1.
+type HoleFeature struct {
+	ID       string `json:"id"`
+	Type     string `json:"type"`
+	Position int    `json:"position"`
 }
 
 type Amenity struct {

@@ -61,6 +61,43 @@ func GetCourse(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Every feature of every hole in the club, in one query. Ordering by the feature type puts the
+	// standard six first in the order they were declared, with bunkers last, and the position then
+	// numbers the bunkers.
+	featureRows, err := db.Pool.Query(
+		r.Context(),
+		`SELECT hf.id, hf.hole_id, hf.feature_type::text, hf.position
+		 FROM hole_features hf
+		 JOIN holes h ON h.id = hf.hole_id
+		 JOIN layouts l ON l.id = h.layout_id
+		 WHERE l.course_id = $1
+		 ORDER BY hf.feature_type, hf.position`,
+		course.ID,
+	)
+	if err != nil {
+		log.Printf("error fetching hole features: %v", err)
+		http.Error(w, "could not fetch hole features", http.StatusInternalServerError)
+		return
+	}
+	defer featureRows.Close()
+
+	featuresByHoleID := map[string][]models.HoleFeature{}
+	for featureRows.Next() {
+		var holeID string
+		var feature models.HoleFeature
+		if err := featureRows.Scan(&feature.ID, &holeID, &feature.Type, &feature.Position); err != nil {
+			log.Printf("error scanning hole feature: %v", err)
+			http.Error(w, "could not fetch hole features", http.StatusInternalServerError)
+			return
+		}
+		featuresByHoleID[holeID] = append(featuresByHoleID[holeID], feature)
+	}
+	if err := featureRows.Err(); err != nil {
+		log.Printf("error reading hole features: %v", err)
+		http.Error(w, "could not fetch hole features", http.StatusInternalServerError)
+		return
+	}
+
 	holeRows, err := db.Pool.Query(
 		r.Context(),
 		`SELECT h.id, h.layout_id, h.hole_number, h.par, h.yardage
@@ -84,6 +121,13 @@ func GetCourse(w http.ResponseWriter, r *http.Request) {
 			log.Printf("error scanning hole: %v", err)
 			http.Error(w, "could not fetch holes", http.StatusInternalServerError)
 			return
+		}
+
+		// A hole always has features once the trigger has run, but a list that is empty must still
+		// be an empty list and not null
+		hole.Features = featuresByHoleID[hole.ID]
+		if hole.Features == nil {
+			hole.Features = []models.HoleFeature{}
 		}
 		course.Holes = append(course.Holes, hole)
 

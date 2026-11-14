@@ -17,6 +17,8 @@ function buildDetails(course, layout, hole, layoutCount) {
     groupTitle: formatGroupTitle(layout, group.key, layoutCount),
     par: hole.par,
     yardage: typeof hole.yardage === 'number' ? hole.yardage : null,
+    // What the hole has on it, from which its checklist is built. Anything but a list is no features.
+    features: Array.isArray(hole.features) ? hole.features : [],
     amenities: groupAmenitiesByHole(course.amenities).get(hole.id) ?? [],
   }
 }

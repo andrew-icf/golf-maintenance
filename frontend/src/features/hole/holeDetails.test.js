@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { CLUBHOUSE, NINES, THREE_NINES, holeIdOf } from '../../test/fixtures/course'
+import { CLUBHOUSE, HOLE_C7, NINES, THREE_NINES, holeIdOf } from '../../test/fixtures/course'
 import { THREE_NINE_PAGE } from '../../test/fixtures/coursePageCases'
 import {
   AMENITY_CASES,
@@ -12,6 +12,7 @@ import {
   YARDAGE_CASES,
   YARDAGE_PAGE,
 } from '../../test/fixtures/holeDetailsCases'
+import { BUNKER_PAGE, BUNKER_PAGE_CASES, FEATURE_VALUE_CASES, FEATURE_VALUE_PAGE } from '../../test/fixtures/holeFeatureCases'
 import { findHoleDetails } from './holeDetails'
 
 describe('findHoleDetails', () => {
@@ -66,5 +67,22 @@ describe('findHoleDetails', () => {
 
   it('does not modify the course it is given', () => {
     expect(() => findHoleDetails(FROZEN_PAGE, holeIdOf('C', 7))).not.toThrow()
+  })
+
+  it('carries the features of the hole it describes', () => {
+    const details = findHoleDetails(THREE_NINE_PAGE, holeIdOf('C', 7))
+
+    expect(details.features).toEqual(HOLE_C7.features)
+  })
+
+  it.each(BUNKER_PAGE_CASES)('carries the features of $name', ({ holeId, bunkers }) => {
+    const details = findHoleDetails(BUNKER_PAGE, holeId)
+
+    expect(details.features).toHaveLength(6 + bunkers)
+    expect(details.features.filter((feature) => feature.type === 'bunker')).toHaveLength(bunkers)
+  })
+
+  it.each(FEATURE_VALUE_CASES)('gives an empty list when the features are $label', ({ holeId }) => {
+    expect(findHoleDetails(FEATURE_VALUE_PAGE, holeId).features).toEqual([])
   })
 })

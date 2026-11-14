@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { todayDateString } from '../../schedule/scheduleDates'
 import { Checklist } from './Checklist'
 import { ResponsibleToday } from './ResponsibleToday'
@@ -6,11 +6,12 @@ import { buildSampleMarks, checkItem, skipItem, undoItem } from './checklistMark
 import { buildChecklistItems, listDuties } from './checklistTasks'
 import { buildSampleAssignments } from './responsibleList'
 
-// Who is responsible and the checklist, all with sample data, kept in this page's memory only:
-// nothing is saved, and everything starts over when the page is shown again. user is the person
-// looking, who takes one of the sample duties that fits their job title.
-export function ChecklistPreview({ user }) {
-  const [items] = useState(() => buildChecklistItems())
+// Who is responsible and the checklist, with sample marks and sample people, kept in this page's
+// memory only: nothing is saved, and everything starts over when the page is shown again. The
+// tasks follow the features of the hole it is given. user is the person looking, who takes one of
+// the sample duties that fits their job title.
+export function ChecklistPreview({ user, features }) {
+  const items = useMemo(() => buildChecklistItems(features), [features])
   const [marks, setMarks] = useState(() => buildSampleMarks(todayDateString()))
 
   function handleCheck(item) {

@@ -20,7 +20,6 @@ import {
   GREENS_ONLY_ITEMS,
   INVALID_BUNKER_COUNT_CASES,
   ITEM_COUNT_CASES,
-  ITEMS_WITHOUT_BUNKERS,
   MISSING_FEATURE_ITEMS,
   MIXED_DUTY_ITEMS,
   MIXED_SECTION_ITEMS,
@@ -32,11 +31,26 @@ import {
   UNORDERED_SECTION_ITEMS,
 } from '../../../test/fixtures/checklistCases'
 import {
+  DUPLICATE_FEATURES,
+  EXPECTED_FEATURE_TYPES,
+  EXPECTED_NON_CONTIGUOUS_BUNKER_IDS,
+  EXPECTED_NON_CONTIGUOUS_SECTION_KEYS,
+  FROZEN_FEATURES,
+  IGNORED_FEATURE_CASES,
+  MISSING_FEATURE_CASES,
+  NON_CONTIGUOUS_BUNKER_FEATURES,
+  NOT_A_LIST_CASES,
+  SHUFFLED_FEATURES,
+  STANDARD_FEATURE_TYPES,
+  makeFeatures,
+} from '../../../test/fixtures/holeFeatureCases'
+import {
   DUTY_ORDER,
   FEATURE_ORDER,
   SAMPLE_BUNKER_COUNT,
   TASK_TEMPLATES,
   buildChecklistItems,
+  buildSampleFeatures,
   formatDutyTitle,
   formatFeatureTitle,
   groupChecklist,
@@ -62,12 +76,19 @@ function sectionsOf(groups, title) {
   }))
 }
 
+function idsOf(items) {
+  return items.map((item) => item.id)
+}
+
 describe('the task list', () => {
-  it('gives every task an id, a name, an area, a duty, and who may check it', () => {
+  it('gives every task an id, a name, an area, a kind of feature, a duty, and who may check it', () => {
+    const knownFeatureTypes = [...STANDARD_FEATURE_TYPES, 'bunker']
+
     for (const template of TASK_TEMPLATES) {
       expect(template.id, template.name).toBeTruthy()
       expect(template.name.trim(), template.id).not.toBe('')
       expect(FEATURE_ORDER, template.id).toContain(template.feature)
+      expect(knownFeatureTypes, template.id).toContain(template.featureType)
       expect(DUTY_ORDER, template.id).toContain(template.duty)
       expect(template.allowedJobTitles.length, template.id).toBeGreaterThan(0)
       for (const title of template.allowedJobTitles) {
@@ -87,6 +108,7 @@ describe('the task list', () => {
 
     expect(template).toBeDefined()
     expect(template).toMatchObject({ feature, name, duty, allowedJobTitles: titles })
+    expect(template.featureType).toBe(EXPECTED_FEATURE_TYPES[id])
     expect(template.section?.key ?? null).toBe(section)
   })
 
@@ -113,26 +135,53 @@ describe('the task list', () => {
   })
 })
 
-describe('buildChecklistItems', () => {
-  it.each(ITEM_COUNT_CASES)('makes $expected tasks for $bunkerCount bunkers', ({ bunkerCount, expected }) => {
-    expect(buildChecklistItems(bunkerCount)).toHaveLength(expected)
+describe('buildSampleFeatures', () => {
+  it('gives the standard six, then the bunkers numbered from one', () => {
+    const features = buildSampleFeatures(2)
+
+    expect(features.map((feature) => [feature.type, feature.position])).toEqual([
+      ['tee_box', 1],
+      ['par_3_tee_box', 1],
+      ['fairway', 1],
+      ['approach', 1],
+      ['rough', 1],
+      ['green', 1],
+      ['bunker', 1],
+      ['bunker', 2],
+    ])
   })
 
   it('uses three bunkers when it is not told how many', () => {
     expect(SAMPLE_BUNKER_COUNT).toBe(3)
-    expect(buildChecklistItems()).toHaveLength(SAMPLE_ITEM_COUNT)
+    expect(buildSampleFeatures().filter((feature) => feature.type === 'bunker')).toHaveLength(3)
   })
 
-  it.each(INVALID_BUNKER_COUNT_CASES)('treats a bunker count of $label as no bunkers', ({ bunkerCount }) => {
-    const items = buildChecklistItems(bunkerCount)
+  it.each(INVALID_BUNKER_COUNT_CASES)('makes no bunkers for a count of $label', ({ bunkerCount }) => {
+    const features = buildSampleFeatures(bunkerCount)
 
-    expect(items).toHaveLength(ITEMS_WITHOUT_BUNKERS)
-    expect(items.some((item) => item.feature === 'bunker')).toBe(false)
+    expect(features.some((feature) => feature.type === 'bunker')).toBe(false)
+    expect(features).toHaveLength(6)
+  })
+
+  it('gives every feature its own id', () => {
+    const ids = idsOf(buildSampleFeatures(5))
+
+    expect(new Set(ids).size).toBe(ids.length)
+  })
+})
+
+describe('buildChecklistItems', () => {
+  it.each(ITEM_COUNT_CASES)('makes $expected tasks for $bunkerCount bunkers', ({ bunkerCount, expected }) => {
+    expect(buildChecklistItems(buildSampleFeatures(bunkerCount))).toHaveLength(expected)
+  })
+
+  it("builds the sample hole's checklist when it is given no features at all", () => {
+    expect(buildChecklistItems()).toHaveLength(SAMPLE_ITEM_COUNT)
   })
 
   it('gives every task its own id, however many bunkers there are', () => {
     for (const bunkerCount of [0, 3, 12]) {
-      const ids = buildChecklistItems(bunkerCount).map((item) => item.id)
+      const ids = idsOf(buildChecklistItems(buildSampleFeatures(bunkerCount)))
 
       expect(new Set(ids).size, `${bunkerCount} bunkers`).toBe(ids.length)
     }
@@ -143,7 +192,7 @@ describe('buildChecklistItems', () => {
   })
 
   it('numbers the bunkers from one, each with its own section and the two rake tasks', () => {
-    const bunkerItems = buildChecklistItems(4).filter((item) => item.feature === 'bunker')
+    const bunkerItems = buildChecklistItems(buildSampleFeatures(4)).filter((item) => item.feature === 'bunker')
 
     expect(bunkerItems).toHaveLength(8)
     for (const bunkerNumber of [1, 2, 3, 4]) {
@@ -181,6 +230,47 @@ describe('buildChecklistItems', () => {
     expect(freshItem.allowedJobTitles).toEqual(['greenskeeper'])
     expect(freshItem.section.title).toBe('Tee box')
   })
+
+  it.each(MISSING_FEATURE_CASES)('leaves out the tasks of a missing $omit', ({ omit, missingIds }) => {
+    const everyId = idsOf(buildChecklistItems())
+    const features = buildSampleFeatures().filter((feature) => feature.type !== omit)
+
+    const ids = idsOf(buildChecklistItems(features))
+
+    expect(ids).toEqual(everyId.filter((id) => !missingIds.includes(id)))
+  })
+
+  it("numbers each bunker's section by the bunker's own position", () => {
+    const bunkerItems = buildChecklistItems(NON_CONTIGUOUS_BUNKER_FEATURES).filter((item) => item.feature === 'bunker')
+
+    expect(idsOf(bunkerItems).sort()).toEqual(EXPECTED_NON_CONTIGUOUS_BUNKER_IDS)
+    expect([...new Set(bunkerItems.map((item) => item.section.key))].sort()).toEqual(
+      EXPECTED_NON_CONTIGUOUS_SECTION_KEYS
+    )
+  })
+
+  it('makes one set of tasks when the same feature is listed twice', () => {
+    expect(idsOf(buildChecklistItems(DUPLICATE_FEATURES))).toEqual(idsOf(buildChecklistItems(makeFeatures([1]))))
+  })
+
+  it.each(IGNORED_FEATURE_CASES)('ignores $label', ({ entry }) => {
+    const withEntry = buildChecklistItems([...makeFeatures(), entry])
+
+    expect(idsOf(withEntry)).toEqual(idsOf(buildChecklistItems(makeFeatures())))
+  })
+
+  it.each(NOT_A_LIST_CASES)('builds no tasks when the features are $label', ({ features }) => {
+    expect(buildChecklistItems(features)).toEqual([])
+  })
+
+  it('gives the same tasks whatever order the features come in', () => {
+    expect(idsOf(buildChecklistItems(SHUFFLED_FEATURES))).toEqual(idsOf(buildChecklistItems(makeFeatures([1, 2, 3]))))
+  })
+
+  it('does not modify the features it is given', () => {
+    expect(() => buildChecklistItems(FROZEN_FEATURES)).not.toThrow()
+    expect(FROZEN_FEATURES).toHaveLength(9)
+  })
 })
 
 describe('groupChecklist', () => {
@@ -193,7 +283,7 @@ describe('groupChecklist', () => {
   })
 
   it('leaves out the bunkers when the hole has none', () => {
-    const titles = groupChecklist(buildChecklistItems(0)).map((group) => group.title)
+    const titles = groupChecklist(buildChecklistItems(buildSampleFeatures(0))).map((group) => group.title)
 
     expect(titles).toEqual(['Tee box', 'Fairway', 'Rough', 'Green'])
   })
@@ -246,7 +336,7 @@ describe('groupChecklist', () => {
       group.sections.flatMap((section) => section.items.map((item) => item.id))
     )
 
-    expect(shownIds.sort()).toEqual(items.map((item) => item.id).sort())
+    expect(shownIds.sort()).toEqual(idsOf(items).sort())
   })
 })
 

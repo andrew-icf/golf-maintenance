@@ -7,17 +7,25 @@ import (
 	"reflect"
 	"testing"
 
+	"golf-maintenance/backend/internal/models"
 	"golf-maintenance/backend/internal/router"
 	"golf-maintenance/backend/internal/testutil"
 )
 
 // What /api/course sends back
+type holeFeatureResponse struct {
+	ID       string `json:"id"`
+	Type     string `json:"type"`
+	Position int    `json:"position"`
+}
+
 type holeResponse struct {
-	ID         string `json:"id"`
-	LayoutID   string `json:"layout_id"`
-	HoleNumber int    `json:"hole_number"`
-	Par        int    `json:"par"`
-	Yardage    *int   `json:"yardage"`
+	ID         string                `json:"id"`
+	LayoutID   string                `json:"layout_id"`
+	HoleNumber int                   `json:"hole_number"`
+	Par        int                   `json:"par"`
+	Yardage    *int                  `json:"yardage"`
+	Features   []holeFeatureResponse `json:"features"`
 }
 
 type layoutResponse struct {
@@ -68,6 +76,18 @@ const (
 	comfortStationThreeHole = "C7"
 )
 
+// Holes with different numbers of bunkers, in the order they are built, so a hole can only come
+// back with the right features if each hole's own are kept apart from the others'
+var bunkerCountCases = []struct {
+	name    string
+	bunkers int
+}{
+	{"a hole with no bunkers", 0},
+	{"a hole with one bunker", 1},
+	{"a hole with three bunkers", 3},
+	{"a hole with five bunkers", 5},
+}
+
 // Actions
 // A staff member who is on the clock, since the course is only open to people who are.
 // It adds to the current database, so it can run after a club has been built.
@@ -107,6 +127,28 @@ func holeLabels(course courseResponse) map[string]string {
 		for _, hole := range layout.Holes {
 			labels[hole.ID] = fmt.Sprintf("%s%d", *layout.Code, hole.HoleNumber)
 		}
+	}
+	return labels
+}
+
+// A hole's features in the order they came back, with each bunker written with its number
+func featureLabels(features []holeFeatureResponse) []string {
+	labels := []string{}
+	for _, feature := range features {
+		if feature.Type == "bunker" {
+			labels = append(labels, fmt.Sprintf("bunker %d", feature.Position))
+		} else {
+			labels = append(labels, feature.Type)
+		}
+	}
+	return labels
+}
+
+// What a hole with this many bunkers should list: the standard six, then its bunkers by number
+func expectedFeatureLabels(bunkerCount int) []string {
+	labels := models.StandardHoleFeatureTypes()
+	for position := 1; position <= bunkerCount; position++ {
+		labels = append(labels, fmt.Sprintf("bunker %d", position))
 	}
 	return labels
 }
@@ -338,5 +380,128 @@ func TestGetCourse_Access(t *testing.T) {
 				t.Errorf("expected %d, got %d", testCase.expectedStatus, recorder.Code)
 			}
 		})
+	}
+}
+
+func TestGetCourse_EveryHoleHasTheStandardSixFeaturesInOrder(t *testing.T) {
+	testutil.SetupTestDB(t)
+	buildClub(t, []int{9, 9})
+
+	course := fetchCourse(t, loggedInStaffCookie(t))
+
+	expected := models.StandardHoleFeatureTypes()
+	for _, layout := range course.Layouts {
+		for _, hole := range layout.Holes {
+			if actual := featureLabels(hole.Features); !reflect.DeepEqual(actual, expected) {
+				t.Errorf("course %s, hole %d: expected %v, got %v", layout.Name, hole.HoleNumber, expected, actual)
+			}
+		}
+	}
+}
+
+func TestGetCourse_BunkersFollowTheStandardSixNumberedFromOne(t *testing.T) {
+	testutil.SetupTestDB(t)
+	club := buildClub(t, []int{len(bunkerCountCases)})
+	for holeIndex, testCase := range bunkerCountCases {
+		for position := 1; position <= testCase.bunkers; position++ {
+			mustAddHoleFeature(t, club.HoleIDs[0][holeIndex], "bunker", position)
+		}
+	}
+
+	course := fetchCourse(t, loggedInStaffCookie(t))
+
+	for holeIndex, testCase := range bunkerCountCases {
+		t.Run(testCase.name, func(t *testing.T) {
+			actual := featureLabels(course.Layouts[0].Holes[holeIndex].Features)
+
+			if expected := expectedFeatureLabels(testCase.bunkers); !reflect.DeepEqual(actual, expected) {
+				t.Errorf("expected %v, got %v", expected, actual)
+			}
+		})
+	}
+}
+
+func TestGetCourse_BunkerOrderDoesNotDependOnTheOrderTheyWereAdded(t *testing.T) {
+	testutil.SetupTestDB(t)
+	holeID := buildClub(t, []int{1}).HoleIDs[0][0]
+	for _, position := range []int{3, 1, 2} {
+		mustAddHoleFeature(t, holeID, "bunker", position)
+	}
+
+	course := fetchCourse(t, loggedInStaffCookie(t))
+
+	actual := featureLabels(course.Layouts[0].Holes[0].Features)
+	if expected := expectedFeatureLabels(3); !reflect.DeepEqual(actual, expected) {
+		t.Errorf("expected %v, got %v", expected, actual)
+	}
+}
+
+func TestGetCourse_EveryFeatureHasItsOwnId(t *testing.T) {
+	testutil.SetupTestDB(t)
+	club := buildClub(t, []int{3})
+	mustAddHoleFeature(t, club.HoleIDs[0][0], "bunker", 1)
+	mustAddHoleFeature(t, club.HoleIDs[0][0], "bunker", 2)
+
+	course := fetchCourse(t, loggedInStaffCookie(t))
+
+	seenIDs := map[string]bool{}
+	for _, hole := range course.Layouts[0].Holes {
+		for _, feature := range hole.Features {
+			if feature.ID == "" {
+				t.Errorf("hole %d: a %s has no id", hole.HoleNumber, feature.Type)
+			}
+			if seenIDs[feature.ID] {
+				t.Errorf("hole %d: the id %q is used more than once", hole.HoleNumber, feature.ID)
+			}
+			seenIDs[feature.ID] = true
+		}
+	}
+	// 3 holes with the standard six each, plus the 2 bunkers on the first
+	if len(seenIDs) != 20 {
+		t.Errorf("expected 20 different feature ids, got %d", len(seenIDs))
+	}
+}
+
+func TestGetCourse_AHoleWithNoFeatureRowsHasAnEmptyListNotNull(t *testing.T) {
+	testutil.SetupTestDB(t)
+	holeIDs := buildClub(t, []int{2}).HoleIDs[0]
+	mustExec(t, `DELETE FROM hole_features WHERE hole_id = $1`, holeIDs[0])
+
+	course := fetchCourse(t, loggedInStaffCookie(t))
+
+	bare := course.Layouts[0].Holes[0]
+	if bare.Features == nil || len(bare.Features) != 0 {
+		t.Errorf("expected an empty list of features, got %v", bare.Features)
+	}
+	if course.Holes[0].Features == nil || len(course.Holes[0].Features) != 0 {
+		t.Errorf("expected an empty list of features in the flat list too, got %v", course.Holes[0].Features)
+	}
+	if other := course.Layouts[0].Holes[1]; len(other.Features) != 6 {
+		t.Errorf("the other hole should keep its 6 features, got %d", len(other.Features))
+	}
+}
+
+func TestGetCourse_TheFlatListCarriesTheSameFeaturesAsTheCourses(t *testing.T) {
+	testutil.SetupTestDB(t)
+	club := buildClub(t, []int{3, 2})
+	mustAddHoleFeature(t, club.HoleIDs[0][1], "bunker", 1)
+	mustAddHoleFeature(t, club.HoleIDs[1][0], "bunker", 1)
+	mustAddHoleFeature(t, club.HoleIDs[1][0], "bunker", 2)
+
+	course := fetchCourse(t, loggedInStaffCookie(t))
+
+	nestedFeatures := map[string][]holeFeatureResponse{}
+	for _, layout := range course.Layouts {
+		for _, hole := range layout.Holes {
+			nestedFeatures[hole.ID] = hole.Features
+		}
+	}
+	if len(course.Holes) != 5 {
+		t.Fatalf("expected 5 holes in the flat list, got %d", len(course.Holes))
+	}
+	for _, flatHole := range course.Holes {
+		if !reflect.DeepEqual(flatHole.Features, nestedFeatures[flatHole.ID]) {
+			t.Errorf("hole %s: the flat list and the course disagree about its features", flatHole.ID)
+		}
 	}
 }

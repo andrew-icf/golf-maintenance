@@ -75,7 +75,7 @@ export function HoleDetailsView() {
         </div>
       </dl>
 
-      <ChecklistPreview user={ user } />
+      <ChecklistPreview key={ details.id } user={ user } features={ details.features } />
 
       <div className="hole-details-bottom">
         <section className="hole-details-section">

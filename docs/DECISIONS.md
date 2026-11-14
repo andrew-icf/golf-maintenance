@@ -84,6 +84,7 @@ Information about you and your own time stays open before you clock in. **Work i
 - **Features are the nouns on a hole. Tasks are the verbs.** A hole's checklist for a day is its features combined with the task list.
 - **The standard features** are the tee box, the par 3 tee box, the fairway, the approach, the rough, the green, and numbered bunkers.
 - **Every hole has exactly one fairway.** The par 3 tee box plays to that same fairway, so there is no separate fairway for it. **Every hole has a par 3 tee box.**
+- **A database trigger gives every new hole the standard six features** (everything except bunkers) at the moment the hole is created, so a hole can never exist without them. Existing holes are backfilled by the migration.
 - **Bunkers** are counted per hole and numbered from 1. A hole with none has no Bunkers area.
 - **Bunker counts are seeded for now.** Editing them in the app waits for the admin editors (roadmap step 16). Until the real counts are supplied, the seed uses a placeholder pattern of 2 to 5 per hole, clearly marked as placeholder data.
 - The approach has no tasks yet.
@@ -239,6 +240,7 @@ Seeded from Prince Waikiki. G is greenskeeper and O is operator. The duty is who
 - **Manual completion:** confirm that "the people listed on a hole's card, plus admins" is the right group.
 - **Hole images:** placement and source (section 15).
 - **Legal retention** for clock and schedule records.
+- **Dev seed and the admin:** section 14 says `dev_seed.sql` creates an admin (`test@example.com`), but it doesn't. Either the seed should create one or section 14 should be corrected.
 
 ## 17. Change log
 

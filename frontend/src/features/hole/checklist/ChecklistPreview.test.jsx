@@ -12,6 +12,7 @@ import {
 import { CHECKLIST_NAME, RESPONSIBLE_NAME } from '../../../test/fixtures/holeChecklistCases'
 import { LUKE, MON_MOTHMA, YODA } from '../../../test/fixtures/taskPermissionCases'
 import { ChecklistPreview } from './ChecklistPreview'
+import { makeFeatures } from '../../../test/fixtures/holeFeatureCases'
 
 // Test data. Now is 6:12am on Wednesday 2026-10-21.
 const NOW = new Date(2026, 9, 21, 6, 12)
@@ -192,4 +193,44 @@ describe('ChecklistPreview', () => {
       expect(within(responsibleCard()).queryByText(/\(you\)/)).not.toBeInTheDocument()
     })
   })
+
+  describe('the features of the hole', () => {
+  it('builds the tasks from the features it is given, leaving out bunkers a hole lacks', () => {
+    render(<ChecklistPreview user={ LUKE } features={ makeFeatures() } />)
+
+    // The 5 sample marks on tasks this hole has, and the 3 set aside, out of 15 tasks
+    expect(screen.getByText('7 of 15 tasks accounted for')).toBeInTheDocument()
+    expect(screen.queryByRole('heading', { level: 4, name: 'Bunkers' })).not.toBeInTheDocument()
+  })
+
+  it('shows a section for each bunker the hole has', () => {
+    render(<ChecklistPreview user={ LUKE } features={ makeFeatures([1, 2, 3, 4, 5]) } />)
+
+    const sections = screen.getAllByRole('heading', { level: 5 }).map((heading) => heading.textContent)
+
+    expect(sections.filter((text) => text.startsWith('Bunker '))).toEqual([
+      'Bunker 1',
+      'Bunker 2',
+      'Bunker 3',
+      'Bunker 4',
+      'Bunker 5',
+    ])
+  })
+
+  it('shows no tasks, and no list of who is responsible, for a hole with no features', () => {
+    render(<ChecklistPreview user={ LUKE } features={ [] } />)
+
+    expect(screen.getByText('There are no tasks for this hole today.')).toBeInTheDocument()
+    expect(screen.queryByRole('region', { name: RESPONSIBLE_NAME })).not.toBeInTheDocument()
+  })
+
+  it('builds a new checklist when the features change', () => {
+    const { rerender } = render(<ChecklistPreview user={ LUKE } />)
+    expect(screen.getByText(SAMPLE_COUNT_TEXT)).toBeInTheDocument()
+
+    rerender(<ChecklistPreview user={ LUKE } features={ makeFeatures() } />)
+
+    expect(screen.getByText('7 of 15 tasks accounted for')).toBeInTheDocument()
+  })
+})
 })

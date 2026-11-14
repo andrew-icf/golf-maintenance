@@ -28,16 +28,36 @@ export const THREE_NINE_HOLE_COUNT = 27
 export const THREE_NINE_TOTAL_YARDAGE = 10763
 export const HOLES_IN_MAIN_COURSE = 18
 
+// How many bunkers a hole has in test data unless a test says otherwise, which is also how many the
+// sample hole has
+export const DEFAULT_BUNKER_COUNT = 3
+
+// The features every hole has, as the server sends them
+const STANDARD_FEATURE_TYPES = ['tee_box', 'par_3_tee_box', 'fairway', 'approach', 'rough', 'green']
+
 // Builders
 
 export function holeIdOf(prefix, number) {
   return `hole-${prefix}${number}`
 }
 
+// A hole's features the way the server sends them: the standard six, then numbered bunkers
+export function makeHoleFeatures(holeId, bunkerCount = DEFAULT_BUNKER_COUNT) {
+  return [
+    ...STANDARD_FEATURE_TYPES.map((type) => ({ id: `${holeId}-${type}`, type, position: 1 })),
+    ...Array.from({ length: bunkerCount }, (unusedItem, index) => ({
+      id: `${holeId}-bunker-${index + 1}`,
+      type: 'bunker',
+      position: index + 1,
+    })),
+  ]
+}
+
 // A hole. Leave yardage out (undefined) for a hole whose yardage field is missing entirely,
-// or pass null for a hole whose yardage is empty.
-export function makeHole(prefix, number, par, yardage) {
-  const hole = { id: holeIdOf(prefix, number), hole_number: number, par }
+// or pass null for a hole whose yardage is empty. It has the standard features plus bunkers.
+export function makeHole(prefix, number, par, yardage, bunkerCount = DEFAULT_BUNKER_COUNT) {
+  const holeId = holeIdOf(prefix, number)
+  const hole = { id: holeId, hole_number: number, par, features: makeHoleFeatures(holeId, bunkerCount) }
   return yardage === undefined ? hole : { ...hole, yardage }
 }
 

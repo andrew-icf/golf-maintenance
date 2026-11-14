@@ -42,6 +42,7 @@ goose -dir migrations postgres "$TEST_DATABASE_URL" up
 # Dev data (Star Wars crew, password password123). Never anywhere real.
 docker exec -i golf-maintenance-db psql -U golfadmin -d golf_maintenance -v ON_ERROR_STOP=1 < seed/dev_seed.sql
 docker exec -i golf-maintenance-db psql -U golfadmin -d golf_maintenance -v ON_ERROR_STOP=1 < seed/dev_course.sql
+docker exec -i golf-maintenance-db psql -U golfadmin -d golf_maintenance -v ON_ERROR_STOP=1 < seed/dev_bunkers.sql   # after dev_course.sql, which rebuilds the holes and their bunkers
 ```
 
 Frontend, from `frontend/`:

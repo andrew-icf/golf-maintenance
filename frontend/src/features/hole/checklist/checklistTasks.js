@@ -39,81 +39,88 @@ const DUTY_TITLES = {
 // How many bunkers the sample hole has
 export const SAMPLE_BUNKER_COUNT = 3
 
+// The features every hole has exactly one of, as the server lists them. A hole also has numbered
+// bunkers, and only bunkers repeat.
+const STANDARD_FEATURE_TYPES = ['tee_box', 'par_3_tee_box', 'fairway', 'approach', 'rough', 'green']
+const REPEATING_FEATURE_TYPES = ['bunker']
+
 // A tee box has its own section on the page, and the par 3 tee box a second one after it
 const TEE_BOX_SECTION = { key: 'tee-box', title: 'Tee box', order: 1 }
 const PAR_3_TEE_BOX_SECTION = { key: 'par-3-tee-box', title: 'Par 3 tee box', order: 2 }
 
-// Prince Waikiki's task list. Each task names the job titles that may check it off and the duty
-// whose owner is answerable for it. A task that repeats for every bunker makes its own section
-// for each one. Every task can happen every day: which ones are on for a given day is decided by
-// the superintendent's plan for the week, not by rules built into the tasks.
+// Prince Waikiki's task list. Each task names the feature of a hole it belongs to (featureType),
+// which decides whether a hole has the task, the area it is shown under (feature), the job titles
+// that may check it off, and the duty whose owner is answerable for it. A task for a feature that
+// repeats, a bunker, is made once for each one. Every task can happen every day: which ones are on
+// for a given day is decided by the superintendent's plan for the week, not by rules built into the
+// tasks.
 export const TASK_TEMPLATES = [
   {
-    id: 'collect-garbage', feature: 'tee_box', section: null,
+    id: 'collect-garbage', featureType: 'tee_box', feature: 'tee_box', section: null,
     name: 'Collect garbage', allowedJobTitles: GREENSKEEPER, duty: 'greenskeeper',
   },
   {
-    id: 'tee-box-cleared', feature: 'tee_box', section: TEE_BOX_SECTION,
+    id: 'tee-box-cleared', featureType: 'tee_box', feature: 'tee_box', section: TEE_BOX_SECTION,
     name: 'Cleared', allowedJobTitles: GREENSKEEPER, duty: 'greenskeeper',
   },
   {
-    id: 'tee-box-mowed', feature: 'tee_box', section: TEE_BOX_SECTION,
+    id: 'tee-box-mowed', featureType: 'tee_box', feature: 'tee_box', section: TEE_BOX_SECTION,
     name: 'Mowed', allowedJobTitles: OPERATOR, duty: 'tees_and_fairways',
   },
   {
-    id: 'par-3-tee-box-cleared', feature: 'tee_box', section: PAR_3_TEE_BOX_SECTION,
+    id: 'par-3-tee-box-cleared', featureType: 'par_3_tee_box', feature: 'tee_box', section: PAR_3_TEE_BOX_SECTION,
     name: 'Cleared', allowedJobTitles: GREENSKEEPER, duty: 'greenskeeper',
   },
   {
-    id: 'par-3-tee-box-mowed', feature: 'tee_box', section: PAR_3_TEE_BOX_SECTION,
+    id: 'par-3-tee-box-mowed', featureType: 'par_3_tee_box', feature: 'tee_box', section: PAR_3_TEE_BOX_SECTION,
     name: 'Mowed', allowedJobTitles: OPERATOR, duty: 'tees_and_fairways',
   },
   {
-    id: 'fairway-mowed', feature: 'fairway', section: null,
+    id: 'fairway-mowed', featureType: 'fairway', feature: 'fairway', section: null,
     name: 'Fairway mowed', allowedJobTitles: OPERATOR, duty: 'tees_and_fairways',
   },
   {
-    id: 'cart-signs', feature: 'fairway', section: null,
+    id: 'cart-signs', featureType: 'fairway', feature: 'fairway', section: null,
     name: 'Cart signs', allowedJobTitles: GREENSKEEPER, duty: 'greenskeeper',
   },
   {
-    id: 'fairway-sprayed', feature: 'fairway', section: null,
+    id: 'fairway-sprayed', featureType: 'fairway', feature: 'fairway', section: null,
     name: 'Fairway sprayed', allowedJobTitles: OPERATOR, duty: 'spraying',
   },
   {
-    id: 'rough-mowed', feature: 'rough', section: null,
+    id: 'rough-mowed', featureType: 'rough', feature: 'rough', section: null,
     name: 'Rough mowed', allowedJobTitles: OPERATOR, duty: 'rough',
   },
   {
-    id: 'bunker-raked-machine', feature: 'bunker', section: null, repeatsPerBunker: true,
+    id: 'bunker-raked-machine', featureType: 'bunker', feature: 'bunker', section: null, repeatsPerBunker: true,
     name: 'Raked by machine', allowedJobTitles: OPERATOR, duty: 'bunkers',
   },
   {
-    id: 'bunker-raked-hand', feature: 'bunker', section: null, repeatsPerBunker: true,
+    id: 'bunker-raked-hand', featureType: 'bunker', feature: 'bunker', section: null, repeatsPerBunker: true,
     name: 'Raked by hand', allowedJobTitles: GREENSKEEPER, duty: 'greenskeeper',
   },
   {
-    id: 'pin-placement', feature: 'green', section: null,
+    id: 'pin-placement', featureType: 'green', feature: 'green', section: null,
     name: 'Pin placement', allowedJobTitles: GREENSKEEPER, duty: 'greenskeeper',
   },
   {
-    id: 'ball-marks', feature: 'green', section: null,
+    id: 'ball-marks', featureType: 'green', feature: 'green', section: null,
     name: 'Ball marks', allowedJobTitles: GREENSKEEPER, duty: 'greenskeeper',
   },
   {
-    id: 'top-dress', feature: 'green', section: null,
+    id: 'top-dress', featureType: 'green', feature: 'green', section: null,
     name: 'Top dress', allowedJobTitles: GREENSKEEPER, duty: 'greenskeeper',
   },
   {
-    id: 'green-mowed', feature: 'green', section: null,
+    id: 'green-mowed', featureType: 'green', feature: 'green', section: null,
     name: 'Mowed', allowedJobTitles: OPERATOR, duty: 'greens',
   },
   {
-    id: 'green-rolled', feature: 'green', section: null,
+    id: 'green-rolled', featureType: 'green', feature: 'green', section: null,
     name: 'Rolled', allowedJobTitles: OPERATOR, duty: 'rolling',
   },
   {
-    id: 'green-sprayed', feature: 'green', section: null,
+    id: 'green-sprayed', featureType: 'green', feature: 'green', section: null,
     name: 'Sprayed', allowedJobTitles: OPERATOR, duty: 'spraying',
   },
 ]
@@ -124,6 +131,51 @@ export function formatFeatureTitle(feature) {
 
 export function formatDutyTitle(duty) {
   return lookupLabel(DUTY_TITLES, duty)
+}
+
+// The features of a hole like the sample one: the standard six, then this many bunkers numbered
+// from one. A count that is not a whole number above zero counts as no bunkers.
+export function buildSampleFeatures(bunkerCount = SAMPLE_BUNKER_COUNT) {
+  const bunkers = Number.isInteger(bunkerCount) && bunkerCount > 0 ? bunkerCount : 0
+
+  return [
+    ...STANDARD_FEATURE_TYPES.map((type) => ({ id: `sample-${type}`, type, position: 1 })),
+    ...Array.from({ length: bunkers }, (unusedItem, index) => ({
+      id: `sample-bunker-${index + 1}`,
+      type: 'bunker',
+      position: index + 1,
+    })),
+  ]
+}
+
+// For each kind of feature, the positions the hole has it at. A feature that does not repeat is at
+// position 1 however many times it is listed, and a bunker is only counted when its position is a
+// whole number above zero. Entries that are not features are left out.
+function indexFeatures(features) {
+  if (!Array.isArray(features)) {
+    return new Map()
+  }
+
+  const positionSets = new Map()
+  for (const feature of features) {
+    if (!feature || typeof feature !== 'object' || typeof feature.type !== 'string') {
+      continue
+    }
+
+    const repeats = REPEATING_FEATURE_TYPES.includes(feature.type)
+    if (repeats && !(Number.isInteger(feature.position) && feature.position >= 1)) {
+      continue
+    }
+
+    if (!positionSets.has(feature.type)) {
+      positionSets.set(feature.type, new Set())
+    }
+    positionSets.get(feature.type).add(repeats ? feature.position : 1)
+  }
+
+  return new Map(
+    [...positionSets].map(([type, positions]) => [type, [...positions].sort((first, second) => first - second)])
+  )
 }
 
 function makeItem(template, bunkerNumber) {
@@ -142,19 +194,23 @@ function makeItem(template, bunkerNumber) {
   }
 }
 
-// The tasks on one hole's checklist. A bunker count that is not a whole number above zero counts
-// as no bunkers.
-export function buildChecklistItems(bunkerCount = SAMPLE_BUNKER_COUNT) {
-  const bunkers = Number.isInteger(bunkerCount) && bunkerCount > 0 ? bunkerCount : 0
+// The tasks on one hole's checklist, built from the features the server sent with the hole. A
+// hole has the tasks of the features it has and none for the features it lacks. Given no features
+// at all (undefined), it builds the sample hole's checklist, for tests and the preview. Anything
+// else that is not a list of features builds nothing.
+export function buildChecklistItems(features = buildSampleFeatures()) {
+  const positionsByType = indexFeatures(features)
   const items = []
 
   for (const template of TASK_TEMPLATES) {
-    if (!template.repeatsPerBunker) {
+    const positions = positionsByType.get(template.featureType) ?? []
+
+    if (template.repeatsPerBunker) {
+      for (const position of positions) {
+        items.push(makeItem(template, position))
+      }
+    } else if (positions.length > 0) {
       items.push(makeItem(template, null))
-      continue
-    }
-    for (let bunkerNumber = 1; bunkerNumber <= bunkers; bunkerNumber++) {
-      items.push(makeItem(template, bunkerNumber))
     }
   }
 

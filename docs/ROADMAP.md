@@ -4,18 +4,18 @@ The build order for Golf Maintenance. Decisions behind each step are in `docs/DE
 
 **How to read it**
 - Steps are numbered `N`, and their sub-steps `N-M`. If a step needs more sub-steps, add the next number. Never use letters.
-- A step is done only when `npm run lint`, `npm test`, and the backend tests are green and it is committed. Update this file in the same commit.
+- A step is done only when `npm run lint`, `npm test`, and the backend tests are green and it is committed. Update this file in the same commit that finishes the step, not in each sub-step.
 - Every new endpoint gets a gate decision when it is built: open, gated, or admin-only (DECISIONS section 3).
 - Work one step at a time.
 
-Last updated: 2026-11-11.
+Last updated: 2026-11-13.
 
 ## Current state
 
-- Frontend: **1331 tests in 50 files**. Lint shows one accepted warning (`react(set-state-in-effect)` in `AuthContext.jsx`).
-- Backend: **256 router tests and 19 auth tests** (`go test -count=1 -p 1 ./...` from `backend/`).
-- Last finished: step 5 (the checklist preview), plus the phone and upright-tablet layout and the matching Not today and Undo button widths.
-- In progress: nothing. Next is step 6, on a branch called `hole-features`.
+- Frontend: **1379 tests in 51 files**. Lint shows one accepted warning (`react(set-state-in-effect)` in `AuthContext.jsx`).
+- Backend: **266 router tests and 19 auth tests** (`go test -count=1 -p 1 -coverpkg=./...` is what CI runs, and `go test -count=1 -p 1 ./...` from `backend/` is the quick check).
+- Last finished: step 6 (hole features).
+- In progress: nothing. Next is step 7, on a new branch.
 
 ---
 
@@ -60,28 +60,25 @@ Last updated: 2026-11-11.
 | 5-7 | The "Responsible today" list |
 | 5-8 | The checklist and who is responsible on the hole page |
 
+### Step 6: Hole features
+| Sub-step | What |
+|---|---|
+| 6-1 | A `hole_features` table. A database trigger gives every hole the standard six features (tee box, par 3 tee box, fairway, approach, rough, green), the migration backfilled the existing holes, and bunkers are numbered from 1. A placeholder seed, `backend/seed/dev_bunkers.sql`, sets each dev hole's bunker count. Database-rule tests, and a test that the Go list of feature types matches the database enum |
+| 6-2 | `GET /api/course` sends each hole's features with the hole, in a fixed order and with a stable id for each |
+| 6-3 | The checklist is built from the hole's real features: no Bunkers area for a hole without bunkers, and a section for each bunker by its own number. Each task now names the kind of feature it belongs to |
+
 ### Small fixes along the way
 - Curl cookie files stopped being tracked and are ignored.
 - The side nav became a strip across the top on phones and upright tablets.
 
 ### Step 20: Tests for the equipment endpoints (done out of order)
-Done ahead of steps 6 to 19 as part of batch 1 of `docs/test-audit.md` (the backend gap tests), with the owner's approval. Both equipment endpoints are covered: `GET /api/equipment` (sorted by label, an empty list is `[]`) and `PUT /api/equipment/{id}` (each allowed status, the status allowlist, a bad body, an unknown id). The same batch added tests for creating shifts, logout, login's required fields, and CORS.
+Done ahead of steps 7 to 19 as part of batch 1 of `docs/test-audit.md` (the backend gap tests), with the owner's approval. Both equipment endpoints are covered: `GET /api/equipment` (sorted by label, an empty list is `[]`) and `PUT /api/equipment/{id}` (each allowed status, the status allowlist, a bad body, an unknown id). The same batch added tests for creating shifts, logout, login's required fields, and CORS.
 
 ---
 
-## Next: Step 6, hole features
+## Next: Step 7, task templates
 
-Every hole gets real features, and its checklist is built from them. See DECISIONS section 6.
-
-| Sub-step | What | Where |
-|---|---|---|
-| 6-1 (done)| A table of each hole's features (tee box, par 3 tee box, fairway, approach, rough, green, numbered bunkers). Every existing hole gets the standard six. A separate seed file sets each hole's bunker count (placeholder values until the real ones arrive). Database-rule tests. | Backend |
-| 6-2 | `GET /api/course` sends each hole's features with the hole, with tests | Backend |
-| 6-3 | The checklist builds from the hole's real features: no Bunkers area without bunkers, and sections that match the count | Frontend |
-
-Gate: the features arrive through `GET /api/course`, which is already gated. No new endpoint.
-
-Needs from you: the real bunker count for each of the 27 holes (a list like "A1: 3, A2: 4, ...").
+Move the task list out of the frontend and into the database, with each task's feature type, who may check it, and its duty. Today the list is written in `frontend/src/features/hole/checklist/checklistTasks.js`. The seeded list is in DECISIONS 7.1, and admin editing of it is step 16. The sub-steps are planned when the step starts.
 
 ---
 
@@ -89,9 +86,8 @@ Needs from you: the real bunker count for each of the 27 holes (a list like "A1:
 
 | Step | What | Notes |
 |---|---|---|
-| 7 | Task templates seeded with the Prince Waikiki list, stored in the database with each task's feature type, who may check it, and its duty | The seeded list is in DECISIONS 7.1. Admin editing is step 16 |
-| 8 | The daily checklist backend: marks stored per hole per day, the permission rule enforced by job title, "not today," undo, 14-day cleanup, and a full test matrix | Gated for staff. Admins exempt. The server enforces everything the preview only mirrors |
-| 9 | The real data in the checklist, replacing the preview wrapper | The checklist component stays. Only `ChecklistPreview` is swapped |
+| 8 | The daily checklist backend: marks stored per hole per day, the permission rule enforced by job title, "not today," undo, 14-day cleanup, and a full test matrix | Gated for staff. Admins exempt. The server enforces everything the preview only mirrors. Also settles how a page picks up checks made on another tablet (DECISIONS 16) |
+| 9 | The real data in the checklist, replacing the preview wrapper | The checklist component stays. Only `ChecklistPreview` is swapped. Checks then survive leaving the page and reach everyone |
 | 10 | A "Course tasks" block on the Course page for the landscaper's course-wide tasks | Needs the real task list |
 | 11 | Assignments: operator duties for the whole club (a standing person plus a one-day change, may be unassigned, may be several people) and greenskeepers per hole, with Front, Back, and whole-course shortcuts | Feeds "Responsible today" |
 | 12 | Hole status: automatic and manual completion, the "Not completed" chip as the control, and progress counts on the hole cards | DECISIONS 7.5 |
@@ -100,7 +96,7 @@ Needs from you: the real bunker count for each of the 27 holes (a list like "A1:
 | 15 | The notes block as a placeholder | Real notes are in step 16 |
 | 16 | Admin editors: the task list (names, who may check, duty), hole features (including bunker counts and feature on/off), duties, and the **weekly planner** (tick tasks per day, copy to next week). Real notes and photos with file storage. Hole images and tee sets | The biggest step. It will be split into sub-steps when it starts |
 | 17 | Remove the old flat `holes` list from the API, the Go models, and the frontend | |
-| 18 | Finish the README refresh: the testing commands, an API table, prerequisites, and the project structure | Partly done: the README links to `docs/DECISIONS.md` and `docs/ROADMAP.md`, and the product decisions and feature order were removed from it |
+| 18 | Finish the README refresh: the testing commands, an API table (including the `features` list on the `GET /api/course` row), prerequisites, and the project structure | Partly done: the README links to `docs/DECISIONS.md` and `docs/ROADMAP.md`, and the product decisions and feature order were removed from it |
 | 19 | Automatic log-out after inactivity, for shared tablets | A PIN or badge login is parked |
 | 21 | A hamburger menu in the top bar for the clock status, clock in and out, change password, and log out | The top bar has five things in it and wraps badly on a phone |
 | 22 | An admin board: all 27 holes at a glance, who is behind, and which duties are done | The hole cards on the Course page are the first version |
@@ -122,7 +118,8 @@ Needs from you: the real bunker count for each of the 27 holes (a list like "A1:
 - Scope queries by `course_id`.
 - Look at `login_test.go` and `router_test.go` for repeated setup.
 - An optional warning for overlapping or very long shifts.
-- Decide about the dev seed and the admin: either `dev_seed.sql` creates an admin, or `DECISIONS.md` section 14 changes. Today the seed has none, though section 14 says it has `test@example.com`.
+- Decide about the dev seed and the admin. The dev database has an admin, `test@example.com` (a superintendent), but it was made by hand, and `dev_seed.sql` creates no admin, so a fresh setup has none. Either the seed creates an admin, with a known password and a Star Wars name, or `DECISIONS.md` section 14 says a hand-made admin is the way.
+- Replace the placeholder bunker counts in `backend/seed/dev_bunkers.sql` with Prince Waikiki's real counts (a list like `A1: 3, A2: 4, ...`).
 - Decide what to do about the three `npm audit` findings that already exist on `main`.
 - Arrow-key navigation in the schedule grid, instead of one Tab stop per cell.
 - Remove the redundant `r.Method` checks in handlers (chi already enforces methods).

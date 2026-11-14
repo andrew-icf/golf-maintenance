@@ -13,7 +13,7 @@ Last updated: 2026-11-11.
 ## Current state
 
 - Frontend: **1331 tests in 50 files**. Lint shows one accepted warning (`react(set-state-in-effect)` in `AuthContext.jsx`).
-- Backend: **237 router tests and 19 auth tests** (`go test -count=1 -p 1 ./...` from `backend/`).
+- Backend: **256 router tests and 19 auth tests** (`go test -count=1 -p 1 ./...` from `backend/`).
 - Last finished: step 5 (the checklist preview), plus the phone and upright-tablet layout and the matching Not today and Undo button widths.
 - In progress: nothing. Next is step 6, on a branch called `hole-features`.
 
@@ -75,7 +75,7 @@ Every hole gets real features, and its checklist is built from them. See DECISIO
 
 | Sub-step | What | Where |
 |---|---|---|
-| 6-1 | A table of each hole's features (tee box, par 3 tee box, fairway, approach, rough, green, numbered bunkers). Every existing hole gets the standard six. A separate seed file sets each hole's bunker count (placeholder values until the real ones arrive). Database-rule tests. | Backend |
+| 6-1 (done)| A table of each hole's features (tee box, par 3 tee box, fairway, approach, rough, green, numbered bunkers). Every existing hole gets the standard six. A separate seed file sets each hole's bunker count (placeholder values until the real ones arrive). Database-rule tests. | Backend |
 | 6-2 | `GET /api/course` sends each hole's features with the hole, with tests | Backend |
 | 6-3 | The checklist builds from the hole's real features: no Bunkers area without bunkers, and sections that match the count | Frontend |
 
@@ -100,10 +100,12 @@ Needs from you: the real bunker count for each of the 27 holes (a list like "A1:
 | 15 | The notes block as a placeholder | Real notes are in step 16 |
 | 16 | Admin editors: the task list (names, who may check, duty), hole features (including bunker counts and feature on/off), duties, and the **weekly planner** (tick tasks per day, copy to next week). Real notes and photos with file storage. Hole images and tee sets | The biggest step. It will be split into sub-steps when it starts |
 | 17 | Remove the old flat `holes` list from the API, the Go models, and the frontend | |
-| 18 | Refresh the README: the project structure, the fixtures and commit conventions, and the greenskeeper rename | Partly done: the README now links to `docs/DECISIONS.md` and `docs/ROADMAP.md`, and the product decisions and feature order were removed from it |
+| 18 | Finish the README refresh: the testing commands, an API table, prerequisites, and the project structure | Partly done: the README links to `docs/DECISIONS.md` and `docs/ROADMAP.md`, and the product decisions and feature order were removed from it |
 | 19 | Automatic log-out after inactivity, for shared tablets | A PIN or badge login is parked |
 | 21 | A hamburger menu in the top bar for the clock status, clock in and out, change password, and log out | The top bar has five things in it and wraps badly on a phone |
 | 22 | An admin board: all 27 holes at a glance, who is behind, and which duties are done | The hole cards on the Course page are the first version |
+| 23 | Optional cleanup, audit batch 2 of `docs/test-audit.md`: one table-driven test covering all 18 `api.js` wrappers, including the eight that no test calls today | Not pressing. Do when convenient |
+| 24 | Optional cleanup, audit batches 3 through 6 of `docs/test-audit.md`: remove the cross-layer duplicate tests that cover the same behavior in more than one layer, for clarity rather than speed | Not pressing. Do when convenient |
 
 ---
 
@@ -120,7 +122,8 @@ Needs from you: the real bunker count for each of the 27 holes (a list like "A1:
 - Scope queries by `course_id`.
 - Look at `login_test.go` and `router_test.go` for repeated setup.
 - An optional warning for overlapping or very long shifts.
-- Add an admin to the dev seed. `dev_seed.sql` has none today, though DECISIONS section 14 says it has `test@example.com`.
+- Decide about the dev seed and the admin: either `dev_seed.sql` creates an admin, or `DECISIONS.md` section 14 changes. Today the seed has none, though section 14 says it has `test@example.com`.
+- Decide what to do about the three `npm audit` findings that already exist on `main`.
 - Arrow-key navigation in the schedule grid, instead of one Tab stop per cell.
 - Remove the redundant `r.Method` checks in handlers (chi already enforces methods).
 - Clean up expired sessions.

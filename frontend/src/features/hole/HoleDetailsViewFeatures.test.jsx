@@ -9,11 +9,12 @@ import {
   NO_FEATURES_HOLE_ID,
   NO_FEATURES_PAGE,
 } from '../../test/fixtures/holeFeatureCases'
+import { SAMPLE_TASK_LIST } from '../../test/fixtures/holeTaskCases'
 import { LUKE } from '../../test/fixtures/taskPermissionCases'
 import { HoleDetailsView } from './HoleDetailsView'
 
 const { apiMock, useAuthMock } = vi.hoisted(() => ({
-  apiMock: { getCourse: vi.fn() },
+  apiMock: { getCourse: vi.fn(), getHoleTasks: vi.fn() },
   useAuthMock: vi.fn(),
 }))
 
@@ -57,6 +58,8 @@ function headingTexts(level) {
 describe('the checklist on the hole page', () => {
   beforeEach(() => {
     apiMock.getCourse.mockReset()
+    apiMock.getHoleTasks.mockReset()
+    apiMock.getHoleTasks.mockResolvedValue(SAMPLE_TASK_LIST)
     useAuthMock.mockReset()
     useAuthMock.mockReturnValue({ user: LUKE })
   })

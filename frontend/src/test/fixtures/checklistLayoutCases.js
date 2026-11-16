@@ -50,8 +50,7 @@ export const EXPECTED_SAMPLE_LAYOUT = [
   {
     title: 'Tee box',
     sections: [
-      { title: null, columns: { greenskeeper: ['Collect garbage'], operator: [] } },
-      { title: 'Tee box', columns: { greenskeeper: ['Cleared'], operator: ['Mowed'] } },
+      { title: 'Tee box', columns: { greenskeeper: ['Cleared', 'Collect garbage'], operator: ['Mowed'] } },
       { title: 'Par 3 tee box', columns: { greenskeeper: ['Cleared'], operator: ['Mowed'] } },
     ],
   },

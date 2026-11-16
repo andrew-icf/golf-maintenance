@@ -39,8 +39,8 @@ export const ACTION_COUNT_CASES = [
 
 // Every checkbox's name, in the order the page reads them
 export const EXPECTED_CHECKBOX_LABELS = [
-  'Tee box: Collect garbage',
   'Tee box: Cleared',
+  'Tee box: Collect garbage',
   'Tee box: Mowed',
   'Tee box, Par 3 tee box: Cleared',
   'Tee box, Par 3 tee box: Mowed',

@@ -19,10 +19,11 @@ import {
 import { FROZEN_USER, LUKE, NO_PERSON_CASES } from '../../../test/fixtures/taskPermissionCases'
 import { makeChecklistItem } from '../../../test/fixtures/checklistCases'
 import { buildChecklistLayout } from './checklistLayout'
-import { buildChecklistItems, groupChecklist } from './checklistTasks'
+import { buildSampleItems } from '../../../test/fixtures/holeTaskCases'
+import { groupChecklist } from './checklistTasks'
 
 // Test data
-const SAMPLE_ITEMS = buildChecklistItems()
+const SAMPLE_ITEMS = buildSampleItems()
 
 // Actions
 function yoursFlags(layout) {

@@ -97,6 +97,9 @@ export const api = {
 
   getCourse: () => request('/api/course'),
 
+  // The club's list of tasks for a hole, and the duties they belong to
+  getHoleTasks: () => request('/api/hole-tasks'),
+
   getEquipment: () => request('/api/equipment'),
 
   updateEquipmentStatus: (id, status) =>

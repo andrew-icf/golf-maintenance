@@ -7,11 +7,11 @@ import { buildChecklistItems, listDuties } from './checklistTasks'
 import { buildSampleAssignments } from './responsibleList'
 
 // Who is responsible and the checklist, with sample marks and sample people, kept in this page's
-// memory only: nothing is saved, and everything starts over when the page is shown again. The
-// tasks follow the features of the hole it is given. user is the person looking, who takes one of
-// the sample duties that fits their job title.
-export function ChecklistPreview({ user, features }) {
-  const items = useMemo(() => buildChecklistItems(features), [features])
+// memory only: nothing is saved, and everything starts over when the page is shown again. The tasks
+// follow the club's task list and the features of the hole it is given. user is the person looking,
+// who takes one of the sample duties that fits their job title.
+export function ChecklistPreview({ user, features, taskList }) {
+  const items = useMemo(() => buildChecklistItems(features, taskList), [features, taskList])
   const [marks, setMarks] = useState(() => buildSampleMarks(todayDateString()))
 
   function handleCheck(item) {
@@ -28,7 +28,11 @@ export function ChecklistPreview({ user, features }) {
 
   return (
     <>
-      <ResponsibleToday duties={ listDuties(items) } assignments={ buildSampleAssignments(user) } user={ user } />
+      <ResponsibleToday
+        duties={ listDuties(items, taskList?.duties) }
+        assignments={ buildSampleAssignments(user) }
+        user={ user }
+      />
       <p className="checklist-preview-banner">Preview with sample tasks. Checks are not saved.</p>
       <Checklist
         items={ items }

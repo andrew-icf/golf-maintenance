@@ -17,27 +17,6 @@ export function makeFeatures(bunkerPositions = []) {
   ]
 }
 
-// The kind of feature each task needs, written out by hand so it is checked against the code
-export const EXPECTED_FEATURE_TYPES = {
-  'collect-garbage': 'tee_box',
-  'tee-box-cleared': 'tee_box',
-  'tee-box-mowed': 'tee_box',
-  'par-3-tee-box-cleared': 'par_3_tee_box',
-  'par-3-tee-box-mowed': 'par_3_tee_box',
-  'fairway-mowed': 'fairway',
-  'cart-signs': 'fairway',
-  'fairway-sprayed': 'fairway',
-  'rough-mowed': 'rough',
-  'bunker-raked-machine': 'bunker',
-  'bunker-raked-hand': 'bunker',
-  'pin-placement': 'green',
-  'ball-marks': 'green',
-  'top-dress': 'green',
-  'green-mowed': 'green',
-  'green-rolled': 'green',
-  'green-sprayed': 'green',
-}
-
 // A hole that lacks one kind of feature has none of that feature's tasks. The approach has no
 // tasks yet, so a hole without one loses nothing.
 export const MISSING_FEATURE_CASES = [

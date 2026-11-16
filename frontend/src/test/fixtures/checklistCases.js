@@ -1,7 +1,8 @@
 import { LUKE } from './taskPermissionCases'
 
-// Test data for the checklist: the task list as it should read, how it is laid out on the page,
-// and the odd lists it has to cope with. Today in these tests is Wednesday 2026-10-21.
+// Test data for the checklist: how it is laid out on the page, and the odd lists it has to cope
+// with. The tasks themselves come from the club's task list in holeTaskCases.js. Today in these
+// tests is Wednesday 2026-10-21.
 export const SAMPLE_DAY = '2026-10-21'
 
 // A moment on that day, in the device's own time
@@ -37,32 +38,7 @@ export function notTodayMark(byId, byName, at) {
   return { status: 'not_today', byId, byName, at }
 }
 
-// The task list, written out by hand so it is checked against the code. section is the key of
-// the section the task sits in.
-export const EXPECTED_TASKS = [
-  { id: 'collect-garbage', feature: 'tee_box', name: 'Collect garbage', duty: 'greenskeeper', titles: ['greenskeeper'], section: null },
-  { id: 'tee-box-cleared', feature: 'tee_box', name: 'Cleared', duty: 'greenskeeper', titles: ['greenskeeper'], section: 'tee-box' },
-  { id: 'tee-box-mowed', feature: 'tee_box', name: 'Mowed', duty: 'tees_and_fairways', titles: ['operator'], section: 'tee-box' },
-  { id: 'par-3-tee-box-cleared', feature: 'tee_box', name: 'Cleared', duty: 'greenskeeper', titles: ['greenskeeper'], section: 'par-3-tee-box' },
-  { id: 'par-3-tee-box-mowed', feature: 'tee_box', name: 'Mowed', duty: 'tees_and_fairways', titles: ['operator'], section: 'par-3-tee-box' },
-  { id: 'fairway-mowed', feature: 'fairway', name: 'Fairway mowed', duty: 'tees_and_fairways', titles: ['operator'], section: null },
-  { id: 'cart-signs', feature: 'fairway', name: 'Cart signs', duty: 'greenskeeper', titles: ['greenskeeper'], section: null },
-  { id: 'fairway-sprayed', feature: 'fairway', name: 'Fairway sprayed', duty: 'spraying', titles: ['operator'], section: null },
-  { id: 'rough-mowed', feature: 'rough', name: 'Rough mowed', duty: 'rough', titles: ['operator'], section: null },
-  { id: 'bunker-raked-machine', feature: 'bunker', name: 'Raked by machine', duty: 'bunkers', titles: ['operator'], section: null },
-  { id: 'bunker-raked-hand', feature: 'bunker', name: 'Raked by hand', duty: 'greenskeeper', titles: ['greenskeeper'], section: null },
-  { id: 'pin-placement', feature: 'green', name: 'Pin placement', duty: 'greenskeeper', titles: ['greenskeeper'], section: null },
-  { id: 'ball-marks', feature: 'green', name: 'Ball marks', duty: 'greenskeeper', titles: ['greenskeeper'], section: null },
-  { id: 'top-dress', feature: 'green', name: 'Top dress', duty: 'greenskeeper', titles: ['greenskeeper'], section: null },
-  { id: 'green-mowed', feature: 'green', name: 'Mowed', duty: 'greens', titles: ['operator'], section: null },
-  { id: 'green-rolled', feature: 'green', name: 'Rolled', duty: 'rolling', titles: ['operator'], section: null },
-  { id: 'green-sprayed', feature: 'green', name: 'Sprayed', duty: 'spraying', titles: ['operator'], section: null },
-]
-
 // 15 tasks outside the bunkers, plus two for each bunker
-export const ITEMS_WITHOUT_BUNKERS = 15
-export const SAMPLE_ITEM_COUNT = 21
-
 export const ITEM_COUNT_CASES = [
   { bunkerCount: 0, expected: 15 },
   { bunkerCount: 1, expected: 17 },
@@ -98,8 +74,7 @@ export const EXPECTED_GROUPS = [
   {
     title: 'Tee box',
     sections: [
-      { title: null, names: ['Collect garbage'] },
-      { title: 'Tee box', names: ['Cleared', 'Mowed'] },
+      { title: 'Tee box', names: ['Cleared', 'Collect garbage', 'Mowed'] },
       { title: 'Par 3 tee box', names: ['Cleared', 'Mowed'] },
     ],
   },
@@ -194,7 +169,7 @@ export const FROZEN_ITEMS = Object.freeze([
   Object.freeze(makeChecklistItem({ id: 'green-task', feature: 'green' })),
 ])
 
-// Duties as the "Responsible today" list reads them
+// Duties as the "Responsible today" list reads them, in the order the club's list gives them
 export const FULL_DUTIES = [
   { key: 'greenskeeper', title: 'Greenskeeper tasks' },
   { key: 'bunkers', title: 'Bunkers' },
@@ -208,8 +183,8 @@ export const FULL_DUTIES = [
 export const GREENS_ONLY_ITEMS = [makeChecklistItem({ id: 'green-mowed', duty: 'greens' })]
 export const GREENS_ONLY_DUTIES = [{ key: 'greens', title: 'Greens' }]
 
-// A duty listed twice counts once, an unknown duty follows the known ones, and a task with no
-// duty is skipped
+// A duty listed twice counts once, a duty the list does not know follows the known ones, and a task
+// with no duty is skipped
 export const MIXED_DUTY_ITEMS = [
   makeChecklistItem({ id: 'a', duty: 'greens' }),
   makeChecklistItem({ id: 'b', duty: 'greenskeeper' }),
@@ -225,14 +200,9 @@ export const EXPECTED_MIXED_DUTIES = [
   { key: 'mystery', title: 'mystery' },
 ]
 
-export const DUTY_TITLE_CASES = [
-  { duty: 'greenskeeper', expected: 'Greenskeeper tasks' },
-  { duty: 'tees_and_fairways', expected: 'Tees and fairways' },
-  { duty: 'mystery', expected: 'mystery' },
-]
-
 export const FEATURE_TITLE_CASES = [
   { feature: 'tee_box', expected: 'Tee box' },
+  { feature: 'approach', expected: 'Approach' },
   { feature: 'bunker', expected: 'Bunkers' },
   { feature: 'irrigation', expected: 'irrigation' },
 ]

@@ -1,136 +1,46 @@
 import { lookupLabel } from '../../../constants/lookupLabel'
 
-const GREENSKEEPER = ['greenskeeper']
-const OPERATOR = ['operator']
-
-// The areas of a hole a task belongs to, in the order the page lists them
-export const FEATURE_ORDER = ['tee_box', 'fairway', 'rough', 'bunker', 'green']
+// The areas of a hole the page groups tasks under, in the order it lists them
+export const FEATURE_ORDER = ['tee_box', 'fairway', 'approach', 'rough', 'bunker', 'green']
 
 const FEATURE_TITLES = {
   tee_box: 'Tee box',
   fairway: 'Fairway',
+  approach: 'Approach',
   rough: 'Rough',
   bunker: 'Bunkers',
   green: 'Green',
   other: 'Other',
 }
 
-// Who is answerable for a task, in the order the "Responsible today" list shows them
-export const DUTY_ORDER = [
-  'greenskeeper',
-  'bunkers',
-  'greens',
-  'rolling',
-  'spraying',
-  'rough',
-  'tees_and_fairways',
-]
-
-const DUTY_TITLES = {
-  greenskeeper: 'Greenskeeper tasks',
-  bunkers: 'Bunkers',
-  greens: 'Greens',
-  rolling: 'Rolling',
-  spraying: 'Spraying',
-  rough: 'Rough',
-  tees_and_fairways: 'Tees and fairways',
-}
-
 // How many bunkers the sample hole has
 export const SAMPLE_BUNKER_COUNT = 3
 
-// The features every hole has exactly one of, as the server lists them. A hole also has numbered
-// bunkers, and only bunkers repeat.
+// The kinds of feature every hole has exactly one of, as the server lists them. A hole also has
+// numbered bunkers, and only bunkers repeat.
 const STANDARD_FEATURE_TYPES = ['tee_box', 'par_3_tee_box', 'fairway', 'approach', 'rough', 'green']
 const REPEATING_FEATURE_TYPES = ['bunker']
 
-// A tee box has its own section on the page, and the par 3 tee box a second one after it
-const TEE_BOX_SECTION = { key: 'tee-box', title: 'Tee box', order: 1 }
-const PAR_3_TEE_BOX_SECTION = { key: 'par-3-tee-box', title: 'Par 3 tee box', order: 2 }
+// The area of the page each kind of feature is shown under. The tee box and the par 3 tee box
+// share one, and a kind the page does not know goes under Other.
+const AREA_BY_FEATURE_TYPE = {
+  tee_box: 'tee_box',
+  par_3_tee_box: 'tee_box',
+  fairway: 'fairway',
+  approach: 'approach',
+  rough: 'rough',
+  green: 'green',
+  bunker: 'bunker',
+}
 
-// Prince Waikiki's task list. Each task names the feature of a hole it belongs to (featureType),
-// which decides whether a hole has the task, the area it is shown under (feature), the job titles
-// that may check it off, and the duty whose owner is answerable for it. A task for a feature that
-// repeats, a bunker, is made once for each one. Every task can happen every day: which ones are on
-// for a given day is decided by the superintendent's plan for the week, not by rules built into the
-// tasks.
-export const TASK_TEMPLATES = [
-  {
-    id: 'collect-garbage', featureType: 'tee_box', feature: 'tee_box', section: null,
-    name: 'Collect garbage', allowedJobTitles: GREENSKEEPER, duty: 'greenskeeper',
-  },
-  {
-    id: 'tee-box-cleared', featureType: 'tee_box', feature: 'tee_box', section: TEE_BOX_SECTION,
-    name: 'Cleared', allowedJobTitles: GREENSKEEPER, duty: 'greenskeeper',
-  },
-  {
-    id: 'tee-box-mowed', featureType: 'tee_box', feature: 'tee_box', section: TEE_BOX_SECTION,
-    name: 'Mowed', allowedJobTitles: OPERATOR, duty: 'tees_and_fairways',
-  },
-  {
-    id: 'par-3-tee-box-cleared', featureType: 'par_3_tee_box', feature: 'tee_box', section: PAR_3_TEE_BOX_SECTION,
-    name: 'Cleared', allowedJobTitles: GREENSKEEPER, duty: 'greenskeeper',
-  },
-  {
-    id: 'par-3-tee-box-mowed', featureType: 'par_3_tee_box', feature: 'tee_box', section: PAR_3_TEE_BOX_SECTION,
-    name: 'Mowed', allowedJobTitles: OPERATOR, duty: 'tees_and_fairways',
-  },
-  {
-    id: 'fairway-mowed', featureType: 'fairway', feature: 'fairway', section: null,
-    name: 'Fairway mowed', allowedJobTitles: OPERATOR, duty: 'tees_and_fairways',
-  },
-  {
-    id: 'cart-signs', featureType: 'fairway', feature: 'fairway', section: null,
-    name: 'Cart signs', allowedJobTitles: GREENSKEEPER, duty: 'greenskeeper',
-  },
-  {
-    id: 'fairway-sprayed', featureType: 'fairway', feature: 'fairway', section: null,
-    name: 'Fairway sprayed', allowedJobTitles: OPERATOR, duty: 'spraying',
-  },
-  {
-    id: 'rough-mowed', featureType: 'rough', feature: 'rough', section: null,
-    name: 'Rough mowed', allowedJobTitles: OPERATOR, duty: 'rough',
-  },
-  {
-    id: 'bunker-raked-machine', featureType: 'bunker', feature: 'bunker', section: null, repeatsPerBunker: true,
-    name: 'Raked by machine', allowedJobTitles: OPERATOR, duty: 'bunkers',
-  },
-  {
-    id: 'bunker-raked-hand', featureType: 'bunker', feature: 'bunker', section: null, repeatsPerBunker: true,
-    name: 'Raked by hand', allowedJobTitles: GREENSKEEPER, duty: 'greenskeeper',
-  },
-  {
-    id: 'pin-placement', featureType: 'green', feature: 'green', section: null,
-    name: 'Pin placement', allowedJobTitles: GREENSKEEPER, duty: 'greenskeeper',
-  },
-  {
-    id: 'ball-marks', featureType: 'green', feature: 'green', section: null,
-    name: 'Ball marks', allowedJobTitles: GREENSKEEPER, duty: 'greenskeeper',
-  },
-  {
-    id: 'top-dress', featureType: 'green', feature: 'green', section: null,
-    name: 'Top dress', allowedJobTitles: GREENSKEEPER, duty: 'greenskeeper',
-  },
-  {
-    id: 'green-mowed', featureType: 'green', feature: 'green', section: null,
-    name: 'Mowed', allowedJobTitles: OPERATOR, duty: 'greens',
-  },
-  {
-    id: 'green-rolled', featureType: 'green', feature: 'green', section: null,
-    name: 'Rolled', allowedJobTitles: OPERATOR, duty: 'rolling',
-  },
-  {
-    id: 'green-sprayed', featureType: 'green', feature: 'green', section: null,
-    name: 'Sprayed', allowedJobTitles: OPERATOR, duty: 'spraying',
-  },
-]
+// A tee box and a par 3 tee box each get a section of their own, the regular one first
+const SECTION_BY_FEATURE_TYPE = {
+  tee_box: { key: 'tee-box', title: 'Tee box', order: 1 },
+  par_3_tee_box: { key: 'par-3-tee-box', title: 'Par 3 tee box', order: 2 },
+}
 
 export function formatFeatureTitle(feature) {
   return lookupLabel(FEATURE_TITLES, feature)
-}
-
-export function formatDutyTitle(duty) {
-  return lookupLabel(DUTY_TITLES, duty)
 }
 
 // The features of a hole like the sample one: the standard six, then this many bunkers numbered
@@ -146,6 +56,38 @@ export function buildSampleFeatures(bunkerCount = SAMPLE_BUNKER_COUNT) {
       position: index + 1,
     })),
   ]
+}
+
+function isNonBlankText(value) {
+  return typeof value === 'string' && value.trim() !== ''
+}
+
+// A task is only usable when it says what it is called, what it is for, and what to call it
+function isUsableTask(task) {
+  return (
+    task !== null &&
+    typeof task === 'object' &&
+    isNonBlankText(task.code) &&
+    isNonBlankText(task.feature_type) &&
+    isNonBlankText(task.name)
+  )
+}
+
+function hasCode(duty) {
+  return duty !== null && typeof duty === 'object' && isNonBlankText(duty.code)
+}
+
+function areaOf(featureType) {
+  return Object.hasOwn(AREA_BY_FEATURE_TYPE, featureType) ? AREA_BY_FEATURE_TYPE[featureType] : 'other'
+}
+
+// The section a task sits in, which follows from the feature it is for: a bunker's own number, or
+// the tee box or par 3 tee box. Everything else has none.
+function sectionFor(featureType, position) {
+  if (featureType === 'bunker') {
+    return { key: `bunker-${position}`, title: `Bunker ${position}`, order: position }
+  }
+  return Object.hasOwn(SECTION_BY_FEATURE_TYPE, featureType) ? { ...SECTION_BY_FEATURE_TYPE[featureType] } : null
 }
 
 // For each kind of feature, the positions the hole has it at. A feature that does not repeat is at
@@ -178,39 +120,45 @@ function indexFeatures(features) {
   )
 }
 
-function makeItem(template, bunkerNumber) {
-  const section = bunkerNumber
-    ? { key: `bunker-${bunkerNumber}`, title: `Bunker ${bunkerNumber}`, order: bunkerNumber }
-    : template.section
+function makeItem(task, dutyCodeById, position) {
+  const repeats = REPEATING_FEATURE_TYPES.includes(task.feature_type)
 
   return {
-    id: bunkerNumber ? `${template.id}:${bunkerNumber}` : template.id,
-    templateId: template.id,
-    feature: template.feature,
-    name: template.name,
-    allowedJobTitles: [...template.allowedJobTitles],
-    duty: template.duty,
-    section: section ? { ...section } : null,
+    id: repeats ? `${task.code}:${position}` : task.code,
+    templateId: task.code,
+    feature: areaOf(task.feature_type),
+    name: task.name,
+    allowedJobTitles: Array.isArray(task.allowed_job_titles) ? [...task.allowed_job_titles] : [],
+    duty: dutyCodeById.get(task.duty_id) ?? null,
+    section: sectionFor(task.feature_type, position),
   }
 }
 
-// The tasks on one hole's checklist, built from the features the server sent with the hole. A
-// hole has the tasks of the features it has and none for the features it lacks. Given no features
-// at all (undefined), it builds the sample hole's checklist, for tests and the preview. Anything
-// else that is not a list of features builds nothing.
-export function buildChecklistItems(features = buildSampleFeatures()) {
+// The tasks on one hole's checklist: the club's task list, from the server, matched against the
+// features the hole has. A hole has the tasks of the features it has and none for the features it
+// lacks, and a task for a feature that repeats, a bunker, is made once for each one. Tasks keep the
+// order the list gives them. Anything that is not a list of features or a task list builds nothing.
+export function buildChecklistItems(features, taskList) {
+  const tasks = Array.isArray(taskList?.tasks) ? taskList.tasks : []
+  const duties = Array.isArray(taskList?.duties) ? taskList.duties : []
+  const dutyCodeById = new Map(
+    duties.filter((duty) => hasCode(duty) && typeof duty.id === 'string').map((duty) => [duty.id, duty.code])
+  )
   const positionsByType = indexFeatures(features)
   const items = []
 
-  for (const template of TASK_TEMPLATES) {
-    const positions = positionsByType.get(template.featureType) ?? []
+  for (const task of tasks) {
+    if (!isUsableTask(task)) {
+      continue
+    }
 
-    if (template.repeatsPerBunker) {
+    const positions = positionsByType.get(task.feature_type) ?? []
+    if (REPEATING_FEATURE_TYPES.includes(task.feature_type)) {
       for (const position of positions) {
-        items.push(makeItem(template, position))
+        items.push(makeItem(task, dutyCodeById, position))
       }
     } else if (positions.length > 0) {
-      items.push(makeItem(template, null))
+      items.push(makeItem(task, dutyCodeById, 1))
     }
   }
 
@@ -293,19 +241,33 @@ export function groupChecklist(items) {
   }))
 }
 
-// The duties the tasks belong to, for the "Responsible today" list: the known ones in the page's
-// order, then any it does not know under their own names. Tasks with no duty are skipped.
-export function listDuties(items) {
+// The duties the tasks belong to, for the "Responsible today" list. The duties come from the club's
+// task list, in the order it gives them, each titled with its name (or its code when it has none).
+// A duty a task has that the list does not know follows them, titled with its code. A duty is
+// listed once, and tasks with no duty are skipped.
+export function listDuties(items, duties) {
   const present = new Set()
-
   for (const item of items ?? []) {
     if (typeof item.duty === 'string' && item.duty) {
       present.add(item.duty)
     }
   }
 
-  const knownDuties = DUTY_ORDER.filter((duty) => present.has(duty))
-  const otherDuties = [...present].filter((duty) => !DUTY_ORDER.includes(duty))
+  const entries = []
+  const listedCodes = new Set()
+  for (const duty of Array.isArray(duties) ? duties : []) {
+    if (!hasCode(duty) || !present.has(duty.code) || listedCodes.has(duty.code)) {
+      continue
+    }
+    listedCodes.add(duty.code)
+    entries.push({ key: duty.code, title: isNonBlankText(duty.name) ? duty.name : duty.code })
+  }
 
-  return [...knownDuties, ...otherDuties].map((duty) => ({ key: duty, title: formatDutyTitle(duty) }))
+  for (const code of present) {
+    if (!listedCodes.has(code)) {
+      entries.push({ key: code, title: code })
+    }
+  }
+
+  return entries
 }

@@ -204,6 +204,37 @@ describe('api', () => {
     })
   })
 
+    describe('getHoleTasks', () => {
+    const TASK_LIST_RESPONSE = { duties: [], tasks: [] }
+
+    it('asks for the hole tasks with a GET and the session cookie', async () => {
+      respondWith(okResponse(TASK_LIST_RESPONSE))
+
+      await api.getHoleTasks()
+
+      const [, options] = fetchMock.mock.calls[0]
+      expect(calledUrl().pathname).toBe('/api/hole-tasks')
+      expect(options.method).toBeUndefined()
+      expect(options.credentials).toBe('include')
+    })
+
+    it('gives back the list the server sent', async () => {
+      respondWith(okResponse(TASK_LIST_RESPONSE))
+
+      await expect(api.getHoleTasks()).resolves.toEqual(TASK_LIST_RESPONSE)
+    })
+
+    it('announces clock in required, like the other work routes', async () => {
+      const handler = vi.fn()
+      setClockInRequiredHandler(handler)
+      respondWithClockInRequired()
+
+      await failureOf(() => api.getHoleTasks())
+
+      expect(handler).toHaveBeenCalledTimes(1)
+    })
+  })
+
   describe('when the server says clock in is required', () => {
     it('tells the handler once, and the caller still gets the error', async () => {
       const handler = vi.fn()

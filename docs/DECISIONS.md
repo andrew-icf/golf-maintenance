@@ -6,7 +6,7 @@ The product and engineering decisions for Golf Maintenance. **This file is the s
 - **To change a decision:** edit it here, add a line to the change log at the bottom, and update the code and tests in the same commit. Never quietly build something that contradicts a decision. Ask first.
 - The build order lives in `docs/ROADMAP.md`. Commands, coding conventions, and testing rules live in `AGENTS.md`.
 
-Last updated: 2026-11-11.
+Last updated: 2026-11-15.
 
 ---
 
@@ -38,7 +38,7 @@ Information about you and your own time stays open before you clock in. **Work i
 | Kind | Endpoints | Rule |
 |---|---|---|
 | Open (any logged-in person) | `GET /me`, `GET /api/my-schedule`, `POST /clock-in`, `POST /clock-out`, `POST /api/change-password` | On or off the clock |
-| Gated (staff must be clocked in) | `GET /api/course`, `GET /api/equipment`, `PUT /api/equipment/{id}`, `GET /api/schedule`, `GET /api/roster` | 403 `clock in required` otherwise |
+| Gated (staff must be clocked in) | `GET /api/course`, `GET /api/hole-tasks`, `GET /api/equipment`, `PUT /api/equipment/{id}`, `GET /api/schedule`, `GET /api/roster` | 403 `clock in required` otherwise |
 | Admin-only | creating users, creating, repeating, editing, and deleting shifts | 403 for staff, and admins are never held at the gate |
 
 - "Clocked in" means a `clock_entries` row with `clock_out IS NULL`. A forgotten clock-out still counts as clocked in (the fix is parked, section 15).
@@ -77,28 +77,30 @@ Information about you and your own time stays open before you clock in. **Work i
 - Each layout has a `front_hole_count`, which splits it into Front and Back (for Prince Waikiki, holes 1 to 5 and 6 to 9). The hole page says "Course C · Back C".
 - **Amenities belong to the club.** An amenity may point at a hole (the comfort stations sit on A5, B6, and C7), and that link is cleared if the hole goes away.
 - Prince Waikiki dev data: three nines of 9 holes, par 36 each, yardages 3,514, 3,600, and 3,649 (10,763 total).
-- `GET /api/course` returns `layouts` with their holes, plus an older flat `holes` list that is still sent and is to be removed (roadmap step 17).
+- `GET /api/course` returns `layouts` with their holes, each hole with its features (section 6), plus an older flat `holes` list that is still sent and is to be removed (roadmap step 17).
 
-## 6. Hole features (Decided, roadmap step 6)
+## 6. Hole features (Built, roadmap step 6)
 
 - **Features are the nouns on a hole. Tasks are the verbs.** A hole's checklist for a day is its features combined with the task list.
 - **The standard features** are the tee box, the par 3 tee box, the fairway, the approach, the rough, the green, and numbered bunkers.
 - **Every hole has exactly one fairway.** The par 3 tee box plays to that same fairway, so there is no separate fairway for it. **Every hole has a par 3 tee box.**
-- **A database trigger gives every new hole the standard six features** (everything except bunkers) at the moment the hole is created, so a hole can never exist without them. Existing holes are backfilled by the migration.
+- **A database trigger gives every new hole the standard six features** (everything except bunkers) at the moment the hole is created, so a hole can never exist without them. Existing holes were backfilled by the migration.
 - **Bunkers** are counted per hole and numbered from 1. A hole with none has no Bunkers area.
-- **Bunker counts are seeded for now.** Editing them in the app waits for the admin editors (roadmap step 16). Until the real counts are supplied, the seed uses a placeholder pattern of 2 to 5 per hole, clearly marked as placeholder data.
+- **Bunker counts are seeded for now.** Editing them in the app waits for the admin editors (roadmap step 16). Until the real counts are supplied, the seed uses a placeholder pattern of 2 to 5 per hole, clearly marked as placeholder data. The seed is `backend/seed/dev_bunkers.sql`, and it runs after `dev_course.sql`, which rebuilds the holes and their bunkers.
+- **The server sends each hole's features** with `GET /api/course`, in the courses' holes and in the older flat list. They come in a fixed order, the standard six in the order above and then the bunkers by number. Each has an id, a type, and a position, and a hole with none gets an empty list.
+- **Each task names the kind of feature it belongs to**, and a hole's checklist has only the tasks of the features it has. A hole with no bunkers has no Bunkers area, and a hole with four has four sections, each numbered by the bunker's own position.
 - The approach has no tasks yet.
 
 ## 7. The daily hole checklist
 
-### 7.1 The task list (Decided; shown in the preview)
+### 7.1 The task list (Built, roadmap step 7)
 
-Seeded from Prince Waikiki. G is greenskeeper and O is operator. The duty is who is answerable (section 8).
+Seeded from Prince Waikiki. G is greenskeeper and O is operator. The duty is who is answerable (section 8). The order below is the stored order.
 
 | Area | Section | Task | May check | Duty |
 |---|---|---|---|---|
-| Tee box | (none) | Collect garbage | G | Greenskeeper tasks |
 | Tee box | Tee box | Cleared | G | Greenskeeper tasks |
+| Tee box | Tee box | Collect garbage | G | Greenskeeper tasks |
 | Tee box | Tee box | Mowed | O | Tees and fairways |
 | Tee box | Par 3 tee box | Cleared | G | Greenskeeper tasks |
 | Tee box | Par 3 tee box | Mowed | O | Tees and fairways |
@@ -116,9 +118,14 @@ Seeded from Prince Waikiki. G is greenskeeper and O is operator. The duty is who
 | Green | (none) | Sprayed | O | Spraying |
 
 - That is 15 tasks on a hole with no bunkers, plus 2 per bunker (21 with three).
-- **Collect garbage** is a greenskeeper task on every hole, at the top of the Tee box area.
+- **Collect garbage** is a greenskeeper task on every hole, in the Tee box section after Cleared, since it is a tee box task.
+- **The list lives in two tables.** `duties` has a code, a name, and an order. `hole_tasks` has a short code, the kind of feature it needs (section 6), a name, the job titles that may check it, its duty, and an order. The job titles may be an empty list, which means only admins may check it. The code never changes when a task is renamed, so later records can refer to it.
+- **A task is made once for each feature of its kind on a hole**, which is why the bunker tasks repeat for every bunker and nothing else does.
+- **Areas and sections are not stored.** They follow from a task's feature type. The tee box and the par 3 tee box each get a section under the Tee box area, a bunker's section is "Bunker N" by its own position, and everything else has none.
+- **The default list is `backend/seed/default_tasks.sql`,** safe to rerun and run by hand like the other seeds. Rerunning it puts the tasks and duties it lists back to these defaults, so it must not be rerun once the superintendent can edit them (roadmap step 16).
+- **`GET /api/hole-tasks`** sends the duties and the tasks in order. It is gated (section 3).
 - **Landscaper tasks are course-wide**, not per hole (placeholders: gardening, weed whacking, clean up; the real list is to come). They belong to the whole course, like flowers and bushes around the clubhouse, and may link to an amenity. They get their own "Course tasks" block on the Course page (roadmap step 10).
-- The club keeps **one task list** attached to feature types. Admins edit it and staff cannot. A new club starts from this default list.
+- The club keeps **one task list** attached to feature types. Admins edit it from the app (roadmap step 16) and staff cannot. A new club starts from this default list.
 
 ### 7.2 Which tasks are on for a day (Decided)
 
@@ -156,12 +163,12 @@ Seeded from Prince Waikiki. G is greenskeeper and O is operator. The duty is who
 - **Color.** Greenskeeper boxes are green and operator boxes are amber. A task you may not check keeps its color, paler. A task set aside is gray. Color never carries the meaning alone. Role chips appear only on the "Responsible today" card.
 - Real checkboxes, with names like "Bunkers, Bunker 2: Raked by hand." "Not today" and "Undo" buttons are the same width.
 - On a narrow screen the columns stack and each stacked group gets a small role label.
-- **The hole page** uses the full width. Order: back link, header, par and yardage, "Responsible today," the preview notice, the checklist, then amenities (left) with Notes to come (right). Headings nest: hole title h2, page sections h3, area labels h4, section titles h5.
-- The preview (`ChecklistPreview`) shows sample tasks and sample people with the marks kept in memory, labeled "Preview with sample tasks. Checks are not saved." The real checklist replaces only that wrapper in roadmap step 9.
+- **The hole page** uses the full width. Order: back link, header, par and yardage, "Responsible today," the preview notice, the checklist, then amenities (left) with Notes to come (right). Headings nest: hole title h2, page sections h3, area labels h4, section titles h5. The page loads the course and the task list together. If the task list cannot be loaded, it still shows the hole and its amenities, with a message where the checklist would be.
+- The preview (`ChecklistPreview`) builds its tasks from the club's task list and the hole's own features, and shows sample people, with the marks kept in the page's memory only, labeled "Preview with sample tasks. Checks are not saved." Leaving the hole, reloading, or moving to another hole starts it over, so checks do not carry between holes. The real checklist replaces only that wrapper in roadmap step 9.
 
 ## 8. Duties and who is responsible
 
-- **Duties** group tasks by who is answerable: Greenskeeper tasks, Bunkers, Greens (mowing), Rolling, Spraying (the chemical work), Rough, and Tees and fairways.
+- **Duties** group tasks by who is answerable: Greenskeeper tasks, Bunkers, Greens (mowing), Rolling, Spraying (the chemical work), Rough, and Tees and fairways. They are stored in the `duties` table (section 7.1).
 - **Operators hold duties across the whole club.** There is one person per duty, usually "their" job, especially senior staff. Others may cover bunkers or greens depending on staffing, so assignment has to be loose:
   - a **standing person** for each duty, set once
   - a **change for a single day** by an admin
@@ -207,12 +214,12 @@ Seeded from Prince Waikiki. G is greenskeeper and O is operator. The duty is who
 
 - **Stack.** Go with chi and pgx, goose migrations, and Postgres in Docker. React with Vite, react-router-dom, Vitest, React Testing Library, and oxlint. Details are in `AGENTS.md`.
 - **Tests accompany every feature**, and each new test is proven by a deliberate break check. No tests that only guard CSS or layout.
-- **Backend tests.** Every test starts with exactly one of `setUpStaff`, `setUpClockedInStaff`, or `setUpAdmin`, because each wipes the database. Suites run with `-p 1` because they share one database.
+- **Backend tests.** Every test starts with exactly one of `setUpStaff`, `setUpClockedInStaff`, or `setUpAdmin`, because each wipes the database. Suites run with `-p 1` because they share one database. A new table is added to the `TRUNCATE` list in `testutil.SetupTestDB`.
 - **Migrations are applied to both databases** (`golf_maintenance` and `golf_maintenance_test`).
 - **Secrets stay out of git.** `.env` files and curl cookie files are ignored. Curl cookie jars go in `/tmp`. The cookie files were once tracked and are not anymore.
 - **File names.** Never two files whose names differ only by capitalization. macOS ignores case, and Vite resolves the wrong file.
 - **Errors.** A failed API request throws an error that carries its status. One accepted lint warning remains: `react(set-state-in-effect)` in `AuthContext.jsx`.
-- **Dev data.** `backend/seed/dev_seed.sql` makes 20 Star Wars crew (password `password123`, an admin `test@example.com`, and a landscaper `newstaffer@example.com`), and `backend/seed/dev_course.sql` makes Prince Waikiki.
+- **Dev data.** `backend/seed/dev_seed.sql` makes 21 staff (20 Star Wars crew and a landscaper, `newstaffer@example.com`, all with the password `password123`) and no admin. `backend/seed/dev_course.sql` makes Prince Waikiki, and `backend/seed/dev_bunkers.sql` gives its holes placeholder bunkers and must run after it. `backend/seed/default_tasks.sql` loads the default duties and tasks and can run at any time. The dev database also has an admin, `test@example.com`, that was made by hand and that the seeds do not create (see section 16).
 - Security headers such as `X-Content-Type-Options: nosniff` on every response are on the deployment list.
 
 ## 15. Parked (decided to do later)
@@ -240,10 +247,14 @@ Seeded from Prince Waikiki. G is greenskeeper and O is operator. The duty is who
 - **Manual completion:** confirm that "the people listed on a hole's card, plus admins" is the right group.
 - **Hole images:** placement and source (section 15).
 - **Legal retention** for clock and schedule records.
-- **Dev seed and the admin:** section 14 says `dev_seed.sql` creates an admin (`test@example.com`), but it doesn't. Either the seed should create one or section 14 should be corrected.
+- **Dev seed and the admin:** the dev database has an admin, `test@example.com`, made by hand, with a password that is not the seed's `password123`. The seeds create no admin, so a fresh setup has none. Should `dev_seed.sql` create one, or is a hand-made admin the intended way?
+- **Checklist freshness (after roadmap step 9):** how should a page pick up checks made on another tablet: refresh when the tab regains focus and about once a minute, or only when the hole is opened?
 
 ## 17. Change log
 
 - 2026-11-11: First version, written from the planning conversation.
 - 2026-11-11: Conventions and stack details moved from `CLAUDE.md` to `AGENTS.md`. No decision changed.
 - Early November 2026: removed per-task scheduling ("every other day," "not on weekends") in favor of a weekly plan the superintendent edits. Tee box tasks became Cleared and Mowed in two sections. The checklist moved to role columns with area labels down the left.
+- 2026-11-13: Hole features built (roadmap step 6): a `hole_features` table, a trigger that gives every hole the standard six, placeholder bunker counts for the dev course, the server sending each hole's features, and the checklist built from them. Each task now names the kind of feature it belongs to.
+- 2026-11-13: Corrected section 14. `dev_seed.sql` creates no admin, and the question of whether it should moved to section 16.
+- 2026-11-15: The task list moved into the database (roadmap step 7): `duties` and `hole_tasks` tables, the default list as `default_tasks.sql`, and `GET /api/hole-tasks`, which is gated. Areas and sections are worked out from a task's feature type, and Collect garbage moved into the Tee box section after Cleared.

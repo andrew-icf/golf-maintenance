@@ -16,12 +16,13 @@ import {
   YARDAGE_CASES,
   YARDAGE_PAGE,
 } from '../../test/fixtures/holeDetailsCases'
+import { CUSTOM_TASK_LIST, SAMPLE_TASK_LIST } from '../../test/fixtures/holeTaskCases'
 import { LUKE } from '../../test/fixtures/taskPermissionCases'
 import { createDeferred } from '../../test/helpers'
 import { HoleDetailsView } from './HoleDetailsView'
 
 const { apiMock, useAuthMock } = vi.hoisted(() => ({
-  apiMock: { getCourse: vi.fn() },
+  apiMock: { getCourse: vi.fn(), getHoleTasks: vi.fn() },
   useAuthMock: vi.fn(),
 }))
 
@@ -30,8 +31,10 @@ vi.mock('../auth/AuthContext', () => ({ useAuth: useAuthMock }))
 
 const LOADING_TEXT = 'Loading hole...'
 const LOAD_ERROR_MESSAGE = 'could not fetch course'
+const TASK_ERROR_MESSAGE = 'could not fetch hole tasks'
 const NOT_FOUND_TEXT = 'Hole not found.'
 const NO_AMENITIES_TEXT = 'No amenities on this hole.'
+const NO_TASKS_TEXT = 'There are no tasks for this hole today.'
 const COURSE_LIST_TEXT = 'Course list page'
 const BACK_LINK_NAME = '← Course'
 const CLUBHOUSE_NAME = 'Clubhouse'
@@ -78,6 +81,8 @@ function checklistRegion() {
 describe('HoleDetailsView', () => {
   beforeEach(() => {
     apiMock.getCourse.mockReset()
+    apiMock.getHoleTasks.mockReset()
+    apiMock.getHoleTasks.mockResolvedValue(SAMPLE_TASK_LIST)
     useAuthMock.mockReset()
     useAuthMock.mockReturnValue({ user: LUKE })
   })
@@ -117,6 +122,63 @@ describe('HoleDetailsView', () => {
       await renderLoadedPage(MULTI_AMENITY_PAGE)
 
       expect(apiMock.getCourse).toHaveBeenCalledTimes(1)
+    })
+  })
+
+  describe('the task list', () => {
+    it('asks for the task list once', async () => {
+      await renderLoadedPage(MULTI_AMENITY_PAGE)
+
+      expect(apiMock.getHoleTasks).toHaveBeenCalledTimes(1)
+    })
+
+    it('keeps showing the loading message until the task list has arrived too', async () => {
+      const tasks = createDeferred()
+      apiMock.getCourse.mockResolvedValue(MULTI_AMENITY_PAGE)
+      apiMock.getHoleTasks.mockReturnValue(tasks.promise)
+
+      renderPage()
+      await act(async () => {})
+
+      expect(screen.getByText(LOADING_TEXT)).toBeInTheDocument()
+      expect(screen.queryByRole('heading')).not.toBeInTheDocument()
+
+      await act(async () => {
+        tasks.resolve(SAMPLE_TASK_LIST)
+      })
+
+      expect(screen.queryByText(LOADING_TEXT)).not.toBeInTheDocument()
+      expect(checklistRegion()).toBeInTheDocument()
+    })
+
+    it('shows the hole, with a message where the checklist would be, when the task list cannot be loaded', async () => {
+      apiMock.getHoleTasks.mockRejectedValue(new Error(TASK_ERROR_MESSAGE))
+
+      const { container } = await renderLoadedPage(MULTI_AMENITY_PAGE)
+
+      expect(screen.getByRole('alert')).toHaveTextContent(`Could not load the checklist: ${TASK_ERROR_MESSAGE}`)
+      expect(screen.getByRole('heading', { level: 2, name: 'C7' })).toBeInTheDocument()
+      expect(container.querySelectorAll('.hole-details-amenity').length).toBeGreaterThan(0)
+      expect(screen.queryByRole('region', { name: CHECKLIST_NAME })).not.toBeInTheDocument()
+      expect(screen.queryByRole('region', { name: RESPONSIBLE_NAME })).not.toBeInTheDocument()
+    })
+
+    it('says there are no tasks when the club has none', async () => {
+      apiMock.getHoleTasks.mockResolvedValue({ duties: [], tasks: [] })
+
+      await renderLoadedPage(MULTI_AMENITY_PAGE)
+
+      expect(screen.getByText(NO_TASKS_TEXT)).toBeInTheDocument()
+      expect(screen.queryByRole('region', { name: RESPONSIBLE_NAME })).not.toBeInTheDocument()
+    })
+
+    it('builds the checklist from the tasks the server sent', async () => {
+      apiMock.getHoleTasks.mockResolvedValue(CUSTOM_TASK_LIST)
+
+      await renderLoadedPage(MULTI_AMENITY_PAGE)
+
+      expect(screen.getByRole('checkbox', { name: 'Green: Inspected' })).toBeInTheDocument()
+      expect(screen.queryByRole('checkbox', { name: 'Tee box: Mowed' })).not.toBeInTheDocument()
     })
   })
 

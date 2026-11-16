@@ -25,7 +25,8 @@ import {
   VIEWER_SAMPLE_CASES,
 } from '../../../test/fixtures/responsibleTodayCases'
 import { LUKE, MON_MOTHMA, NO_PERSON_CASES } from '../../../test/fixtures/taskPermissionCases'
-import { buildChecklistItems, listDuties } from './checklistTasks'
+import { SAMPLE_TASK_LIST, buildSampleItems } from '../../../test/fixtures/holeTaskCases'
+import { listDuties } from './checklistTasks'
 import { buildResponsibleList, buildSampleAssignments } from './responsibleList'
 
 // Actions
@@ -156,8 +157,8 @@ describe('buildResponsibleList', () => {
 
 describe('buildSampleAssignments', () => {
   it('gives every duty on the sample checklist exactly one person', () => {
-    const assignments = buildSampleAssignments(null)
-    const dutyKeys = listDuties(buildChecklistItems()).map((duty) => duty.key)
+    const assignments = buildSampleAssignments(null)    
+    const dutyKeys = listDuties(buildSampleItems(), SAMPLE_TASK_LIST.duties).map((duty) => duty.key)
 
     expect([...assignments.keys()]).toEqual(dutyKeys)
     for (const [key, people] of assignments) {

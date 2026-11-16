@@ -23,10 +23,10 @@ import {
 import { AHSOKA, LUKE, MON_MOTHMA } from '../../../test/fixtures/taskPermissionCases'
 import { Checklist } from './Checklist'
 import { buildSampleMarks } from './checklistMarks'
-import { buildChecklistItems } from './checklistTasks'
+import { buildSampleItems } from '../../../test/fixtures/holeTaskCases'
 
 // Test data
-const ITEMS = buildChecklistItems()
+const ITEMS = buildSampleItems()
 const MARKS = buildSampleMarks(SAMPLE_DAY)
 
 // Actions

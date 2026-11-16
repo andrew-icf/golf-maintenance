@@ -21,7 +21,7 @@ import {
   PEOPLE_AND_THEIR_TASKS,
   YODA,
 } from '../../../test/fixtures/taskPermissionCases'
-import { buildChecklistItems } from './checklistTasks'
+import { buildSampleItems } from '../../../test/fixtures/holeTaskCases'
 import {
   buildSampleMarks,
   checkItem,
@@ -34,7 +34,7 @@ import {
 } from './checklistMarks'
 
 // Test data
-const ITEMS = buildChecklistItems()
+const ITEMS = buildSampleItems()
 const ITEM_COUNT = 21
 const GREENSKEEPER_ITEM = ITEMS.find((item) => item.id === 'tee-box-cleared')
 const OPERATOR_ITEM = ITEMS.find((item) => item.id === 'tee-box-mowed')

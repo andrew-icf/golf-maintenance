@@ -21,12 +21,18 @@ export function HoleDetailsView() {
   const { user } = useAuth()
   const [course, setCourse] = useState(null)
   const [error, setError] = useState('')
+  const [taskList, setTaskList] = useState(null)
+  const [taskError, setTaskError] = useState('')
 
   useEffect(() => {
     api
       .getCourse()
       .then(setCourse)
       .catch((requestError) => setError(requestError.message))
+    api
+      .getHoleTasks()
+      .then(setTaskList)
+      .catch((requestError) => setTaskError(requestError.message))
   }, [])
 
   if (error) {
@@ -38,7 +44,8 @@ export function HoleDetailsView() {
     )
   }
 
-  if (!course) {
+  // Wait for the task list as well, or for the reason it could not be loaded
+  if (!course || (!taskList && !taskError)) {
     return <p className="status">Loading hole...</p>
   }
 
@@ -75,7 +82,11 @@ export function HoleDetailsView() {
         </div>
       </dl>
 
-      <ChecklistPreview key={ details.id } user={ user } features={ details.features } />
+      { taskError ? (
+        <p role="alert" className="error">{ `Could not load the checklist: ${taskError}` }</p>
+      ) : (
+        <ChecklistPreview key={ details.id } user={ user } features={ details.features } taskList={ taskList } />
+      )}
 
       <div className="hole-details-bottom">
         <section className="hole-details-section">

@@ -10,9 +10,11 @@ import {
   SAMPLE_COUNT_TEXT,
 } from '../../../test/fixtures/checklistViewCases'
 import { CHECKLIST_NAME, RESPONSIBLE_NAME } from '../../../test/fixtures/holeChecklistCases'
-import { LUKE, MON_MOTHMA, YODA } from '../../../test/fixtures/taskPermissionCases'
-import { ChecklistPreview } from './ChecklistPreview'
 import { makeFeatures } from '../../../test/fixtures/holeFeatureCases'
+import { CUSTOM_TASK_LIST, SAMPLE_TASK_LIST } from '../../../test/fixtures/holeTaskCases'
+import { LUKE, MON_MOTHMA, YODA } from '../../../test/fixtures/taskPermissionCases'
+import { buildSampleFeatures } from './checklistTasks'
+import { ChecklistPreview } from './ChecklistPreview'
 
 // Test data. Now is 6:12am on Wednesday 2026-10-21.
 const NOW = new Date(2026, 9, 21, 6, 12)
@@ -21,8 +23,9 @@ const NOW = new Date(2026, 9, 21, 6, 12)
 const DUTY_COUNT = 7
 
 // Actions
+// The sample hole: the standard six features and three bunkers, with the club's default task list
 function renderPreview(user = LUKE) {
-  return render(<ChecklistPreview user={ user } />)
+  return render(<ChecklistPreview user={ user } features={ buildSampleFeatures() } taskList={ SAMPLE_TASK_LIST } />)
 }
 
 function box(label) {
@@ -195,42 +198,72 @@ describe('ChecklistPreview', () => {
   })
 
   describe('the features of the hole', () => {
-  it('builds the tasks from the features it is given, leaving out bunkers a hole lacks', () => {
-    render(<ChecklistPreview user={ LUKE } features={ makeFeatures() } />)
+    it('builds the tasks from the features it is given, leaving out bunkers a hole lacks', () => {
+      render(<ChecklistPreview user={ LUKE } features={ makeFeatures() } taskList={ SAMPLE_TASK_LIST } />)
 
-    // The 5 sample marks on tasks this hole has, and the 3 set aside, out of 15 tasks
-    expect(screen.getByText('7 of 15 tasks accounted for')).toBeInTheDocument()
-    expect(screen.queryByRole('heading', { level: 4, name: 'Bunkers' })).not.toBeInTheDocument()
+      // The 4 sample checks on tasks this hole has, and the 3 set aside, out of 15 tasks
+      expect(screen.getByText('7 of 15 tasks accounted for')).toBeInTheDocument()
+      expect(screen.queryByRole('heading', { level: 4, name: 'Bunkers' })).not.toBeInTheDocument()
+    })
+
+    it('shows a section for each bunker the hole has', () => {
+      render(
+        <ChecklistPreview user={ LUKE } features={ makeFeatures([1, 2, 3, 4, 5]) } taskList={ SAMPLE_TASK_LIST } />
+      )
+
+      const sections = screen.getAllByRole('heading', { level: 5 }).map((heading) => heading.textContent)
+
+      expect(sections.filter((text) => text.startsWith('Bunker '))).toEqual([
+        'Bunker 1',
+        'Bunker 2',
+        'Bunker 3',
+        'Bunker 4',
+        'Bunker 5',
+      ])
+    })
+
+    it('shows no tasks, and no list of who is responsible, for a hole with no features', () => {
+      render(<ChecklistPreview user={ LUKE } features={ [] } taskList={ SAMPLE_TASK_LIST } />)
+
+      expect(screen.getByText('There are no tasks for this hole today.')).toBeInTheDocument()
+      expect(screen.queryByRole('region', { name: RESPONSIBLE_NAME })).not.toBeInTheDocument()
+    })
+
+    it('builds a new checklist when the features change', () => {
+      const { rerender } = render(
+        <ChecklistPreview user={ LUKE } features={ buildSampleFeatures() } taskList={ SAMPLE_TASK_LIST } />
+      )
+      expect(screen.getByText(SAMPLE_COUNT_TEXT)).toBeInTheDocument()
+
+      rerender(<ChecklistPreview user={ LUKE } features={ makeFeatures() } taskList={ SAMPLE_TASK_LIST } />)
+
+      expect(screen.getByText('7 of 15 tasks accounted for')).toBeInTheDocument()
+    })
   })
 
-  it('shows a section for each bunker the hole has', () => {
-    render(<ChecklistPreview user={ LUKE } features={ makeFeatures([1, 2, 3, 4, 5]) } />)
+  describe("the club's task list", () => {
+    it('builds the tasks from the task list it is given', () => {
+      render(<ChecklistPreview user={ LUKE } features={ makeFeatures() } taskList={ CUSTOM_TASK_LIST } />)
 
-    const sections = screen.getAllByRole('heading', { level: 5 }).map((heading) => heading.textContent)
+      expect(screen.getAllByRole('checkbox')).toHaveLength(1)
+      expect(box('Green: Inspected')).toBeInTheDocument()
+      expect(screen.queryByRole('checkbox', { name: 'Tee box: Mowed' })).not.toBeInTheDocument()
+    })
 
-    expect(sections.filter((text) => text.startsWith('Bunker '))).toEqual([
-      'Bunker 1',
-      'Bunker 2',
-      'Bunker 3',
-      'Bunker 4',
-      'Bunker 5',
-    ])
+    it('shows the duties from the task list under who is responsible, not assigned until someone is', () => {
+      render(<ChecklistPreview user={ LUKE } features={ makeFeatures() } taskList={ CUSTOM_TASK_LIST } />)
+
+      const card = responsibleCard()
+
+      expect(within(card).getByText('Inspection')).toBeInTheDocument()
+      expect(within(card).getByText('Not assigned')).toBeInTheDocument()
+    })
+
+    it('shows no tasks when it is given no task list', () => {
+      render(<ChecklistPreview user={ LUKE } features={ makeFeatures() } />)
+
+      expect(screen.getByText('There are no tasks for this hole today.')).toBeInTheDocument()
+      expect(screen.queryAllByRole('checkbox')).toHaveLength(0)
+    })
   })
-
-  it('shows no tasks, and no list of who is responsible, for a hole with no features', () => {
-    render(<ChecklistPreview user={ LUKE } features={ [] } />)
-
-    expect(screen.getByText('There are no tasks for this hole today.')).toBeInTheDocument()
-    expect(screen.queryByRole('region', { name: RESPONSIBLE_NAME })).not.toBeInTheDocument()
-  })
-
-  it('builds a new checklist when the features change', () => {
-    const { rerender } = render(<ChecklistPreview user={ LUKE } />)
-    expect(screen.getByText(SAMPLE_COUNT_TEXT)).toBeInTheDocument()
-
-    rerender(<ChecklistPreview user={ LUKE } features={ makeFeatures() } />)
-
-    expect(screen.getByText('7 of 15 tasks accounted for')).toBeInTheDocument()
-  })
-})
 })

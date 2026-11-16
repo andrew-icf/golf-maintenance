@@ -8,14 +8,14 @@ The build order for Golf Maintenance. Decisions behind each step are in `docs/DE
 - Every new endpoint gets a gate decision when it is built: open, gated, or admin-only (DECISIONS section 3).
 - Work one step at a time.
 
-Last updated: 2026-11-13.
+Last updated: 2026-11-15.
 
 ## Current state
 
-- Frontend: **1379 tests in 51 files**. Lint shows one accepted warning (`react(set-state-in-effect)` in `AuthContext.jsx`).
-- Backend: **266 router tests and 19 auth tests** (`go test -count=1 -p 1 -coverpkg=./...` is what CI runs, and `go test -count=1 -p 1 ./...` from `backend/` is the quick check).
-- Last finished: step 6 (hole features).
-- In progress: nothing. Next is step 7, on a new branch.
+- Frontend: **1400 tests in 51 files**. Lint shows one accepted warning (`react(set-state-in-effect)` in `AuthContext.jsx`).
+- Backend: **311 router tests and 19 auth tests** (`go test -count=1 -p 1 -coverpkg=./...` is what CI runs, and `go test -count=1 -p 1 ./...` from `backend/` is the quick check).
+- Last finished: step 7 (the task list in the database).
+- In progress: nothing. Next is step 8, on a new branch.
 
 ---
 
@@ -67,18 +67,25 @@ Last updated: 2026-11-13.
 | 6-2 | `GET /api/course` sends each hole's features with the hole, in a fixed order and with a stable id for each |
 | 6-3 | The checklist is built from the hole's real features: no Bunkers area for a hole without bunkers, and a section for each bunker by its own number. Each task now names the kind of feature it belongs to |
 
+### Step 7: The task list in the database
+| Sub-step | What |
+|---|---|
+| 7-1 | `duties` and `hole_tasks` tables. The default Prince Waikiki list, 7 duties and 17 tasks, is a seed file, `backend/seed/default_tasks.sql`, safe to rerun. Database-rule tests, and tests that run the seed file for real |
+| 7-2 | `GET /api/hole-tasks`, gated like the course (admins exempt), sending the duties and the tasks in order. It is in the clock gate tests |
+| 7-3 | The checklist builds from the server's list in place of the one written in the code, working out areas and sections from each task's feature type, and the hole page loads the list alongside the course, with a message where the checklist would be if it cannot load. Collect garbage now sits in the Tee box section, after Cleared |
+
 ### Small fixes along the way
 - Curl cookie files stopped being tracked and are ignored.
 - The side nav became a strip across the top on phones and upright tablets.
 
 ### Step 20: Tests for the equipment endpoints (done out of order)
-Done ahead of steps 7 to 19 as part of batch 1 of `docs/test-audit.md` (the backend gap tests), with the owner's approval. Both equipment endpoints are covered: `GET /api/equipment` (sorted by label, an empty list is `[]`) and `PUT /api/equipment/{id}` (each allowed status, the status allowlist, a bad body, an unknown id). The same batch added tests for creating shifts, logout, login's required fields, and CORS.
+Done ahead of steps 8 to 19 as part of batch 1 of `docs/test-audit.md` (the backend gap tests), with the owner's approval. Both equipment endpoints are covered: `GET /api/equipment` (sorted by label, an empty list is `[]`) and `PUT /api/equipment/{id}` (each allowed status, the status allowlist, a bad body, an unknown id). The same batch added tests for creating shifts, logout, login's required fields, and CORS.
 
 ---
 
-## Next: Step 7, task templates
+## Next: Step 8, the daily checklist backend
 
-Move the task list out of the frontend and into the database, with each task's feature type, who may check it, and its duty. Today the list is written in `frontend/src/features/hole/checklist/checklistTasks.js`. The seeded list is in DECISIONS 7.1, and admin editing of it is step 16. The sub-steps are planned when the step starts.
+Checks finally get saved. Marks are stored for each hole and day, the server enforces the rule for who may check what (by job title, with admins allowed anything), "not today" and undo work, and old marks are cleaned up after 14 days, with a full test matrix. It is gated for staff, and admins are exempt. It also settles how a page picks up checks made on another tablet (DECISIONS 16). The sub-steps are planned when the step starts.
 
 ---
 
@@ -86,17 +93,16 @@ Move the task list out of the frontend and into the database, with each task's f
 
 | Step | What | Notes |
 |---|---|---|
-| 8 | The daily checklist backend: marks stored per hole per day, the permission rule enforced by job title, "not today," undo, 14-day cleanup, and a full test matrix | Gated for staff. Admins exempt. The server enforces everything the preview only mirrors. Also settles how a page picks up checks made on another tablet (DECISIONS 16) |
 | 9 | The real data in the checklist, replacing the preview wrapper | The checklist component stays. Only `ChecklistPreview` is swapped. Checks then survive leaving the page and reach everyone |
 | 10 | A "Course tasks" block on the Course page for the landscaper's course-wide tasks | Needs the real task list |
-| 11 | Assignments: operator duties for the whole club (a standing person plus a one-day change, may be unassigned, may be several people) and greenskeepers per hole, with Front, Back, and whole-course shortcuts | Feeds "Responsible today" |
+| 11 | Assignments: operator duties for the whole club (a standing person plus a one-day change, may be unassigned, may be several people) and greenskeepers per hole, with Front, Back, and whole-course shortcuts | Feeds "Responsible today". The `duties` table already exists |
 | 12 | Hole status: automatic and manual completion, the "Not completed" chip as the control, and progress counts on the hole cards | DECISIONS 7.5 |
 | 13 | Pin rotation and the diagram: nine fixed patterns, a club-wide day count, one place to restart it, and the "Pin today" tile | DECISIONS 9 |
 | 14 | Green mow direction: the club-wide rotation and the clock-face drawing | Needs the open questions in DECISIONS 16 answered first |
 | 15 | The notes block as a placeholder | Real notes are in step 16 |
-| 16 | Admin editors: the task list (names, who may check, duty), hole features (including bunker counts and feature on/off), duties, and the **weekly planner** (tick tasks per day, copy to next week). Real notes and photos with file storage. Hole images and tee sets | The biggest step. It will be split into sub-steps when it starts |
+| 16 | Admin editors: the task list and duties (names, who may check, order), hole features (including bunker counts and feature on/off), and the **weekly planner** (tick tasks per day, copy to next week). Real notes and photos with file storage. Hole images and tee sets | The biggest step. It will be split into sub-steps when it starts. The tables already exist (step 7). It must also stop `default_tasks.sql` from overwriting the superintendent's edits, so that rerunning it only creates a missing list |
 | 17 | Remove the old flat `holes` list from the API, the Go models, and the frontend | |
-| 18 | Finish the README refresh: the testing commands, an API table (including the `features` list on the `GET /api/course` row), prerequisites, and the project structure | Partly done: the README links to `docs/DECISIONS.md` and `docs/ROADMAP.md`, and the product decisions and feature order were removed from it |
+| 18 | Finish the README refresh: the testing commands, an API table (including the `features` list on the `GET /api/course` row and `GET /api/hole-tasks`), prerequisites, and the project structure | Partly done: the README links to `docs/DECISIONS.md` and `docs/ROADMAP.md`, and the product decisions and feature order were removed from it |
 | 19 | Automatic log-out after inactivity, for shared tablets | A PIN or badge login is parked |
 | 21 | A hamburger menu in the top bar for the clock status, clock in and out, change password, and log out | The top bar has five things in it and wraps badly on a phone |
 | 22 | An admin board: all 27 holes at a glance, who is behind, and which duties are done | The hole cards on the Course page are the first version |

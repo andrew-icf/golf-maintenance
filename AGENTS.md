@@ -43,6 +43,7 @@ goose -dir migrations postgres "$TEST_DATABASE_URL" up
 docker exec -i golf-maintenance-db psql -U golfadmin -d golf_maintenance -v ON_ERROR_STOP=1 < seed/dev_seed.sql
 docker exec -i golf-maintenance-db psql -U golfadmin -d golf_maintenance -v ON_ERROR_STOP=1 < seed/dev_course.sql
 docker exec -i golf-maintenance-db psql -U golfadmin -d golf_maintenance -v ON_ERROR_STOP=1 < seed/dev_bunkers.sql   # after dev_course.sql, which rebuilds the holes and their bunkers
+docker exec -i golf-maintenance-db psql -U golfadmin -d golf_maintenance -v ON_ERROR_STOP=1 < seed/default_tasks.sql
 ```
 
 Frontend, from `frontend/`:
@@ -95,7 +96,7 @@ The Read tool is denied `.env` files (see Agent tooling), and you must not print
   1. Public: `/health`, `/login`, `/logout`.
   2. `auth.RequireAuth` reads the `session_token` cookie, looks up `sessions`, and puts the user ID in context. Open routes (`/me`, `/api/my-schedule`, clock in/out, change password) sit here.
   3. `auth.RequireRole("admin")` for admin-only routes. Admins are never held at the clock gate.
-  4. `auth.RequireClockedIn` for work routes (course, equipment, schedule, roster): staff need an open `clock_entries` row, and admins are exempt. New work endpoints belong in this group.
+  4. `auth.RequireClockedIn` for work routes (course, hole tasks, equipment, schedule, roster): staff need an open `clock_entries` row, and admins are exempt. New work endpoints belong in this group.
 - `db.Pool` is a package-level `pgxpool`. Handlers write raw SQL against it directly, with no ORM and no repository layer.
 - Roles are derived from job titles in `models/job_title.go`, the single source of truth. The frontend labels in `frontend/src/constants/jobTitles.js` must stay in sync.
 - Migrations in `backend/migrations/` are never edited once they are on `main`. Add a new one.
@@ -106,6 +107,7 @@ The Read tool is denied `.env` files (see Agent tooling), and you must not print
 - `features/<name>/` keeps a feature's components, CSS, pure logic modules (such as `buildWeekGrid.js` or `checklistLayout.js`), and tests together. Logic is pulled out into plain JS functions and unit-tested separately from components.
 - `AuthContext` provides `user` and `loading`. `ProtectedRoute` and `components/layout/AppLayout` (side nav, top bar) wrap every logged-in route in `App.jsx`. `ClockGate` is the non-dismissible clock-in dialog.
 - The narrow-layout breakpoint lives in `AppLayout.css`, `SideNav.css`, and `TopBar.css`. Change all three together.
+- The hole checklist is built in `features/hole/checklist/checklistTasks.js` from two server lists: the hole's features (from `GET /api/course`) and the club's task list (from `GET /api/hole-tasks`). Areas and sections are worked out there from each task's feature type, and nothing about the task list is written in the code.
 
 ## Code style
 

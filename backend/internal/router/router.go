@@ -47,6 +47,7 @@ func New() http.Handler {
 			r.Get("/api/schedule", handlers.GetSchedules)
 			r.Get("/api/roster", handlers.GetRoster)
 			r.Get("/api/hole-tasks", handlers.GetHoleTasks)
+			r.Get("/api/holes/{holeId}/marks", handlers.GetHoleMarks)
 		})
 	})
 

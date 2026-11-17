@@ -29,6 +29,9 @@ var gatedRoutes = []gateRequest{
 	equipmentListRequest,
 	{"update equipment", http.MethodPut, "/api/equipment/" + nonexistentID, `{"status":"working_order"}`},
 	{"view hole tasks", http.MethodGet, "/api/hole-tasks", ""},
+	{"view hole marks", http.MethodGet, "/api/holes/" + nonexistentID + "/marks", ""},
+	{"mark a task", http.MethodPut, "/api/marks/" + nonexistentID + "/" + nonexistentID, `{"status":"done"}`},
+	{"undo a mark", http.MethodDelete, "/api/marks/" + nonexistentID + "/" + nonexistentID, ""},
 	{"view the schedule", http.MethodGet, "/api/schedule", ""},
 	{"view the roster", http.MethodGet, "/api/roster", ""},
 }

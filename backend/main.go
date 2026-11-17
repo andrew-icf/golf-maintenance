@@ -1,13 +1,16 @@
 package main
 
 import (
+	"context"
 	"log"
 	"net/http"
 	"os"
+	"time"
 
 	"github.com/joho/godotenv"
 
 	"golf-maintenance/backend/internal/db"
+	"golf-maintenance/backend/internal/jobs"
 	"golf-maintenance/backend/internal/router"
 )
 
@@ -20,6 +23,9 @@ func main() {
 		log.Fatalf("failed to connect to database: %v", err)
 	}
 	defer db.Pool.Close()
+
+	// Marks are only kept for 14 days, so old ones are deleted now and then every hour
+	go jobs.RunEvery(context.Background(), time.Hour, jobs.CleanUpOldMarks)
 
 	port := os.Getenv("PORT")
 	if port == "" {

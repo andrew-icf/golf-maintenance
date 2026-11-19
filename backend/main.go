@@ -24,8 +24,8 @@ func main() {
 	}
 	defer db.Pool.Close()
 
-	// Marks are only kept for 14 days, so old ones are deleted now and then every hour
-	go jobs.RunEvery(context.Background(), time.Hour, jobs.CleanUpOldMarks)
+	// Marks are only kept for 14 days, so old ones are deleted when the server starts and then once a day
+	go jobs.RunEvery(context.Background(), 24*time.Hour, jobs.CleanUpOldMarks)
 
 	port := os.Getenv("PORT")
 	if port == "" {

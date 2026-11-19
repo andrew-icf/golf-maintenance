@@ -31,7 +31,20 @@ import {
   statusOf,
   summarizeProgress,
   undoItem,
+  marksFromServer,
 } from './checklistMarks'
+import {
+  FROZEN_SERVER_MARKS,
+  ITEMS_WITHOUT_IDS,
+  MARKED_AT,
+  NOT_A_MARK_CASES,
+  NOT_A_MARK_LIST_CASES,
+  SERVER_ITEMS,
+  UNKNOWN_STATUS_CASES,
+  UNMATCHED_MARK_CASES,
+  UNREADABLE_TIME_CASES,
+  makeServerMark,
+} from '../../../test/fixtures/serverMarkCases'
 
 // Test data
 const ITEMS = buildSampleItems()
@@ -368,5 +381,143 @@ describe('buildSampleMarks', () => {
         expect(formatDateString(new Date(mark.at)), taskId).toBe(day)
       }
     }
+  })
+})
+
+describe('marksFromServer', () => {
+  it('turns a done mark into what the checklist reads, keyed by the task on this page', () => {
+    const serverMark = makeServerMark('tee-box-mowed', {
+      user_id: LUKE.id,
+      user_name: 'Luke Skywalker',
+      marked_at: MARKED_AT,
+    })
+
+    const marks = marksFromServer(SERVER_ITEMS, [serverMark])
+
+    expect([...marks.keys()]).toEqual(['tee-box-mowed'])
+    expect(marks.get('tee-box-mowed')).toEqual({
+      status: 'done',
+      byId: LUKE.id,
+      byName: 'Luke Skywalker',
+      at: Date.parse(MARKED_AT),
+    })
+  })
+
+  it('turns a not-today mark into one', () => {
+    const marks = marksFromServer(SERVER_ITEMS, [makeServerMark('green-rolled', { status: 'not_today' })])
+
+    expect(marks.get('green-rolled').status).toBe('not_today')
+  })
+
+  it('puts each mark on its own task, and a bunker mark on its own bunker', () => {
+    const marks = marksFromServer(SERVER_ITEMS, [
+      makeServerMark('bunker-raked-machine:1'),
+      makeServerMark('bunker-raked-machine:2', { user_id: 'user-han', user_name: 'Han Solo' }),
+      makeServerMark('tee-box-cleared'),
+    ])
+
+    expect([...marks.keys()].sort()).toEqual(['bunker-raked-machine:1', 'bunker-raked-machine:2', 'tee-box-cleared'])
+    expect(marks.get('bunker-raked-machine:1').byName).toBe('Yoda')
+    expect(marks.get('bunker-raked-machine:2').byName).toBe('Han Solo')
+  })
+
+  it.each(UNMATCHED_MARK_CASES)('leaves out a mark naming $label', ({ overrides }) => {
+    const marks = marksFromServer(SERVER_ITEMS, [makeServerMark('tee-box-mowed', overrides)])
+
+    expect(marks.size).toBe(0)
+  })
+
+  it.each(UNKNOWN_STATUS_CASES)('leaves out a mark with $label', ({ overrides }) => {
+    const marks = marksFromServer(SERVER_ITEMS, [makeServerMark('tee-box-mowed', overrides)])
+
+    expect(marks.size).toBe(0)
+  })
+
+  it.each(NOT_A_MARK_CASES)('skips an entry that is $label and keeps the real marks', ({ entry }) => {
+    const marks = marksFromServer(SERVER_ITEMS, [entry, makeServerMark('tee-box-mowed')])
+
+    expect([...marks.keys()]).toEqual(['tee-box-mowed'])
+  })
+
+  it.each(NOT_A_MARK_LIST_CASES)('gives no marks when the marks are $label', ({ serverMarks }) => {
+    const marks = marksFromServer(SERVER_ITEMS, serverMarks)
+
+    expect(marks).toBeInstanceOf(Map)
+    expect(marks.size).toBe(0)
+  })
+
+  it.each(NO_ITEMS_CASES)('gives no marks when the checklist is $label', ({ items }) => {
+    const marks = marksFromServer(items, [makeServerMark('tee-box-mowed')])
+
+    expect(marks.size).toBe(0)
+  })
+
+  it('never matches a task that has no ids, even to a mark with no ids', () => {
+    const marks = marksFromServer(ITEMS_WITHOUT_IDS, [
+      { status: 'done', user_id: 'user-yoda', user_name: 'Yoda', marked_at: MARKED_AT },
+    ])
+
+    expect(marks.size).toBe(0)
+  })
+
+  it.each(UNREADABLE_TIME_CASES)('keeps a mark whose time is $label, with no time', ({ overrides }) => {
+    const marks = marksFromServer(SERVER_ITEMS, [makeServerMark('tee-box-mowed', overrides)])
+
+    expect(Number.isNaN(marks.get('tee-box-mowed').at)).toBe(true)
+    expect(describeMark(marks.get('tee-box-mowed'), LUKE)).toBe('Yoda')
+  })
+
+  it('keeps a mark with no name, with an empty name', () => {
+    const marks = marksFromServer(SERVER_ITEMS, [makeServerMark('tee-box-mowed', { user_name: undefined })])
+
+    expect(marks.get('tee-box-mowed').byName).toBe('')
+  })
+
+  it('keeps a mark with no person id, with an empty id', () => {
+    const marks = marksFromServer(SERVER_ITEMS, [makeServerMark('tee-box-mowed', { user_id: undefined })])
+
+    expect(marks.get('tee-box-mowed').byId).toBe('')
+  })
+
+  it('counts the first mark when the same task is marked twice', () => {
+    const marks = marksFromServer(SERVER_ITEMS, [
+      makeServerMark('tee-box-mowed', { user_name: 'First' }),
+      makeServerMark('tee-box-mowed', { user_name: 'Second' }),
+    ])
+
+    expect(marks.size).toBe(1)
+    expect(marks.get('tee-box-mowed').byName).toBe('First')
+  })
+
+  it('does not modify the marks it is given', () => {
+    expect(() => marksFromServer(SERVER_ITEMS, FROZEN_SERVER_MARKS)).not.toThrow()
+    expect(FROZEN_SERVER_MARKS).toHaveLength(1)
+  })
+
+  it('gives marks the page can describe, telling the person which are their own', () => {
+    const marks = marksFromServer(SERVER_ITEMS, [
+      makeServerMark('tee-box-mowed', { user_id: LUKE.id, user_name: 'Luke Skywalker', marked_at: MARKED_AT }),
+      makeServerMark('rough-mowed'),
+    ])
+
+    expect(describeMark(marks.get('tee-box-mowed'), LUKE)).toBe('You · 6:12am')
+    expect(describeMark(marks.get('rough-mowed'), LUKE)).toBe('Yoda · 5:48am')
+  })
+
+  it('gives marks the progress count can use', () => {
+    const marks = marksFromServer(SERVER_ITEMS, [
+      makeServerMark('tee-box-mowed'),
+      makeServerMark('rough-mowed'),
+      makeServerMark('green-rolled', { status: 'not_today' }),
+    ])
+
+    expect(summarizeProgress(SERVER_ITEMS, marks)).toEqual({
+      total: 21,
+      done: 2,
+      notToday: 1,
+      accountedFor: 3,
+      open: 18,
+      isComplete: false,
+    })
   })
 })

@@ -134,3 +134,43 @@ export function buildSampleMarks(day) {
     ['green-sprayed', setAside('sample-din', 'Din Djarin')],
   ])
 }
+
+// Turns the server's marks for a hole into a Map from a task's id on this page to its mark.
+// A mark is matched to a task by its feature and task ids, and one that matches nothing, or
+// isn't a done or not_today mark, is left out.
+export function marksFromServer(items, serverMarks) {
+  const itemIdByPair = new Map()
+  for (const item of items ?? []) {
+    if (item.featureId && item.taskId) {
+      itemIdByPair.set(`${item.featureId}|${item.taskId}`, item.id)
+    }
+  }
+
+  const marks = new Map()
+  if (!Array.isArray(serverMarks)) {
+    return marks
+  }
+
+  for (const serverMark of serverMarks) {
+    if (!serverMark || typeof serverMark !== 'object') {
+      continue
+    }
+    if (serverMark.status !== MARK_STATUS.DONE && serverMark.status !== MARK_STATUS.NOT_TODAY) {
+      continue
+    }
+
+    const itemId = itemIdByPair.get(`${serverMark.feature_id}|${serverMark.task_id}`)
+    if (itemId === undefined || marks.has(itemId)) {
+      continue
+    }
+
+    marks.set(itemId, {
+      status: serverMark.status,
+      byId: typeof serverMark.user_id === 'string' ? serverMark.user_id : '',
+      byName: typeof serverMark.user_name === 'string' ? serverMark.user_name : '',
+      at: typeof serverMark.marked_at === 'string' ? Date.parse(serverMark.marked_at) : NaN,
+    })
+  }
+
+  return marks
+}

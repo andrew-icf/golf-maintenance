@@ -36,6 +36,8 @@ import {
   MISSING_FEATURE_CASES,
   NON_CONTIGUOUS_BUNKER_FEATURES,
   NOT_A_LIST_CASES,
+  NO_ID_FEATURE_CASES,
+  REPEATED_FEATURE_CASES,
   SHUFFLED_FEATURES,
   makeFeature,
   makeFeatures,
@@ -46,6 +48,7 @@ import {
   EXPECTED_DUTY_BY_TASK,
   EXPECTED_NO_LIST_DUTIES,
   FROZEN_TASK_LIST,
+  ITEM_ID_CASES,
   NO_DUTY_LIST_CASES,
   NO_TASK_LIST_CASES,
   ODD_TASK_TITLE_CASES,
@@ -196,6 +199,37 @@ describe('buildChecklistItems', () => {
     expect(SAMPLE_TASKS[0].allowed_job_titles).toEqual(['greenskeeper'])
   })
 
+  it.each(ITEM_ID_CASES)('gives $itemId the ids of its task and its feature', ({ itemId, taskId, featureId }) => {
+    expect(itemWithId(buildSampleItems(), itemId)).toMatchObject({ taskId, featureId })
+  })
+
+  it("gives each bunker's tasks that bunker's own feature id", () => {
+    const items = buildChecklistItems(NON_CONTIGUOUS_BUNKER_FEATURES, SAMPLE_TASK_LIST)
+
+    expect(itemWithId(items, 'bunker-raked-hand:2').featureId).toBe('feature-bunker-2')
+    expect(itemWithId(items, 'bunker-raked-machine:2').featureId).toBe('feature-bunker-2')
+    expect(itemWithId(items, 'bunker-raked-hand:4').featureId).toBe('feature-bunker-4')
+    expect(itemWithId(items, 'bunker-raked-machine:4').featureId).toBe('feature-bunker-4')
+  })
+
+  it.each(REPEATED_FEATURE_CASES)(
+    'uses the id of the first feature for $label',
+    ({ features, taskCode, expectedFeatureId }) => {
+      const items = buildChecklistItems(features, SAMPLE_TASK_LIST).filter((item) => item.templateId === taskCode)
+
+      expect(items).toHaveLength(1)
+      expect(items[0].featureId).toBe(expectedFeatureId)
+    }
+  )
+
+  it.each(NO_ID_FEATURE_CASES)('makes no tasks for a feature with $label', ({ feature }) => {
+    const features = [...makeFeatures().filter((entry) => entry.type !== 'green'), feature]
+
+    const items = buildChecklistItems(features, SAMPLE_TASK_LIST)
+
+    expect(items.some((item) => item.feature === 'green')).toBe(false)
+  })
+
   it.each(MISSING_FEATURE_CASES)('leaves out the tasks of a missing $omit', ({ omit, missingIds }) => {
     const everyId = idsOf(buildSampleItems())
     const features = buildSampleFeatures().filter((feature) => feature.type !== omit)
@@ -253,6 +287,8 @@ describe('buildChecklistItems', () => {
       {
         id: 'green-inspected',
         templateId: 'green-inspected',
+        taskId: 'task-green-inspected',
+        featureId: 'feature-green-1',
         feature: 'green',
         name: 'Inspected',
         allowedJobTitles: ['mechanic'],

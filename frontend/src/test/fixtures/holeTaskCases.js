@@ -117,6 +117,8 @@ const EXTRA_TASK = makeTask({
 export const UNUSABLE_TASK_CASES = [
   { label: 'a task with no code', entry: { ...EXTRA_TASK, code: undefined } },
   { label: 'a task with an empty code', entry: { ...EXTRA_TASK, code: '' } },
+  { label: 'a task with no id', entry: { ...EXTRA_TASK, id: undefined } },
+  { label: 'a task with a blank id', entry: { ...EXTRA_TASK, id: '   ' } },
   { label: 'a task with no feature type', entry: { ...EXTRA_TASK, feature_type: undefined } },
   { label: 'a task with no name', entry: { ...EXTRA_TASK, name: undefined } },
   { label: 'a task with a blank name', entry: { ...EXTRA_TASK, name: '   ' } },
@@ -176,4 +178,18 @@ export const EXPECTED_NO_LIST_DUTIES = [
   { key: 'greenskeeper', title: 'greenskeeper' },
   { key: 'mystery', title: 'mystery' },
   { key: 'rolling', title: 'rolling' },
+]
+
+// The ids the sample hole's tasks carry, written out by hand. taskId is the task's own id, and
+// featureId the id of the feature of the hole it is on, as buildSampleFeatures makes them.
+export const ITEM_ID_CASES = [
+  { itemId: 'tee-box-cleared', taskId: 'task-tee-box-cleared', featureId: 'sample-tee_box' },
+  { itemId: 'collect-garbage', taskId: 'task-collect-garbage', featureId: 'sample-tee_box' },
+  { itemId: 'tee-box-mowed', taskId: 'task-tee-box-mowed', featureId: 'sample-tee_box' },
+  { itemId: 'par-3-tee-box-cleared', taskId: 'task-par-3-tee-box-cleared', featureId: 'sample-par_3_tee_box' },
+  { itemId: 'fairway-sprayed', taskId: 'task-fairway-sprayed', featureId: 'sample-fairway' },
+  { itemId: 'rough-mowed', taskId: 'task-rough-mowed', featureId: 'sample-rough' },
+  { itemId: 'green-rolled', taskId: 'task-green-rolled', featureId: 'sample-green' },
+  { itemId: 'bunker-raked-machine:1', taskId: 'task-bunker-raked-machine', featureId: 'sample-bunker-1' },
+  { itemId: 'bunker-raked-hand:3', taskId: 'task-bunker-raked-hand', featureId: 'sample-bunker-3' },
 ]

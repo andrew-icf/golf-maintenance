@@ -62,11 +62,13 @@ function isNonBlankText(value) {
   return typeof value === 'string' && value.trim() !== ''
 }
 
-// A task is only usable when it says what it is called, what it is for, and what to call it
+// A task is only usable when it has an id the server can be asked about, and says what it is
+// called, what it is for, and what to call it
 function isUsableTask(task) {
   return (
     task !== null &&
     typeof task === 'object' &&
+    isNonBlankText(task.id) &&
     isNonBlankText(task.code) &&
     isNonBlankText(task.feature_type) &&
     isNonBlankText(task.name)
@@ -90,17 +92,19 @@ function sectionFor(featureType, position) {
   return Object.hasOwn(SECTION_BY_FEATURE_TYPE, featureType) ? { ...SECTION_BY_FEATURE_TYPE[featureType] } : null
 }
 
-// For each kind of feature, the positions the hole has it at. A feature that does not repeat is at
-// position 1 however many times it is listed, and a bunker is only counted when its position is a
-// whole number above zero. Entries that are not features are left out.
+// For each kind of feature, the id of the feature at each position the hole has it at. A feature
+// that does not repeat is at position 1 however many times it is listed, a bunker is only counted
+// when its position is a whole number above zero, and when a feature is listed more than once the
+// first one's id is used. A feature with no usable id cannot be marked, so it is left out, as are
+// entries that are not features.
 function indexFeatures(features) {
   if (!Array.isArray(features)) {
     return new Map()
   }
 
-  const positionSets = new Map()
+  const idsByType = new Map()
   for (const feature of features) {
-    if (!feature || typeof feature !== 'object' || typeof feature.type !== 'string') {
+    if (!feature || typeof feature !== 'object' || typeof feature.type !== 'string' || !isNonBlankText(feature.id)) {
       continue
     }
 
@@ -109,23 +113,27 @@ function indexFeatures(features) {
       continue
     }
 
-    if (!positionSets.has(feature.type)) {
-      positionSets.set(feature.type, new Set())
+    const position = repeats ? feature.position : 1
+    if (!idsByType.has(feature.type)) {
+      idsByType.set(feature.type, new Map())
     }
-    positionSets.get(feature.type).add(repeats ? feature.position : 1)
+    const idByPosition = idsByType.get(feature.type)
+    if (!idByPosition.has(position)) {
+      idByPosition.set(position, feature.id)
+    }
   }
 
-  return new Map(
-    [...positionSets].map(([type, positions]) => [type, [...positions].sort((first, second) => first - second)])
-  )
+  return idsByType
 }
 
-function makeItem(task, dutyCodeById, position) {
+function makeItem(task, dutyCodeById, position, featureId) {
   const repeats = REPEATING_FEATURE_TYPES.includes(task.feature_type)
 
   return {
     id: repeats ? `${task.code}:${position}` : task.code,
     templateId: task.code,
+    taskId: task.id,
+    featureId,
     feature: areaOf(task.feature_type),
     name: task.name,
     allowedJobTitles: Array.isArray(task.allowed_job_titles) ? [...task.allowed_job_titles] : [],
@@ -136,15 +144,17 @@ function makeItem(task, dutyCodeById, position) {
 
 // The tasks on one hole's checklist: the club's task list, from the server, matched against the
 // features the hole has. A hole has the tasks of the features it has and none for the features it
-// lacks, and a task for a feature that repeats, a bunker, is made once for each one. Tasks keep the
-// order the list gives them. Anything that is not a list of features or a task list builds nothing.
+// lacks, and a task for a feature that repeats, a bunker, is made once for each one. Each task
+// carries the id of its task and of its feature, which is how the server is told which one was
+// checked. Tasks keep the order the list gives them. Anything that is not a list of features or a
+// task list builds nothing.
 export function buildChecklistItems(features, taskList) {
   const tasks = Array.isArray(taskList?.tasks) ? taskList.tasks : []
   const duties = Array.isArray(taskList?.duties) ? taskList.duties : []
   const dutyCodeById = new Map(
     duties.filter((duty) => hasCode(duty) && typeof duty.id === 'string').map((duty) => [duty.id, duty.code])
   )
-  const positionsByType = indexFeatures(features)
+  const featureIdsByType = indexFeatures(features)
   const items = []
 
   for (const task of tasks) {
@@ -152,13 +162,18 @@ export function buildChecklistItems(features, taskList) {
       continue
     }
 
-    const positions = positionsByType.get(task.feature_type) ?? []
+    const featureIdByPosition = featureIdsByType.get(task.feature_type)
+    if (!featureIdByPosition) {
+      continue
+    }
+
     if (REPEATING_FEATURE_TYPES.includes(task.feature_type)) {
+      const positions = [...featureIdByPosition.keys()].sort((first, second) => first - second)
       for (const position of positions) {
-        items.push(makeItem(task, dutyCodeById, position))
+        items.push(makeItem(task, dutyCodeById, position, featureIdByPosition.get(position)))
       }
-    } else if (positions.length > 0) {
-      items.push(makeItem(task, dutyCodeById, 1))
+    } else {
+      items.push(makeItem(task, dutyCodeById, 1, featureIdByPosition.get(1)))
     }
   }
 

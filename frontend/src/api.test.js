@@ -20,12 +20,53 @@ const RANGE_ENDPOINTS = [
   { name: 'getMySchedule', path: '/api/my-schedule', call: api.getMySchedule },
 ]
 
+// Ids for the marks calls, and one with characters that would change a route if they were not encoded
+const HOLE_ID = 'hole-7'
+const FEATURE_ID = 'feature-tee-box'
+const TASK_ID = 'task-mowed'
+const AWKWARD_ID = 'a/b?c d'
+const ENCODED_AWKWARD_ID = 'a%2Fb%3Fc%20d'
+const MARK_STATUSES = ['done', 'not_today']
+
+const MARK = {
+  feature_id: FEATURE_ID,
+  task_id: TASK_ID,
+  status: 'done',
+  user_id: 'user-luke',
+  user_name: 'Luke Skywalker',
+  marked_at: '2026-11-17T12:48:00Z',
+}
+const HOLE_MARKS = { date: '2026-11-17', marks: [MARK] }
+
+// The refusals each marks call can get, with the words the server uses for them
+const HOLE_MARKS_FAILURES = [
+  { label: 'an id that is not an id', status: 400, message: 'invalid hole id' },
+  { label: 'a hole that does not exist', status: 404, message: 'hole not found' },
+  { label: 'a server error', status: 500, message: 'could not fetch marks' },
+]
+
+const SET_MARK_FAILURES = [
+  { label: 'a task someone already marked the other way', status: 409, message: 'already marked, undo it first' },
+  { label: 'a person who may not check the task', status: 403, message: 'you are not allowed to check this task' },
+  { label: 'a task that does not exist', status: 404, message: 'task not found' },
+  { label: 'a status the server does not accept', status: 400, message: 'status must be done or not_today' },
+]
+
+const CLEAR_MARK_FAILURES = [
+  { label: 'a person who may not check the task', status: 403, message: 'you are not allowed to check this task' },
+  { label: 'a feature that does not exist', status: 404, message: 'feature not found' },
+  { label: 'an id that is not an id', status: 400, message: 'invalid feature id' },
+]
+
 // Requests of different kinds, which must all be treated alike when the server refuses them
 const REFUSED_REQUESTS = [
   { name: 'getCourse', call: () => api.getCourse() },
   { name: 'updateEquipmentStatus', call: () => api.updateEquipmentStatus('item-1', 'in_shop') },
   { name: 'getSchedules', call: () => api.getSchedules(START_DATE, END_DATE) },
   { name: 'deleteSchedules', call: () => api.deleteSchedules(['shift-1']) },
+  { name: 'getHoleMarks', call: () => api.getHoleMarks(HOLE_ID) },
+  { name: 'setTaskMark', call: () => api.setTaskMark(FEATURE_ID, TASK_ID, 'done') },
+  { name: 'clearTaskMark', call: () => api.clearTaskMark(FEATURE_ID, TASK_ID) },
 ]
 
 // Scenarios
@@ -37,6 +78,15 @@ function respondWith(response) {
 
 function okResponse(body) {
   return { ok: true, json: () => Promise.resolve(body) }
+}
+
+// What an undo gets back: success, with nothing to read. Reading it as JSON fails, as a real one does.
+function noContentResponse() {
+  return {
+    ok: true,
+    status: 204,
+    json: () => Promise.reject(new SyntaxError('Unexpected end of JSON input')),
+  }
 }
 
 function failedResponse(status, text) {
@@ -98,6 +148,12 @@ describe('api', () => {
       await expect(api.getMySchedule()).resolves.toEqual(SHIFTS)
     })
 
+    it('gives back nothing when the server answers with no content', async () => {
+      respondWith(noContentResponse())
+
+      await expect(api.clearTaskMark(FEATURE_ID, TASK_ID)).resolves.toBeNull()
+    })
+
     it('throws the server text as the error message when a request fails', async () => {
       respondWithClockInRequired()
 
@@ -151,7 +207,7 @@ describe('api', () => {
     })
   })
 
-    describe('changePassword', () => {
+  describe('changePassword', () => {
     it('sends the two passwords to the change-password address as a POST', async () => {
       respondWith(okResponse({ message: 'password changed' }))
 
@@ -204,7 +260,7 @@ describe('api', () => {
     })
   })
 
-    describe('getHoleTasks', () => {
+  describe('getHoleTasks', () => {
     const TASK_LIST_RESPONSE = { duties: [], tasks: [] }
 
     it('asks for the hole tasks with a GET and the session cookie', async () => {
@@ -233,6 +289,125 @@ describe('api', () => {
 
       expect(handler).toHaveBeenCalledTimes(1)
     })
+  })
+
+  describe('getHoleMarks', () => {
+    it("asks for the hole's marks with a GET and the session cookie", async () => {
+      respondWith(okResponse(HOLE_MARKS))
+
+      await api.getHoleMarks(HOLE_ID)
+
+      const [, options] = fetchMock.mock.calls[0]
+      expect(calledUrl().pathname).toBe(`/api/holes/${HOLE_ID}/marks`)
+      expect(options.method).toBeUndefined()
+      expect(options.credentials).toBe('include')
+    })
+
+    it('gives back what the server sent', async () => {
+      respondWith(okResponse(HOLE_MARKS))
+
+      await expect(api.getHoleMarks(HOLE_ID)).resolves.toEqual(HOLE_MARKS)
+    })
+
+    it('encodes the hole id so it cannot change the route', async () => {
+      respondWith(okResponse(HOLE_MARKS))
+
+      await api.getHoleMarks(AWKWARD_ID)
+
+      expect(calledUrl().pathname).toBe(`/api/holes/${ENCODED_AWKWARD_ID}/marks`)
+    })
+
+    it.each(HOLE_MARKS_FAILURES)('fails with the status and the words of $label', async ({ status, message }) => {
+      respondWith(failedResponse(status, `${message}\n`))
+
+      const failure = await failureOf(() => api.getHoleMarks(HOLE_ID))
+
+      expect(failure).toBeInstanceOf(ApiError)
+      expect(failure.status).toBe(status)
+      expect(failure.message).toBe(message)
+    })
+  })
+
+  describe('setTaskMark', () => {
+    it.each(MARK_STATUSES)('sends a PUT with the status %s', async (status) => {
+      respondWith(okResponse({ ...MARK, status }))
+
+      await api.setTaskMark(FEATURE_ID, TASK_ID, status)
+
+      const [, options] = fetchMock.mock.calls[0]
+      expect(calledUrl().pathname).toBe(`/api/marks/${FEATURE_ID}/${TASK_ID}`)
+      expect(options.method).toBe('PUT')
+      expect(options.credentials).toBe('include')
+      expect(JSON.parse(options.body)).toEqual({ status })
+    })
+
+    it('gives back the mark the server saved', async () => {
+      respondWith(okResponse(MARK))
+
+      await expect(api.setTaskMark(FEATURE_ID, TASK_ID, 'done')).resolves.toEqual(MARK)
+    })
+
+    it('encodes both ids so they cannot change the route', async () => {
+      respondWith(okResponse(MARK))
+
+      await api.setTaskMark(AWKWARD_ID, AWKWARD_ID, 'done')
+
+      expect(calledUrl().pathname).toBe(`/api/marks/${ENCODED_AWKWARD_ID}/${ENCODED_AWKWARD_ID}`)
+    })
+
+    it.each(SET_MARK_FAILURES)(
+      'fails with the status and the words of $label, without calling it a clock-in problem',
+      async ({ status, message }) => {
+        const handler = vi.fn()
+        setClockInRequiredHandler(handler)
+        respondWith(failedResponse(status, `${message}\n`))
+
+        const failure = await failureOf(() => api.setTaskMark(FEATURE_ID, TASK_ID, 'done'))
+
+        expect(failure).toBeInstanceOf(ApiError)
+        expect(failure.status).toBe(status)
+        expect(failure.message).toBe(message)
+        expect(handler).not.toHaveBeenCalled()
+      }
+    )
+  })
+
+  describe('clearTaskMark', () => {
+    it('sends a DELETE with no body and the session cookie', async () => {
+      respondWith(noContentResponse())
+
+      await api.clearTaskMark(FEATURE_ID, TASK_ID)
+
+      const [, options] = fetchMock.mock.calls[0]
+      expect(calledUrl().pathname).toBe(`/api/marks/${FEATURE_ID}/${TASK_ID}`)
+      expect(options.method).toBe('DELETE')
+      expect(options.body).toBeUndefined()
+      expect(options.credentials).toBe('include')
+    })
+
+    it('encodes both ids so they cannot change the route', async () => {
+      respondWith(noContentResponse())
+
+      await api.clearTaskMark(AWKWARD_ID, AWKWARD_ID)
+
+      expect(calledUrl().pathname).toBe(`/api/marks/${ENCODED_AWKWARD_ID}/${ENCODED_AWKWARD_ID}`)
+    })
+
+    it.each(CLEAR_MARK_FAILURES)(
+      'fails with the status and the words of $label, without calling it a clock-in problem',
+      async ({ status, message }) => {
+        const handler = vi.fn()
+        setClockInRequiredHandler(handler)
+        respondWith(failedResponse(status, `${message}\n`))
+
+        const failure = await failureOf(() => api.clearTaskMark(FEATURE_ID, TASK_ID))
+
+        expect(failure).toBeInstanceOf(ApiError)
+        expect(failure.status).toBe(status)
+        expect(failure.message).toBe(message)
+        expect(handler).not.toHaveBeenCalled()
+      }
+    )
   })
 
   describe('when the server says clock in is required', () => {

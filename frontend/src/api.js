@@ -68,6 +68,11 @@ async function request(path, options = {}) {
     throw error
   }
 
+  // A successful answer with nothing in it, such as the one an undo gets, has no JSON to read
+  if (response.status === 204) {
+    return null
+  }
+
   return response.json()
 }
 
@@ -99,6 +104,22 @@ export const api = {
 
   // The club's list of tasks for a hole, and the duties they belong to
   getHoleTasks: () => request('/api/hole-tasks'),
+
+  // Today's marks for one hole, with the club's date. A mark says a task is done or set aside.
+  getHoleMarks: (holeId) => request(`/api/holes/${encodeURIComponent(holeId)}/marks`),
+
+  // Checks a task off, or sets it aside, on one feature of a hole. status is done or not_today.
+  setTaskMark: (featureId, taskId, status) =>
+    request(`/api/marks/${encodeURIComponent(featureId)}/${encodeURIComponent(taskId)}`, {
+      method: 'PUT',
+      body: JSON.stringify({ status }),
+    }),
+
+  // Takes a mark back. Taking back a task nobody marked is not an error.
+  clearTaskMark: (featureId, taskId) =>
+    request(`/api/marks/${encodeURIComponent(featureId)}/${encodeURIComponent(taskId)}`, {
+      method: 'DELETE',
+    }),
 
   getEquipment: () => request('/api/equipment'),
 

@@ -2,6 +2,8 @@ import { useId } from 'react'
 import { MARK_STATUS, describeMark } from './checklistMarks'
 import { canCheckTask, formatAllowedTitles } from './taskPermissions'
 
+const SAVING_TEXT = 'Saving…'
+
 function LockIcon() {
   return (
     <svg
@@ -21,30 +23,41 @@ function LockIcon() {
   )
 }
 
-// One task. The box checks it off, or takes the check back when it is already done. A task set
-// aside for today has a disabled box and an Undo button, and an open task has Not today. A task
-// the person may not check is locked, with a lock that says who it is for. label names the task
-// with its area and section, because the same name turns up in several places.
-export function ChecklistRow({ item, mark, user, label, onCheck, onSkip, onUndo }) {
+// One task. The box checks it off, or takes the check back when it is done. A task set aside has a
+// disabled box and an Undo button, and an open task has Not today. A task the person may not check
+// is locked. While a change is saving the row says so and cannot be tapped, and notice is a message
+// about the last change. label names the task with its area and section.
+export function ChecklistRow({
+  item,
+  mark,
+  user,
+  label,
+  isSaving = false,
+  notice,
+  onCheck,
+  onSkip,
+  onUndo,
+  onDismissNotice,
+}) {
   const metaId = useId()
   const mayCheck = canCheckTask(user, item)
   const isDone = mark?.status === MARK_STATUS.DONE
   const isSkipped = mark?.status === MARK_STATUS.NOT_TODAY
   const isOpen = !isDone && !isSkipped
   const isLocked = !mayCheck && isOpen
-  const meta = describeMark(mark, user)
+  const meta = isSaving ? SAVING_TEXT : describeMark(mark, user)
   const forTitles = formatAllowedTitles(item)
-  const rowClass = ['checklist-row', isLocked && 'is-locked', isSkipped && 'is-skipped']
+  const rowClass = ['checklist-row', isLocked && 'is-locked', isSkipped && 'is-skipped', isSaving && 'is-saving']
     .filter(Boolean)
     .join(' ')
 
   return (
-    <li className={ rowClass }>
+    <li className={ rowClass } aria-busy={ isSaving ? 'true' : undefined }>
       <input
         type="checkbox"
         className="checklist-box"
         checked={ isDone }
-        disabled={ !mayCheck || isSkipped }
+        disabled={ !mayCheck || isSkipped || isSaving }
         onChange={ () => (isDone ? onUndo(item) : onCheck(item)) }
         aria-label={ label }
         aria-describedby={ meta ? metaId : undefined }
@@ -53,6 +66,21 @@ export function ChecklistRow({ item, mark, user, label, onCheck, onSkip, onUndo 
       <div className="checklist-text">
         <p className="checklist-name">{ item.name }</p>
         { meta && <p id={ metaId } className="checklist-meta">{ meta }</p> }
+        { notice && (
+          <div className="checklist-notice">
+            <p role="alert" className="checklist-notice-text">{ notice }</p>
+            { onDismissNotice && (
+              <button
+                type="button"
+                className="checklist-notice-dismiss"
+                onClick={ onDismissNotice }
+                aria-label={ `Dismiss message: ${label}` }
+              >
+                Dismiss
+              </button>
+            )}
+          </div>
+        )}
       </div>
 
       { isLocked && (
@@ -68,6 +96,7 @@ export function ChecklistRow({ item, mark, user, label, onCheck, onSkip, onUndo 
         <button
           type="button"
           className="checklist-action"
+          disabled={ isSaving }
           onClick={ () => onSkip(item) }
           aria-label={ `Not today: ${label}` }
         >
@@ -78,6 +107,7 @@ export function ChecklistRow({ item, mark, user, label, onCheck, onSkip, onUndo 
         <button
           type="button"
           className="checklist-action"
+          disabled={ isSaving }
           onClick={ () => onUndo(item) }
           aria-label={ `Undo: ${label}` }
         >

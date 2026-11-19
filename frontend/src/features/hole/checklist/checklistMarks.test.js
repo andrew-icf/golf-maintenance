@@ -32,6 +32,7 @@ import {
   summarizeProgress,
   undoItem,
   marksFromServer,
+  formatClubDate,
 } from './checklistMarks'
 import {
   FROZEN_SERVER_MARKS,
@@ -519,5 +520,31 @@ describe('marksFromServer', () => {
       open: 18,
       isComplete: false,
     })
+  })
+})
+
+describe('formatClubDate', () => {
+  const READABLE_CASES = [
+    { label: 'an ordinary day', day: '2026-11-17', expected: 'Tuesday, November 17' },
+    { label: 'the last day of the year', day: '2026-12-31', expected: 'Thursday, December 31' },
+    { label: 'the first day of the year', day: '2027-01-01', expected: 'Friday, January 1' },
+    { label: 'a leap day', day: '2028-02-29', expected: 'Tuesday, February 29' },
+  ]
+  const UNREADABLE_CASES = [
+    { label: 'text that is not a date', day: 'banana' },
+    { label: 'a day that is not a real one', day: '2026-13-45' },
+    { label: 'a day that does not exist', day: '2026-02-30' },
+    { label: 'an empty string', day: '' },
+    { label: 'nothing', day: undefined },
+    { label: 'null', day: null },
+    { label: 'a number', day: 20261117 },
+  ]
+
+  it.each(READABLE_CASES)('writes $label as "$expected"', ({ day, expected }) => {
+    expect(formatClubDate(day)).toBe(expected)
+  })
+
+  it.each(UNREADABLE_CASES)('says nothing for $label', ({ day }) => {
+    expect(formatClubDate(day)).toBe('')
   })
 })

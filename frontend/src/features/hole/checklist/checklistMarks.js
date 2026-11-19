@@ -1,4 +1,4 @@
-import { formatShiftTime, parseDateString } from '../../schedule/scheduleDates'
+import { formatDateString, formatShiftTime, parseDateString } from '../../schedule/scheduleDates'
 import { canCheckTask } from './taskPermissions'
 
 export const MARK_STATUS = { DONE: 'done', NOT_TODAY: 'not_today' }
@@ -99,6 +99,23 @@ export function describeMark(mark, user) {
   }
 
   return mark?.status === MARK_STATUS.NOT_TODAY ? 'Not today' : ''
+}
+
+const DAY_PATTERN = /^\d{4}-\d{2}-\d{2}$/
+
+// 'Tuesday, November 17' for the club's date ('2026-11-17'), or nothing when it can't be read
+export function formatClubDate(day) {
+  if (typeof day !== 'string' || !DAY_PATTERN.test(day)) {
+    return ''
+  }
+
+  const date = parseDateString(day)
+  // A date that doesn't exist, like 2026-02-30, rolls over into another day
+  if (formatDateString(date) !== day) {
+    return ''
+  }
+
+  return new Intl.DateTimeFormat('en-US', { weekday: 'long', month: 'long', day: 'numeric' }).format(date)
 }
 
 function timeOnDay(day, hours, minutes) {

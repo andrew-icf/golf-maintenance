@@ -1,0 +1,41 @@
+.hole-checklist-note {
+  margin: 0;
+  padding: 10px 14px;
+  background: #fbf4e2;
+  border: 1px solid #e0b84a;
+  border-radius: 10px;
+  font-size: 14px;
+  color: #5c3b00;
+}
+
+.hole-checklist-date {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 600;
+  color: #4d7a55;
+}
+
+.hole-checklist-error {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 12px;
+}
+
+.hole-checklist-retry {
+  min-height: 44px;
+  padding: 0 16px;
+  border: 1px solid #dce8d7;
+  border-radius: 10px;
+  background: #ffffff;
+  color: #17341c;
+  font: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.hole-checklist-retry:focus-visible {
+  outline: 3px solid #17341c;
+  outline-offset: 2px;
+}

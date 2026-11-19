@@ -4,7 +4,7 @@ import { api } from '../../api'
 import { formatAmenityType } from '../../constants/amenities'
 import { useAuth } from '../auth/AuthContext'
 import { formatYardage } from '../course/courseSummary'
-import { ChecklistPreview } from './checklist/ChecklistPreview'
+import { HoleChecklist } from './checklist/HoleChecklist'
 import { findHoleDetails } from './holeDetails'
 import './HoleDetailsView.css'
 
@@ -85,7 +85,13 @@ export function HoleDetailsView() {
       { taskError ? (
         <p role="alert" className="error">{ `Could not load the checklist: ${taskError}` }</p>
       ) : (
-        <ChecklistPreview key={ details.id } user={ user } features={ details.features } taskList={ taskList } />
+        <HoleChecklist
+          key={ details.id }
+          holeId={ details.id }
+          user={ user }
+          features={ details.features }
+          taskList={ taskList }
+        />
       )}
 
       <div className="hole-details-bottom">

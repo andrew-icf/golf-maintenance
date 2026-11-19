@@ -126,3 +126,35 @@ export const FEATURE_VALUE_PAGE = makePageResponse(
   ],
   []
 )
+
+// The same kind of feature listed twice, with different ids: the first one's id is the one used
+export const REPEATED_FEATURE_CASES = [
+  {
+    label: 'the same green listed twice',
+    features: [
+      ...makeFeatures().filter((feature) => feature.type !== 'green'),
+      { id: 'first-green', type: 'green', position: 1 },
+      { id: 'second-green', type: 'green', position: 1 },
+    ],
+    taskCode: 'green-mowed',
+    expectedFeatureId: 'first-green',
+  },
+  {
+    label: 'the same bunker listed twice',
+    features: [
+      ...makeFeatures(),
+      { id: 'first-bunker', type: 'bunker', position: 1 },
+      { id: 'second-bunker', type: 'bunker', position: 1 },
+    ],
+    taskCode: 'bunker-raked-hand',
+    expectedFeatureId: 'first-bunker',
+  },
+]
+
+// A feature with no usable id cannot be marked, so the hole is treated as not having it
+export const NO_ID_FEATURE_CASES = [
+  { label: 'no id', feature: { type: 'green', position: 1 } },
+  { label: 'an empty id', feature: { id: '', type: 'green', position: 1 } },
+  { label: 'a blank id', feature: { id: '   ', type: 'green', position: 1 } },
+  { label: 'an id that is a number', feature: { id: 42, type: 'green', position: 1 } },
+]

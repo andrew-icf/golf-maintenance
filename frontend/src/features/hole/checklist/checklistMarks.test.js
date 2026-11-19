@@ -1,234 +1,54 @@
 import { describe, expect, it } from 'vitest'
-import { formatDateString } from '../../schedule/scheduleDates'
 import {
   DESCRIBE_MARK_CASES,
   FORMAT_TIME_CASES,
-  HAN_SOLO,
   INVALID_TIME_CASES,
   NOW,
+  NO_ITEMS_CASES,
   SAMPLE_DAY,
-  SAMPLE_MARK_DESCRIPTIONS,
   atTime,
   doneMark,
   notTodayMark,
-  NO_ITEMS_CASES,
 } from '../../../test/fixtures/checklistCases'
-import {
-  ALL_TASKS,
-  LUKE,
-  MON_MOTHMA,
-  NO_PERSON_CASES,
-  PEOPLE_AND_THEIR_TASKS,
-  YODA,
-} from '../../../test/fixtures/taskPermissionCases'
 import { buildSampleItems } from '../../../test/fixtures/holeTaskCases'
+import { buildSampleMarks } from '../../../test/fixtures/sampleMarks'
 import {
-  buildSampleMarks,
-  checkItem,
+  FROZEN_SERVER_MARKS,
+  ITEMS_WITHOUT_IDS,
+  MARKED_AT,
+  NOT_A_MARK_CASES,
+  NOT_A_MARK_LIST_CASES,
+  SERVER_ITEMS,
+  UNKNOWN_STATUS_CASES,
+  UNMATCHED_MARK_CASES,
+  UNREADABLE_TIME_CASES,
+  makeServerMark,
+} from '../../../test/fixtures/serverMarkCases'
+import { LUKE } from '../../../test/fixtures/taskPermissionCases'
+import {
   describeMark,
+  formatClubDate,
   formatMarkTime,
-  skipItem,
+  marksFromServer,
   statusOf,
   summarizeProgress,
-  undoItem,
 } from './checklistMarks'
 
 // Test data
 const ITEMS = buildSampleItems()
 const ITEM_COUNT = 21
-const GREENSKEEPER_ITEM = ITEMS.find((item) => item.id === 'tee-box-cleared')
-const OPERATOR_ITEM = ITEMS.find((item) => item.id === 'tee-box-mowed')
-const OTHER_OPERATOR_ITEM = ITEMS.find((item) => item.id === 'rough-mowed')
-
-// Actions
-function withMarks(entries) {
-  return new Map(entries)
-}
-
-describe('checkItem', () => {
-  it.each(PEOPLE_AND_THEIR_TASKS)('lets $name check exactly the tasks they may', ({ user, mayCheck }) => {
-    for (const task of ALL_TASKS) {
-      const item = { ...task, id: task.key }
-      const marks = new Map()
-
-      const result = checkItem(marks, item, user, NOW)
-
-      expect(result.has(item.id), `${task.key} task`).toBe(mayCheck.includes(task.key))
-      if (!mayCheck.includes(task.key)) {
-        expect(result, `${task.key} task`).toBe(marks)
-      }
-    }
-  })
-
-  it('records who checked it, and when', () => {
-    const result = checkItem(new Map(), OPERATOR_ITEM, LUKE, NOW)
-
-    expect(result.get(OPERATOR_ITEM.id)).toEqual({
-      status: 'done',
-      byId: LUKE.id,
-      byName: 'Luke Skywalker',
-      at: NOW,
-    })
-  })
-
-  it('leaves a task that is already done alone, whoever tries', () => {
-    const marks = withMarks([[OPERATOR_ITEM.id, doneMark(HAN_SOLO.id, 'Han Solo', atTime(5, 0))]])
-
-    const result = checkItem(marks, OPERATOR_ITEM, LUKE, NOW)
-
-    expect(result).toBe(marks)
-    expect(result.get(OPERATOR_ITEM.id).byId).toBe(HAN_SOLO.id)
-  })
-
-  it('leaves a task that was set aside for today alone', () => {
-    const marks = withMarks([[OPERATOR_ITEM.id, notTodayMark(HAN_SOLO.id, 'Han Solo', atTime(5, 0))]])
-
-    expect(checkItem(marks, OPERATOR_ITEM, LUKE, NOW)).toBe(marks)
-  })
-
-  it('does not change the marks it is given', () => {
-    const marks = new Map()
-
-    const result = checkItem(marks, OPERATOR_ITEM, LUKE, NOW)
-
-    expect(result).not.toBe(marks)
-    expect(marks.size).toBe(0)
-  })
-
-  it.each([
-    { label: 'null', marks: null },
-    { label: 'undefined', marks: undefined },
-  ])('starts a new set of marks when there are $label yet', ({ marks }) => {
-    const result = checkItem(marks, OPERATOR_ITEM, LUKE, NOW)
-
-    expect(result.size).toBe(1)
-    expect(statusOf(result, OPERATOR_ITEM.id)).toBe('done')
-  })
-
-  it.each(NO_PERSON_CASES)('checks nothing when the person is $label', ({ user }) => {
-    const marks = new Map()
-
-    expect(checkItem(marks, OPERATOR_ITEM, user, NOW)).toBe(marks)
-  })
-
-  it('checks nothing when there is no task', () => {
-    const marks = new Map()
-
-    expect(checkItem(marks, null, MON_MOTHMA, NOW)).toBe(marks)
-  })
-})
-
-describe('skipItem', () => {
-  it('sets a task aside for today, recording who and when', () => {
-    const result = skipItem(new Map(), OPERATOR_ITEM, LUKE, NOW)
-
-    expect(result.get(OPERATOR_ITEM.id)).toEqual({
-      status: 'not_today',
-      byId: LUKE.id,
-      byName: 'Luke Skywalker',
-      at: NOW,
-    })
-  })
-
-  it('does nothing for someone who may not check the task', () => {
-    const marks = new Map()
-
-    expect(skipItem(marks, GREENSKEEPER_ITEM, LUKE, NOW)).toBe(marks)
-  })
-
-  it('leaves a task that is done as it is', () => {
-    const marks = withMarks([[OPERATOR_ITEM.id, doneMark(HAN_SOLO.id, 'Han Solo', atTime(5, 0))]])
-
-    expect(skipItem(marks, OPERATOR_ITEM, LUKE, NOW)).toBe(marks)
-  })
-
-  it('leaves a task that is already set aside as it is', () => {
-    const marks = withMarks([[OPERATOR_ITEM.id, notTodayMark(HAN_SOLO.id, 'Han Solo', atTime(5, 0))]])
-
-    expect(skipItem(marks, OPERATOR_ITEM, LUKE, NOW)).toBe(marks)
-  })
-})
-
-describe('undoItem', () => {
-  it('takes back a check', () => {
-    const marks = withMarks([[OPERATOR_ITEM.id, doneMark(LUKE.id, 'Luke Skywalker', NOW)]])
-
-    const result = undoItem(marks, OPERATOR_ITEM, LUKE)
-
-    expect(statusOf(result, OPERATOR_ITEM.id)).toBe('open')
-  })
-
-  it('takes back a "not today"', () => {
-    const marks = withMarks([[OPERATOR_ITEM.id, notTodayMark(LUKE.id, 'Luke Skywalker', NOW)]])
-
-    const result = undoItem(marks, OPERATOR_ITEM, LUKE)
-
-    expect(statusOf(result, OPERATOR_ITEM.id)).toBe('open')
-  })
-
-  it('leaves an open task alone', () => {
-    const marks = new Map()
-
-    expect(undoItem(marks, OPERATOR_ITEM, LUKE)).toBe(marks)
-  })
-
-  it("does not let someone who may not check the task take back another person's check", () => {
-    const marks = withMarks([[OPERATOR_ITEM.id, doneMark(LUKE.id, 'Luke Skywalker', NOW)]])
-
-    const result = undoItem(marks, OPERATOR_ITEM, YODA)
-
-    expect(result).toBe(marks)
-    expect(statusOf(result, OPERATOR_ITEM.id)).toBe('done')
-  })
-
-  it("lets anyone who may check the task take back someone else's check", () => {
-    const marks = withMarks([[OPERATOR_ITEM.id, doneMark(LUKE.id, 'Luke Skywalker', NOW)]])
-
-    const result = undoItem(marks, OPERATOR_ITEM, HAN_SOLO)
-
-    expect(statusOf(result, OPERATOR_ITEM.id)).toBe('open')
-  })
-
-  it("lets an admin take back anyone's check", () => {
-    const marks = withMarks([[GREENSKEEPER_ITEM.id, doneMark(YODA.id, 'Yoda', NOW)]])
-
-    const result = undoItem(marks, GREENSKEEPER_ITEM, MON_MOTHMA)
-
-    expect(statusOf(result, GREENSKEEPER_ITEM.id)).toBe('open')
-  })
-
-  it('takes back only that task and keeps every other mark', () => {
-    const marks = withMarks([
-      [OPERATOR_ITEM.id, doneMark(LUKE.id, 'Luke Skywalker', NOW)],
-      [OTHER_OPERATOR_ITEM.id, doneMark(LUKE.id, 'Luke Skywalker', NOW)],
-    ])
-
-    const result = undoItem(marks, OPERATOR_ITEM, LUKE)
-
-    expect(result.size).toBe(1)
-    expect(statusOf(result, OTHER_OPERATOR_ITEM.id)).toBe('done')
-  })
-
-  it('does not change the marks it is given', () => {
-    const marks = withMarks([[OPERATOR_ITEM.id, doneMark(LUKE.id, 'Luke Skywalker', NOW)]])
-
-    undoItem(marks, OPERATOR_ITEM, LUKE)
-
-    expect(marks.size).toBe(1)
-  })
-})
 
 describe('statusOf', () => {
   it.each([
     { label: 'no mark', marks: new Map(), expected: 'open' },
     {
       label: 'a check',
-      marks: withMarks([['task', doneMark('user-1', 'Someone', NOW)]]),
+      marks: new Map([['task', doneMark('user-1', 'Someone', NOW)]]),
       expected: 'done',
     },
     {
       label: 'a "not today"',
-      marks: withMarks([['task', notTodayMark('user-1', 'Someone', NOW)]]),
+      marks: new Map([['task', notTodayMark('user-1', 'Someone', NOW)]]),
       expected: 'not_today',
     },
     { label: 'no marks at all', marks: null, expected: 'open' },
@@ -332,41 +152,166 @@ describe('formatMarkTime', () => {
   })
 })
 
-describe('buildSampleMarks', () => {
-  it('only marks tasks that are on the sample checklist', () => {
-    const itemIds = new Set(ITEMS.map((item) => item.id))
+describe('marksFromServer', () => {
+  it('turns a done mark into what the checklist reads, keyed by the task on this page', () => {
+    const serverMark = makeServerMark('tee-box-mowed', {
+      user_id: LUKE.id,
+      user_name: 'Luke Skywalker',
+      marked_at: MARKED_AT,
+    })
 
-    for (const taskId of buildSampleMarks(SAMPLE_DAY).keys()) {
-      expect(itemIds.has(taskId), taskId).toBe(true)
-    }
+    const marks = marksFromServer(SERVER_ITEMS, [serverMark])
+
+    expect([...marks.keys()]).toEqual(['tee-box-mowed'])
+    expect(marks.get('tee-box-mowed')).toEqual({
+      status: 'done',
+      byId: LUKE.id,
+      byName: 'Luke Skywalker',
+      at: Date.parse(MARKED_AT),
+    })
   })
 
-  it('has five tasks done and three set aside', () => {
-    const marks = buildSampleMarks(SAMPLE_DAY)
-    const statuses = [...marks.values()].map((mark) => mark.status)
+  it('turns a not-today mark into one', () => {
+    const marks = marksFromServer(SERVER_ITEMS, [makeServerMark('green-rolled', { status: 'not_today' })])
 
-    expect(statuses.filter((status) => status === 'done')).toHaveLength(5)
-    expect(statuses.filter((status) => status === 'not_today')).toHaveLength(3)
+    expect(marks.get('green-rolled').status).toBe('not_today')
   })
 
-  it.each(SAMPLE_MARK_DESCRIPTIONS)('says "$expected" under $id', ({ id, expected }) => {
-    const marks = buildSampleMarks(SAMPLE_DAY)
+  it('puts each mark on its own task, and a bunker mark on its own bunker', () => {
+    const marks = marksFromServer(SERVER_ITEMS, [
+      makeServerMark('bunker-raked-machine:1'),
+      makeServerMark('bunker-raked-machine:2', { user_id: 'user-han', user_name: 'Han Solo' }),
+      makeServerMark('tee-box-cleared'),
+    ])
 
-    expect(describeMark(marks.get(id), LUKE)).toBe(expected)
+    expect([...marks.keys()].sort()).toEqual(['bunker-raked-machine:1', 'bunker-raked-machine:2', 'tee-box-cleared'])
+    expect(marks.get('bunker-raked-machine:1').byName).toBe('Yoda')
+    expect(marks.get('bunker-raked-machine:2').byName).toBe('Han Solo')
   })
 
-  it('is never mistaken for the person looking', () => {
-    for (const [taskId, mark] of buildSampleMarks(SAMPLE_DAY)) {
-      expect(mark.byId.startsWith('sample-'), taskId).toBe(true)
-      expect(describeMark(mark, LUKE), taskId).not.toMatch(/^You/)
-    }
+  it.each(UNMATCHED_MARK_CASES)('leaves out a mark naming $label', ({ overrides }) => {
+    const marks = marksFromServer(SERVER_ITEMS, [makeServerMark('tee-box-mowed', overrides)])
+
+    expect(marks.size).toBe(0)
   })
 
-  it('puts the times on the day it is given', () => {
-    for (const day of [SAMPLE_DAY, '2026-12-31']) {
-      for (const [taskId, mark] of buildSampleMarks(day)) {
-        expect(formatDateString(new Date(mark.at)), taskId).toBe(day)
-      }
-    }
+  it.each(UNKNOWN_STATUS_CASES)('leaves out a mark with $label', ({ overrides }) => {
+    const marks = marksFromServer(SERVER_ITEMS, [makeServerMark('tee-box-mowed', overrides)])
+
+    expect(marks.size).toBe(0)
+  })
+
+  it.each(NOT_A_MARK_CASES)('skips an entry that is $label and keeps the real marks', ({ entry }) => {
+    const marks = marksFromServer(SERVER_ITEMS, [entry, makeServerMark('tee-box-mowed')])
+
+    expect([...marks.keys()]).toEqual(['tee-box-mowed'])
+  })
+
+  it.each(NOT_A_MARK_LIST_CASES)('gives no marks when the marks are $label', ({ serverMarks }) => {
+    const marks = marksFromServer(SERVER_ITEMS, serverMarks)
+
+    expect(marks).toBeInstanceOf(Map)
+    expect(marks.size).toBe(0)
+  })
+
+  it.each(NO_ITEMS_CASES)('gives no marks when the checklist is $label', ({ items }) => {
+    const marks = marksFromServer(items, [makeServerMark('tee-box-mowed')])
+
+    expect(marks.size).toBe(0)
+  })
+
+  it('never matches a task that has no ids, even to a mark with no ids', () => {
+    const marks = marksFromServer(ITEMS_WITHOUT_IDS, [
+      { status: 'done', user_id: 'user-yoda', user_name: 'Yoda', marked_at: MARKED_AT },
+    ])
+
+    expect(marks.size).toBe(0)
+  })
+
+  it.each(UNREADABLE_TIME_CASES)('keeps a mark whose time is $label, with no time', ({ overrides }) => {
+    const marks = marksFromServer(SERVER_ITEMS, [makeServerMark('tee-box-mowed', overrides)])
+
+    expect(Number.isNaN(marks.get('tee-box-mowed').at)).toBe(true)
+    expect(describeMark(marks.get('tee-box-mowed'), LUKE)).toBe('Yoda')
+  })
+
+  it('keeps a mark with no name, with an empty name', () => {
+    const marks = marksFromServer(SERVER_ITEMS, [makeServerMark('tee-box-mowed', { user_name: undefined })])
+
+    expect(marks.get('tee-box-mowed').byName).toBe('')
+  })
+
+  it('keeps a mark with no person id, with an empty id', () => {
+    const marks = marksFromServer(SERVER_ITEMS, [makeServerMark('tee-box-mowed', { user_id: undefined })])
+
+    expect(marks.get('tee-box-mowed').byId).toBe('')
+  })
+
+  it('counts the first mark when the same task is marked twice', () => {
+    const marks = marksFromServer(SERVER_ITEMS, [
+      makeServerMark('tee-box-mowed', { user_name: 'First' }),
+      makeServerMark('tee-box-mowed', { user_name: 'Second' }),
+    ])
+
+    expect(marks.size).toBe(1)
+    expect(marks.get('tee-box-mowed').byName).toBe('First')
+  })
+
+  it('does not modify the marks it is given', () => {
+    expect(() => marksFromServer(SERVER_ITEMS, FROZEN_SERVER_MARKS)).not.toThrow()
+    expect(FROZEN_SERVER_MARKS).toHaveLength(1)
+  })
+
+  it('gives marks the page can describe, telling the person which are their own', () => {
+    const marks = marksFromServer(SERVER_ITEMS, [
+      makeServerMark('tee-box-mowed', { user_id: LUKE.id, user_name: 'Luke Skywalker', marked_at: MARKED_AT }),
+      makeServerMark('rough-mowed'),
+    ])
+
+    expect(describeMark(marks.get('tee-box-mowed'), LUKE)).toBe('You · 6:12am')
+    expect(describeMark(marks.get('rough-mowed'), LUKE)).toBe('Yoda · 5:48am')
+  })
+
+  it('gives marks the progress count can use', () => {
+    const marks = marksFromServer(SERVER_ITEMS, [
+      makeServerMark('tee-box-mowed'),
+      makeServerMark('rough-mowed'),
+      makeServerMark('green-rolled', { status: 'not_today' }),
+    ])
+
+    expect(summarizeProgress(SERVER_ITEMS, marks)).toEqual({
+      total: 21,
+      done: 2,
+      notToday: 1,
+      accountedFor: 3,
+      open: 18,
+      isComplete: false,
+    })
+  })
+})
+
+describe('formatClubDate', () => {
+  const READABLE_CASES = [
+    { label: 'an ordinary day', day: '2026-11-17', expected: 'Tuesday, November 17' },
+    { label: 'the last day of the year', day: '2026-12-31', expected: 'Thursday, December 31' },
+    { label: 'the first day of the year', day: '2027-01-01', expected: 'Friday, January 1' },
+    { label: 'a leap day', day: '2028-02-29', expected: 'Tuesday, February 29' },
+  ]
+  const UNREADABLE_CASES = [
+    { label: 'text that is not a date', day: 'banana' },
+    { label: 'a day that is not a real one', day: '2026-13-45' },
+    { label: 'a day that does not exist', day: '2026-02-30' },
+    { label: 'an empty string', day: '' },
+    { label: 'nothing', day: undefined },
+    { label: 'null', day: null },
+    { label: 'a number', day: 20261117 },
+  ]
+
+  it.each(READABLE_CASES)('writes $label as "$expected"', ({ day, expected }) => {
+    expect(formatClubDate(day)).toBe(expected)
+  })
+
+  it.each(UNREADABLE_CASES)('says nothing for $label', ({ day }) => {
+    expect(formatClubDate(day)).toBe('')
   })
 })

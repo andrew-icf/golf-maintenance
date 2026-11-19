@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest'
-import { render, screen } from '@testing-library/react'
+import { render, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { atTime, doneMark, makeChecklistItem } from '../../../test/fixtures/checklistCases'
 import { ONE_ROLE_ITEMS, VIEWER_CASES } from '../../../test/fixtures/checklistLayoutCases'
@@ -22,23 +22,40 @@ import {
 } from '../../../test/fixtures/checklistViewCases'
 import { AHSOKA, LUKE, MON_MOTHMA } from '../../../test/fixtures/taskPermissionCases'
 import { Checklist } from './Checklist'
-import { buildSampleMarks } from './checklistMarks'
+import { buildSampleMarks } from '../../../test/fixtures/sampleMarks'
 import { buildSampleItems } from '../../../test/fixtures/holeTaskCases'
 
 // Test data
 const ITEMS = buildSampleItems()
 const MARKS = buildSampleMarks(SAMPLE_DAY)
+const SAVING_TEXT = 'Saving…'
+const NOTICE = { itemId: 'tee-box-mowed', message: 'Yoda already marked this' }
 
 // Actions
 function renderChecklist({
   items = ITEMS,
   marks = MARKS,
   user = LUKE,
+  pendingIds,
+  notice,
   onCheck = vi.fn(),
   onSkip = vi.fn(),
   onUndo = vi.fn(),
+  onDismissNotice,
 } = {}) {
-  render(<Checklist items={ items } marks={ marks } user={ user } onCheck={ onCheck } onSkip={ onSkip } onUndo={ onUndo } />)
+  render(
+    <Checklist
+      items={ items }
+      marks={ marks }
+      user={ user }
+      pendingIds={ pendingIds }
+      notice={ notice }
+      onCheck={ onCheck }
+      onSkip={ onSkip }
+      onUndo={ onUndo }
+      onDismissNotice={ onDismissNotice }
+    />
+  )
   return { onCheck, onSkip, onUndo }
 }
 
@@ -52,6 +69,10 @@ function columnHeads() {
 
 function metaTexts() {
   return Array.from(document.querySelectorAll('.checklist-meta')).map((element) => element.textContent)
+}
+
+function enabledNotTodayButtons() {
+  return screen.queryAllByRole('button', { name: /^Not today:/ }).filter((button) => !button.disabled)
 }
 
 describe('Checklist', () => {
@@ -273,5 +294,141 @@ describe('Checklist', () => {
 
     expect(screen.queryAllByRole('img', { name: /^Locked:/ })).toHaveLength(13)
     expect(screen.queryAllByRole('button', { name: /^Not today:/ })).toHaveLength(0)
+  })
+
+  describe('a row that is saving', () => {
+    it('says Saving… and disables the box and the Not today button', () => {
+      renderChecklist({ pendingIds: new Set(['tee-box-mowed']) })
+
+      expect(metaTexts()).toContain(SAVING_TEXT)
+      expect(box('Tee box: Mowed')).toBeDisabled()
+      expect(screen.getByRole('button', { name: 'Not today: Tee box: Mowed' })).toBeDisabled()
+    })
+
+    it('leaves every other row as it was', () => {
+      renderChecklist({ pendingIds: new Set(['tee-box-mowed']) })
+
+      // Luke may check 8 tasks, and 6 of them are open
+      expect(screen.getAllByRole('checkbox').filter((checkbox) => !checkbox.disabled)).toHaveLength(7)
+      expect(enabledNotTodayButtons()).toHaveLength(5)
+      expect(metaTexts().filter((text) => text === SAVING_TEXT)).toHaveLength(1)
+    })
+
+    it('keeps a done task checked, and says Saving… in place of who and when', () => {
+      renderChecklist({ pendingIds: new Set(['fairway-mowed']) })
+
+      expect(box('Fairway: Fairway mowed')).toBeChecked()
+      expect(box('Fairway: Fairway mowed')).toBeDisabled()
+      expect(metaTexts()).toContain(SAVING_TEXT)
+      expect(metaTexts()).not.toContain('Chewbacca · 6:40am')
+    })
+
+    it('disables the Undo button of a task set aside', () => {
+      renderChecklist({ pendingIds: new Set(['fairway-sprayed']) })
+
+      expect(screen.getByRole('button', { name: 'Undo: Fairway: Fairway sprayed' })).toBeDisabled()
+    })
+
+    it('reports nothing when a saving row is clicked', async () => {
+      const { onCheck, onSkip, onUndo } = renderChecklist({ pendingIds: new Set(['tee-box-mowed']) })
+
+      await userEvent.click(box('Tee box: Mowed'))
+      await userEvent.click(screen.getByRole('button', { name: 'Not today: Tee box: Mowed' }))
+
+      expect(onCheck).not.toHaveBeenCalled()
+      expect(onSkip).not.toHaveBeenCalled()
+      expect(onUndo).not.toHaveBeenCalled()
+    })
+
+    it('marks only the saving row as busy', () => {
+      renderChecklist({ pendingIds: new Set(['tee-box-mowed']) })
+
+      const busyRows = Array.from(document.querySelectorAll('li[aria-busy="true"]'))
+
+      expect(busyRows).toHaveLength(1)
+      expect(busyRows[0]).toContainElement(box('Tee box: Mowed'))
+    })
+
+    it('can show several rows saving at once', () => {
+      renderChecklist({ pendingIds: new Set(['tee-box-mowed', 'rough-mowed']) })
+
+      expect(metaTexts().filter((text) => text === SAVING_TEXT)).toHaveLength(2)
+      expect(box('Tee box: Mowed')).toBeDisabled()
+      expect(box('Rough: Rough mowed')).toBeDisabled()
+    })
+
+    it('ignores a saving id that matches no task', () => {
+      renderChecklist({ pendingIds: new Set(['ghost-task']) })
+
+      expect(metaTexts()).not.toContain(SAVING_TEXT)
+      expect(screen.getByText(SAMPLE_COUNT_TEXT)).toBeInTheDocument()
+    })
+
+    it('shows no Saving when nothing is saving', () => {
+      renderChecklist()
+
+      expect(metaTexts()).not.toContain(SAVING_TEXT)
+      expect(document.querySelectorAll('li[aria-busy="true"]')).toHaveLength(0)
+    })
+  })
+
+  describe('a message on a row', () => {
+    it('shows the message under the task it belongs to', () => {
+      renderChecklist({ notice: NOTICE })
+
+      const row = box('Tee box: Mowed').closest('li')
+
+      expect(within(row).getByRole('alert')).toHaveTextContent('Yoda already marked this')
+    })
+
+    it('shows only that one message', () => {
+      renderChecklist({ notice: NOTICE })
+
+      expect(screen.getAllByRole('alert')).toHaveLength(1)
+    })
+
+    it('shows no message when there is none', () => {
+      renderChecklist()
+
+      expect(screen.queryByRole('alert')).not.toBeInTheDocument()
+    })
+
+    it('shows no message for a task that is not on the checklist', () => {
+      renderChecklist({ notice: { itemId: 'ghost-task', message: 'Nothing to see' } })
+
+      expect(screen.queryByRole('alert')).not.toBeInTheDocument()
+    })
+
+    it('keeps showing who checked the task, and when, beside the message', () => {
+      renderChecklist({ notice: { itemId: 'fairway-mowed', message: 'Could not save' } })
+
+      expect(metaTexts()).toContain('Chewbacca · 6:40am')
+      expect(screen.getByRole('alert')).toHaveTextContent('Could not save')
+    })
+
+    it('offers a Dismiss button on that row only, and reports it when used', async () => {
+      const onDismissNotice = vi.fn()
+      renderChecklist({ notice: NOTICE, onDismissNotice })
+
+      expect(screen.getAllByRole('button', { name: /^Dismiss message:/ })).toHaveLength(1)
+      await userEvent.click(screen.getByRole('button', { name: 'Dismiss message: Tee box: Mowed' }))
+
+      expect(onDismissNotice).toHaveBeenCalledTimes(1)
+    })
+
+    it('offers no Dismiss button when nothing can dismiss it', () => {
+      renderChecklist({ notice: NOTICE })
+
+      expect(screen.getByRole('alert')).toBeInTheDocument()
+      expect(screen.queryByRole('button', { name: /^Dismiss message:/ })).not.toBeInTheDocument()
+    })
+
+    it('shows a message on one row while another row is saving', () => {
+      renderChecklist({ notice: NOTICE, pendingIds: new Set(['rough-mowed']) })
+
+      expect(screen.getByRole('alert')).toHaveTextContent('Yoda already marked this')
+      expect(box('Rough: Rough mowed')).toBeDisabled()
+      expect(box('Tee box: Mowed')).toBeEnabled()
+    })
   })
 })

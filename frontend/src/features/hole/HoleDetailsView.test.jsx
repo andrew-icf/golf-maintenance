@@ -2,7 +2,6 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { act, render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { MemoryRouter, Route, Routes } from 'react-router-dom'
-import { PREVIEW_NOTICE } from '../../test/fixtures/checklistViewCases'
 import { holeIdOf } from '../../test/fixtures/course'
 import { MARKUP_NAME } from '../../test/fixtures/courseViewCases'
 import { CHECKLIST_NAME, RESPONSIBLE_NAME, VIEWER_PAGE_CASES } from '../../test/fixtures/holeChecklistCases'
@@ -22,11 +21,15 @@ import { createDeferred } from '../../test/helpers'
 import { HoleDetailsView } from './HoleDetailsView'
 
 const { apiMock, useAuthMock } = vi.hoisted(() => ({
-  apiMock: { getCourse: vi.fn(), getHoleTasks: vi.fn() },
+  apiMock: { getCourse: vi.fn(), getHoleTasks: vi.fn(), getHoleMarks: vi.fn() },
   useAuthMock: vi.fn(),
 }))
 
-vi.mock('../../api', () => ({ api: apiMock }))
+// The real ApiError and isClockInRequired stay, and only the calls to the server are replaced
+vi.mock('../../api', async (importOriginal) => ({
+  ...(await importOriginal()),
+  api: apiMock,
+}))
 vi.mock('../auth/AuthContext', () => ({ useAuth: useAuthMock }))
 
 const LOADING_TEXT = 'Loading hole...'
@@ -35,10 +38,24 @@ const TASK_ERROR_MESSAGE = 'could not fetch hole tasks'
 const NOT_FOUND_TEXT = 'Hole not found.'
 const NO_AMENITIES_TEXT = 'No amenities on this hole.'
 const NO_TASKS_TEXT = 'There are no tasks for this hole today.'
+const SAMPLE_NOTE = 'The people under Responsible today are samples until assignments are set up.'
+const DATE_TEXT = 'Checks for Tuesday, November 17'
+const CLUB_DATE = '2026-11-17'
 const COURSE_LIST_TEXT = 'Course list page'
 const BACK_LINK_NAME = '← Course'
 const CLUBHOUSE_NAME = 'Clubhouse'
 const DEFAULT_HOLE_ID = holeIdOf('C', 7)
+
+// Yoda's check on C7's tee box mowing, as the server sends it. The ids are the ones the test course
+// gives its features and the sample task list gives its tasks.
+const YODAS_MOWING_ON_C7 = {
+  feature_id: `${DEFAULT_HOLE_ID}-tee_box`,
+  task_id: 'task-tee-box-mowed',
+  status: 'done',
+  user_id: 'user-yoda',
+  user_name: 'Yoda',
+  marked_at: new Date(2026, 10, 17, 5, 48).toISOString(),
+}
 
 // Holes the checklist has to show on, with and without amenities
 const CHECKLIST_HOLE_CASES = [
@@ -63,6 +80,8 @@ async function renderLoadedPage(course, holeId) {
   apiMock.getCourse.mockResolvedValue(course)
   const view = renderPage(holeId)
   await screen.findByRole('link', { name: BACK_LINK_NAME })
+  // Let the marks request, which starts once a hole is shown, finish
+  await act(async () => {})
   return view
 }
 
@@ -74,8 +93,8 @@ function textsIn(container, selector) {
   return Array.from(container.querySelectorAll(selector)).map((node) => node.textContent)
 }
 
-function checklistRegion() {
-  return screen.getByRole('region', { name: CHECKLIST_NAME })
+function findChecklist() {
+  return screen.findByRole('region', { name: CHECKLIST_NAME })
 }
 
 describe('HoleDetailsView', () => {
@@ -83,6 +102,8 @@ describe('HoleDetailsView', () => {
     apiMock.getCourse.mockReset()
     apiMock.getHoleTasks.mockReset()
     apiMock.getHoleTasks.mockResolvedValue(SAMPLE_TASK_LIST)
+    apiMock.getHoleMarks.mockReset()
+    apiMock.getHoleMarks.mockResolvedValue({ date: CLUB_DATE, marks: [] })
     useAuthMock.mockReset()
     useAuthMock.mockReturnValue({ user: LUKE })
   })
@@ -104,6 +125,7 @@ describe('HoleDetailsView', () => {
 
       expect(screen.queryByText(LOADING_TEXT)).not.toBeInTheDocument()
       expect(screen.getByRole('heading', { level: 2, name: 'C7' })).toBeInTheDocument()
+      await findChecklist()
     })
 
     it('shows the error, with a way back, when loading fails', async () => {
@@ -116,6 +138,7 @@ describe('HoleDetailsView', () => {
       expect(screen.queryByText(LOADING_TEXT)).not.toBeInTheDocument()
       expect(screen.queryByRole('heading')).not.toBeInTheDocument()
       expect(screen.queryByRole('region')).not.toBeInTheDocument()
+      expect(apiMock.getHoleMarks).not.toHaveBeenCalled()
     })
 
     it('asks for the course once', async () => {
@@ -148,7 +171,7 @@ describe('HoleDetailsView', () => {
       })
 
       expect(screen.queryByText(LOADING_TEXT)).not.toBeInTheDocument()
-      expect(checklistRegion()).toBeInTheDocument()
+      expect(await findChecklist()).toBeInTheDocument()
     })
 
     it('shows the hole, with a message where the checklist would be, when the task list cannot be loaded', async () => {
@@ -161,6 +184,7 @@ describe('HoleDetailsView', () => {
       expect(container.querySelectorAll('.hole-details-amenity').length).toBeGreaterThan(0)
       expect(screen.queryByRole('region', { name: CHECKLIST_NAME })).not.toBeInTheDocument()
       expect(screen.queryByRole('region', { name: RESPONSIBLE_NAME })).not.toBeInTheDocument()
+      expect(apiMock.getHoleMarks).not.toHaveBeenCalled()
     })
 
     it('says there are no tasks when the club has none', async () => {
@@ -168,7 +192,7 @@ describe('HoleDetailsView', () => {
 
       await renderLoadedPage(MULTI_AMENITY_PAGE)
 
-      expect(screen.getByText(NO_TASKS_TEXT)).toBeInTheDocument()
+      expect(await screen.findByText(NO_TASKS_TEXT)).toBeInTheDocument()
       expect(screen.queryByRole('region', { name: RESPONSIBLE_NAME })).not.toBeInTheDocument()
     })
 
@@ -177,7 +201,7 @@ describe('HoleDetailsView', () => {
 
       await renderLoadedPage(MULTI_AMENITY_PAGE)
 
-      expect(screen.getByRole('checkbox', { name: 'Green: Inspected' })).toBeInTheDocument()
+      expect(await screen.findByRole('checkbox', { name: 'Green: Inspected' })).toBeInTheDocument()
       expect(screen.queryByRole('checkbox', { name: 'Tee box: Mowed' })).not.toBeInTheDocument()
     })
   })
@@ -204,23 +228,25 @@ describe('HoleDetailsView', () => {
 
   describe('the checklist', () => {
     it.each(CHECKLIST_HOLE_CASES)(
-      'shows who is responsible, the preview notice, and the checklist on $label',
+      'shows who is responsible, the note about samples, and the checklist on $label',
       async ({ holeId }) => {
         await renderLoadedPage(MULTI_AMENITY_PAGE, holeId)
 
         expect(screen.getByRole('region', { name: RESPONSIBLE_NAME })).toBeInTheDocument()
-        expect(screen.getByText(PREVIEW_NOTICE)).toBeInTheDocument()
-        expect(checklistRegion()).toBeInTheDocument()
+        expect(screen.getByText(SAMPLE_NOTE)).toBeInTheDocument()
+        expect(await findChecklist()).toBeInTheDocument()
       }
     )
 
-    it('puts the facts first, then who is responsible, the notice, the checklist, and the amenities', async () => {
+    it('puts the facts first, then who is responsible, the note, the day, the checklist, and the amenities', async () => {
       const { container } = await renderLoadedPage(MULTI_AMENITY_PAGE)
+      const checklist = await findChecklist()
       const partsInOrder = [
         container.querySelector('.hole-details-facts'),
         screen.getByRole('region', { name: RESPONSIBLE_NAME }),
-        screen.getByText(PREVIEW_NOTICE),
-        checklistRegion(),
+        screen.getByText(SAMPLE_NOTE),
+        screen.getByText(DATE_TEXT),
+        checklist,
         screen.getByRole('heading', { level: 3, name: 'Amenities on this hole' }),
       ]
 
@@ -231,11 +257,29 @@ describe('HoleDetailsView', () => {
       }
     })
 
+    it('asks for the marks of the hole it shows', async () => {
+      await renderLoadedPage(MULTI_AMENITY_PAGE, DEFAULT_HOLE_ID)
+
+      expect(apiMock.getHoleMarks).toHaveBeenCalledTimes(1)
+      expect(apiMock.getHoleMarks).toHaveBeenCalledWith(DEFAULT_HOLE_ID)
+    })
+
+    it('shows the marks the server sends for this hole, against the right tasks', async () => {
+      apiMock.getHoleMarks.mockResolvedValue({ date: CLUB_DATE, marks: [YODAS_MOWING_ON_C7] })
+
+      await renderLoadedPage(MULTI_AMENITY_PAGE, DEFAULT_HOLE_ID)
+
+      expect(await screen.findByRole('checkbox', { name: 'Tee box: Mowed' })).toBeChecked()
+      expect(screen.getByText('Yoda · 5:48am')).toBeInTheDocument()
+      expect(screen.getByRole('checkbox', { name: 'Tee box: Cleared' })).not.toBeChecked()
+    })
+
     it.each(VIEWER_PAGE_CASES)(
       'tags the right columns as theirs for $name',
       async ({ user, expectedYours }) => {
         useAuthMock.mockReturnValue({ user })
         const { container } = await renderLoadedPage(MULTI_AMENITY_PAGE)
+        await findChecklist()
 
         const heads = Array.from(container.querySelectorAll('.checklist-head'))
 
@@ -282,6 +326,7 @@ describe('HoleDetailsView', () => {
       expect(screen.getByRole('link', { name: BACK_LINK_NAME })).toBeInTheDocument()
       expect(screen.queryByRole('heading')).not.toBeInTheDocument()
       expect(screen.queryByRole('region')).not.toBeInTheDocument()
+      expect(apiMock.getHoleMarks).not.toHaveBeenCalled()
     })
   })
 

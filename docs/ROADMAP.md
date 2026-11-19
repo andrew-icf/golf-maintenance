@@ -8,14 +8,14 @@ The build order for Golf Maintenance. Decisions behind each step are in `docs/DE
 - Every new endpoint gets a gate decision when it is built: open, gated, or admin-only (DECISIONS section 3).
 - Work one step at a time.
 
-Last updated: 2026-11-17.
+Last updated: 2026-11-18.
 
 ## Current state
 
-- Frontend: **1400 tests in 51 files**. Lint shows one accepted warning (`react(set-state-in-effect)` in `AuthContext.jsx`).
+- Frontend: **1500 tests in 52 files**. Lint shows two accepted warnings, both `react(set-state-in-effect)`: one in `AuthContext.jsx` and one in `useHoleMarks.js`. Each loads data when something opens and sets state after the answer arrives.
 - Backend: **613 router tests, 19 auth tests, and 4 jobs tests** (`go test -count=1 -p 1 -coverpkg=./...` is what CI runs, and `go test -count=1 -p 1 ./...` from `backend/` is the quick check).
-- Last finished: step 8 (the daily checklist backend).
-- In progress: nothing. Next is step 9, on a new branch.
+- Last finished: step 9 (the checklist goes live).
+- In progress: nothing. Next is step 10, on a new branch.
 
 ---
 
@@ -80,20 +80,31 @@ Last updated: 2026-11-17.
 | 8-1 | `courses.timezone` (Pacific/Honolulu by default, and the database refuses a name it does not know) and the `task_marks` table: one mark per task, feature, and day, deleted with its hole, feature, or task, and a person who has marked something cannot be deleted |
 | 8-2 | `GET /api/holes/{holeId}/marks`, gated like the course: the club's date and today's marks for one hole, each with who made it and when |
 | 8-3 | `PUT` and `DELETE /api/marks/{featureId}/{taskId}`, gated: mark a task done or not today, and undo it. The server enforces who may (admins anything, staff only the tasks that name their job title), the first person to mark a task stays on record, and the other status is a 409 until it is undone. Every job title is tested against every task |
-| 8-4 | Marks older than 14 days are deleted when the server starts and then every hour, through a small reusable runner in `backend/internal/jobs` |
+| 8-4 | Marks older than 14 days are deleted when the server starts and then once a day (every hour until 9-1), through a small reusable runner, `jobs.RunEvery`, in `backend/internal/jobs` |
+
+### Step 9: The checklist goes live
+| Sub-step | What |
+|---|---|
+| 9-1 | The 14-day mark cleanup runs once a day instead of every hour |
+| 9-2 | The API client reads a hole's marks, marks a task, and undoes a mark. It copes with an undo's empty answer, and it encodes the ids so a strange one cannot change the route |
+| 9-3 | Each checklist item carries the ids of its task and its feature, and the server's marks turn into what the checklist reads |
+| 9-4 | `useHoleMarks`: loads a hole's marks, saves a change, reloads the marks after it, always keeps the newest answer, and works out what to tell the person when something goes wrong |
+| 9-5 | Checklist rows can say Saving… and show a short message with a Dismiss button |
+| 9-6 | `HoleChecklist`: loads and saves through the hook, holds the checklist back until the marks arrive, says which day the checks are for, and notes that the people under Responsible today are samples |
+| 9-7 | The hole page uses it. The preview, its sample marks, the code that worked out marks on the page, and the preview notice are gone |
 
 ### Small fixes along the way
 - Curl cookie files stopped being tracked and are ignored.
 - The side nav became a strip across the top on phones and upright tablets.
 
 ### Step 20: Tests for the equipment endpoints (done out of order)
-Done ahead of steps 9 to 19 as part of batch 1 of `docs/test-audit.md` (the backend gap tests), with the owner's approval. Both equipment endpoints are covered: `GET /api/equipment` (sorted by label, an empty list is `[]`) and `PUT /api/equipment/{id}` (each allowed status, the status allowlist, a bad body, an unknown id). The same batch added tests for creating shifts, logout, login's required fields, and CORS.
+Done ahead of steps 10 to 19 as part of batch 1 of `docs/test-audit.md` (the backend gap tests), with the owner's approval. Both equipment endpoints are covered: `GET /api/equipment` (sorted by label, an empty list is `[]`) and `PUT /api/equipment/{id}` (each allowed status, the status allowlist, a bad body, an unknown id). The same batch added tests for creating shifts, logout, login's required fields, and CORS.
 
 ---
 
-## Next: Step 9, the real data in the checklist
+## Next: Step 10, course tasks
 
-Replace `ChecklistPreview` with the real thing. The hole page loads today's marks and saves each check, set-aside, and undo through the server, so checks survive leaving the page and reach everyone, with names from the server. The checklist component stays as it is, and the sample marks and the preview notice go. "Responsible today" keeps its sample people until step 11. Design points to settle first: how a page picks up checks made on another tablet (DECISIONS 16), and what it shows when a tap loses to someone else's (the server's 409). The sub-steps are planned when the step starts.
+A "Course tasks" block on the Course page for the landscaper's course-wide tasks (DECISIONS 7.1). It can start with the placeholder tasks, gardening, weed whacking, and clean up, and take the real list when it is ready. The sub-steps are planned when the step starts.
 
 ---
 
@@ -101,8 +112,7 @@ Replace `ChecklistPreview` with the real thing. The hole page loads today's mark
 
 | Step | What | Notes |
 |---|---|---|
-| 10 | A "Course tasks" block on the Course page for the landscaper's course-wide tasks | Needs the real task list |
-| 11 | Assignments: operator duties for the whole club (a standing person plus a one-day change, may be unassigned, may be several people) and greenskeepers per hole, with Front, Back, and whole-course shortcuts | Feeds "Responsible today". The `duties` table already exists |
+| 11 | Assignments: operator duties for the whole club (a standing person plus a one-day change, may be unassigned, may be several people) and greenskeepers per hole, with Front, Back, and whole-course shortcuts | Replaces the sample people under Responsible today. The `duties` table already exists |
 | 12 | Hole status: automatic and manual completion, the "Not completed" chip as the control, and progress counts on the hole cards | DECISIONS 7.5. Computed from the marks |
 | 13 | Pin rotation and the diagram: nine fixed patterns, a club-wide day count, one place to restart it, and the "Pin today" tile | DECISIONS 9 |
 | 14 | Green mow direction: the club-wide rotation and the clock-face drawing | Needs the open questions in DECISIONS 16 answered first |
@@ -113,7 +123,7 @@ Replace `ChecklistPreview` with the real thing. The hole page loads today's mark
 | 19 | Automatic log-out after inactivity, for shared tablets | A PIN or badge login is parked |
 | 21 | A hamburger menu in the top bar for the clock status, clock in and out, change password, and log out | The top bar has five things in it and wraps badly on a phone |
 | 22 | An admin board: all 27 holes at a glance, who is behind, and which duties are done | The hole cards on the Course page are the first version. Looking at past days is not built yet (DECISIONS 15) |
-| 23 | Optional cleanup, audit batch 2 of `docs/test-audit.md`: one table-driven test covering all 18 `api.js` wrappers, including the eight that no test calls today | Not pressing. Do when convenient |
+| 23 | Optional cleanup, audit batch 2 of `docs/test-audit.md`: one table-driven test covering all 18 `api.js` wrappers, including the eight that no test calls today | Not pressing. Do when convenient. The three marks calls are already covered in `api.test.js` |
 | 24 | Optional cleanup, audit batches 3 through 6 of `docs/test-audit.md`: remove the cross-layer duplicate tests that cover the same behavior in more than one layer, for clarity rather than speed | Not pressing. Do when convenient |
 
 ---
@@ -127,7 +137,8 @@ Replace `ChecklistPreview` with the real thing. The hole page loads today's mark
 - An Equipment nav badge for items that need attention.
 - A malformed or impossible date or time returns a 500 where it should be a 400. Creating a shift doesn't check `shift_date` (`banana`, `2026-02-30`), and creating, repeating, and editing don't check `start_time` or `end_time` (`25:00`). Postgres reports these as `22007` and `22008`.
 - Share one "clocked in" helper between `/me` and the gate. They each run their own query.
-- Move the schedule and the clock onto the club's timezone too. Only the checklist's marks follow `courses.timezone` today, and the rest still use the device's date.
+- Move the schedule, the clock, and the times shown on checks onto the club's timezone too. Only the checklist's day follows `courses.timezone` today, and the rest use the device's clock.
+- After the server refuses a check because the person may not make it, the page could ask who is logged in again. A second login in another window of the same browser replaces the session, and the first window keeps showing the earlier person until it is reloaded. This does not happen with one person to a tablet.
 - Scope queries by `course_id`.
 - Look at `login_test.go` and `router_test.go` for repeated setup.
 - An optional warning for overlapping or very long shifts.
@@ -136,8 +147,8 @@ Replace `ChecklistPreview` with the real thing. The hole page loads today's mark
 - Decide what to do about the three `npm audit` findings that already exist on `main`.
 - Arrow-key navigation in the schedule grid, instead of one Tab stop per cell.
 - Remove the redundant `r.Method` checks in handlers (chi already enforces methods).
-- Clean up expired sessions. The runner `jobs.RunPeriodically` from step 8 is what to use.
+- Clean up expired sessions. The runner `jobs.RunEvery` from step 8 is what to use.
 
 ## Parked
 
-Decided to do later and not scheduled: forgotten clock-out handling, email and text alerts, language support, user management screens (including password reset), timesheets, time off, deployment, offline mode, backups, a weather and conditions panel, a course map or drawing tool, a people-on-holes view, a short PIN or badge login, and a history of who marked and undid what on the checklist. Details are in DECISIONS section 15.
+Decided to do later and not scheduled: forgotten clock-out handling, email and text alerts, language support, user management screens (including password reset), timesheets, time off, deployment, offline mode, backups, a weather and conditions panel, a course map or drawing tool, a people-on-holes view, a short PIN or badge login, a history of who marked and undid what on the checklist, and a page that picks up other tablets' checks by itself, on a timer or when the tab regains focus. Details are in DECISIONS section 15.

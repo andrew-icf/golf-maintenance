@@ -6,7 +6,7 @@ The product and engineering decisions for Golf Maintenance. **This file is the s
 - **To change a decision:** edit it here, add a line to the change log at the bottom, and update the code and tests in the same commit. Never quietly build something that contradicts a decision. Ask first.
 - The build order lives in `docs/ROADMAP.md`. Commands, coding conventions, and testing rules live in `AGENTS.md`.
 
-Last updated: 2026-11-17.
+Last updated: 2026-11-18.
 
 ---
 
@@ -135,7 +135,7 @@ Seeded from Prince Waikiki. G is greenskeeper and O is operator. The duty is who
 - **Weekends are just a plan.** Example for Prince Waikiki: operators do only the greens mowing and the machine bunker rake, and greenskeepers do the tee box and green tasks, with no hand raking and no par 3 tasks. One greenskeeper covers all nine holes of Course C (an assignment shortcut, section 8).
 - Built in roadmap step 16, with the editors.
 
-### 7.3 Who may check, set aside, and undo (Built; the server enforces it and the preview mirrors it)
+### 7.3 Who may check, set aside, and undo (Built; the server enforces it and the page mirrors it)
 
 - Anyone whose job title is on a task's list may check it **on any hole**. Any greenskeeper may check any greenskeeper task, and any operator any operator task. Admins may check anything.
 - **The server enforces it.** Staff must also be clocked in, and admins are exempt from that. A person who may not check a task gets a 403 whose message says so, in words that are never the clock-in message, because the app brings up the clock-in screen when it sees that one.
@@ -145,7 +145,7 @@ Seeded from Prince Waikiki. G is greenskeeper and O is operator. The duty is who
 - **Undo** takes back a check or a "not today." Anyone who may check the task may undo it, whoever made the mark.
 - The role that a task sits under in the layout is the first job title it names. Who may actually check it is decided by the permission rule, not by the column.
 
-### 7.4 Marks (Built on the server in roadmap step 8; the page uses them from step 9)
+### 7.4 Marks (Built: the server in roadmap step 8, the page in step 9)
 
 - A mark is `done` or `not_today`, with who made it and when. A task with no mark is open. There is one mark for a task on a feature of a hole on a day, and a bunker's task is marked on that bunker's own feature, which is how it knows which bunker.
 - **Only the latest state is kept.** Undoing deletes the mark, so there is no history of who marked and undid what. With an honor system and 14-day retention that is enough, and a history is parked (section 15).
@@ -154,8 +154,10 @@ Seeded from Prince Waikiki. G is greenskeeper and O is operator. The duty is who
 - **No backdating.** The page never sends a date. A mark is always for the club's own today, from the course's timezone (section 5), and the server works it out in SQL as `(now() AT TIME ZONE courses.timezone)::date`.
 - **What the server refuses:** a malformed id is a 400, never a 500. An unknown feature or task is a 404. A task for another kind of feature than the one named (a green task on a tee box) is a 400. A body without a status of exactly `done` or `not_today` is a 400.
 - **The routes** (all gated, section 3): `GET /api/holes/{holeId}/marks` sends the club's date and today's marks for one hole, each with the feature, the task, the status, who made it (id and name), and when. `PUT /api/marks/{featureId}/{taskId}` takes `{"status": "done"}` or `{"status": "not_today"}` and answers with the mark. `DELETE` on the same path undoes it.
-- The screen shows the person's **name**. The id is used only to tell "is this me?", so the row says "You · 6:12am" instead of a name. The preview's made-up people have ids that start with `sample-`, so they can never be mistaken for the person looking.
-- In the frontend, marks are never changed in place. Each change returns a new set, or the same one when nothing changed.
+- **When a page learns about other people's checks:** when a hole is opened, and after each of the person's own taps. There is no timer and no refresh when the tab regains focus, so a tablet that is left alone makes no requests. The first-tap-wins rule means a page that is behind can never overwrite anyone.
+- **The page never works out a mark itself.** It sends the change, and then it shows what the server says.
+- The screen shows the person's **name**. The id is used only to tell "is this me?", so the row says "You · 6:12am" instead of a name. The made-up people under Responsible today have ids that start with `sample-`, so they can never be mistaken for the person looking.
+- **Times show in the device's own clock**, so a tablet at the course shows the course's time.
 
 ### 7.5 A hole is completed (Decided, roadmap step 12)
 
@@ -171,8 +173,9 @@ Seeded from Prince Waikiki. G is greenskeeper and O is operator. The duty is who
 - **Color.** Greenskeeper boxes are green and operator boxes are amber. A task you may not check keeps its color, paler. A task set aside is gray. Color never carries the meaning alone. Role chips appear only on the "Responsible today" card.
 - Real checkboxes, with names like "Bunkers, Bunker 2: Raked by hand." "Not today" and "Undo" buttons are the same width.
 - On a narrow screen the columns stack and each stacked group gets a small role label.
-- **The hole page** uses the full width. Order: back link, header, par and yardage, "Responsible today," the preview notice, the checklist, then amenities (left) with Notes to come (right). Headings nest: hole title h2, page sections h3, area labels h4, section titles h5. The page loads the course and the task list together. If the task list cannot be loaded, it still shows the hole and its amenities, with a message where the checklist would be.
-- The preview (`ChecklistPreview`) builds its tasks from the club's task list and the hole's own features, and shows sample people, with the marks kept in the page's memory only, labeled "Preview with sample tasks. Checks are not saved." Leaving the hole, reloading, or moving to another hole starts it over, so checks do not carry between holes. The server side exists since roadmap step 8, and the real checklist replaces only that wrapper in step 9.
+- **The hole page** uses the full width. Order: back link, header, par and yardage, "Responsible today" with a note that its people are samples, "Checks for" the club's day, the checklist, then amenities (left) with Notes to come (right). Headings nest: hole title h2, page sections h3, area labels h4, section titles h5. The page loads the course and the task list together, and the checklist then loads the hole's marks. If the task list cannot be loaded, it still shows the hole and its amenities, with a message where the checklist would be.
+- **The checklist is live (roadmap step 9).** It holds back until the hole's marks arrive, since a page of empty boxes would look like nothing was done. A tap shows Saving… on that row, which cannot be tapped again, and when the server has answered the page reloads the hole's marks, so what is shown is always what the server says. A short message appears on the row, with a Dismiss button, if someone else got there first (naming them), if the person may not check the task, or if it did not save. If the marks cannot be loaded the page says so, with a Try again button. When to reload is in section 7.4.
+- **The people under Responsible today are still samples,** with a note saying so, until roadmap step 11.
 
 ## 8. Duties and who is responsible
 
@@ -184,7 +187,7 @@ Seeded from Prince Waikiki. G is greenskeeper and O is operator. The duty is who
   - one person may hold **several duties**, and a duty may list **several people**
 - **Greenskeepers are assigned per hole.** One greenskeeper does all the greenskeeper tasks of their assigned hole. Defaults to assign in bulk: Front or Back of a course (for example, Front C is C1 to C5), or the whole course (a weekend greenskeeper covers all of C).
 - **The "Responsible today" card** lists each duty with its people and their role chip, with "(you)" beside the viewer, matched by id. It shows nothing when there are no duties.
-- Real assignments come in roadmap step 11. The preview uses sample people, and the person looking takes one duty that fits their title.
+- Real assignments come in roadmap step 11. Until then the card uses sample people, with a note saying so, and the person looking takes one duty that fits their title.
 
 ## 9. Pin position (Decided, roadmap step 13)
 
@@ -208,7 +211,7 @@ Seeded from Prince Waikiki. G is greenskeeper and O is operator. The duty is who
 ## 12. Retention
 
 - **14 days** for daily checklists, notes, and photos, then they are deleted automatically.
-- **For checklist marks this is built.** A mark is deleted once its day is more than 14 days behind the club's today, so a mark from exactly 14 days ago is still kept. The server does it when it starts and then every hour (section 14). Notes and photos will follow the same 14 days when they exist.
+- **For checklist marks this is built.** A mark is deleted once its day is more than 14 days behind the club's today, so a mark from exactly 14 days ago is still kept. The server does it when it starts and then once a day (section 14). Notes and photos will follow the same 14 days when they exist.
 - Clock and schedule records are separate. They may have legal retention rules, so check with the club and payroll before deleting anything.
 
 ## 13. Layout and devices (Built)
@@ -226,10 +229,10 @@ Seeded from Prince Waikiki. G is greenskeeper and O is operator. The duty is who
 - **Backend tests.** Every test starts with exactly one of `setUpStaff`, `setUpClockedInStaff`, or `setUpAdmin`, because each wipes the database. Suites run with `-p 1` because they share one database. A new table is added to the `TRUNCATE` list in `testutil.SetupTestDB`.
 - **Migrations are applied to both databases** (`golf_maintenance` and `golf_maintenance_test`).
 - **The club's day is worked out in SQL from the course's timezone,** never with `CURRENT_DATE` or the server's clock, because the database runs in UTC. The tests build their dates the same way, so they do not depend on when they are run.
-- **Background jobs live in `backend/internal/jobs`.** `RunPeriodically` runs a job once at startup and then on an interval until it is stopped, and `main.go` uses it for the 14-day mark cleanup. A job logs its problems and never stops the server. Clearing expired sessions can use the same runner.
+- **Background jobs live in `backend/internal/jobs`.** `RunEvery` runs a job once at startup and then on an interval until it is stopped, and `main.go` uses it for the 14-day mark cleanup, once a day. A job logs its problems and never stops the server. Clearing expired sessions can use the same runner.
 - **Secrets stay out of git.** `.env` files and curl cookie files are ignored. Curl cookie jars go in `/tmp`. The cookie files were once tracked and are not anymore.
 - **File names.** Never two files whose names differ only by capitalization. macOS ignores case, and Vite resolves the wrong file.
-- **Errors.** A failed API request throws an error that carries its status. One accepted lint warning remains: `react(set-state-in-effect)` in `AuthContext.jsx`.
+- **Errors.** A failed API request throws an error that carries its status. Two lint warnings are accepted, both `react(set-state-in-effect)`: `AuthContext.jsx` and `useHoleMarks.js`. Each loads data when something opens and sets state only after the answer arrives, which is what an effect is for, and every way of quieting the warning makes the code worse.
 - **Dev data.** `backend/seed/dev_seed.sql` makes 21 staff (20 Star Wars crew and a landscaper, `newstaffer@example.com`, all with the password `password123`) and no admin. `backend/seed/dev_course.sql` makes Prince Waikiki, and `backend/seed/dev_bunkers.sql` gives its holes placeholder bunkers and must run after it. `backend/seed/default_tasks.sql` loads the default duties and tasks and can run at any time. The dev database also has an admin, `test@example.com`, that was made by hand and that the seeds do not create (see section 16).
 - Security headers such as `X-Content-Type-Options: nosniff` on every response are on the deployment list.
 
@@ -246,6 +249,7 @@ Seeded from Prince Waikiki. G is greenskeeper and O is operator. The duty is who
 - A short PIN or badge login for shared tablets, and an automatic log-out after inactivity (roadmap step 19).
 - Hole images: whether on the details page only (recommended, since nine-across cards are too small) or on the cards, and where they come from (club photos, drawn shapes, or none).
 - A history of who marked and undid what on the checklist, and looking at past days' checklists (the admin board in step 22 may want them). Neither is built, since only the latest state of each mark is kept (section 7.4).
+- A page picking up other tablets' checks by itself, with a timer or when the tab regains focus. It was decided against for now (section 7.4), and it would be a small change inside `useHoleMarks` if it turns out to be a nuisance.
 
 ## 16. Open questions
 
@@ -260,7 +264,6 @@ Seeded from Prince Waikiki. G is greenskeeper and O is operator. The duty is who
 - **Hole images:** placement and source (section 15).
 - **Legal retention** for clock and schedule records.
 - **Dev seed and the admin:** the dev database has an admin, `test@example.com`, made by hand, with a password that is not the seed's `password123`. The seeds create no admin, so a fresh setup has none. Should `dev_seed.sql` create one, or is a hand-made admin the intended way?
-- **Checklist freshness (roadmap step 9, next):** how should a page pick up checks made on another tablet: refresh when the tab regains focus and about once a minute, or only when the hole is opened? The first-tap-wins rule (section 7.4) keeps either safe.
 
 ## 17. Change log
 
@@ -271,3 +274,4 @@ Seeded from Prince Waikiki. G is greenskeeper and O is operator. The duty is who
 - 2026-11-13: Corrected section 14. `dev_seed.sql` creates no admin, and the question of whether it should moved to section 16.
 - 2026-11-15: The task list moved into the database (roadmap step 7): `duties` and `hole_tasks` tables, the default list as `default_tasks.sql`, and `GET /api/hole-tasks`, which is gated. Areas and sections are worked out from a task's feature type, and Collect garbage moved into the Tee box section after Cleared.
 - 2026-11-17: The daily checklist backend (roadmap step 8): checklist marks are stored per task, feature, and day, and the server enforces who may check, with the first tap winning and a 409 for the other status. The checklist's day follows the course's timezone, Hawaii for now, and marks are deleted 14 days after their day. The three marks routes are gated.
+- 2026-11-18: The checklist went live (roadmap step 9): the hole page loads each hole's marks from the server and saves every check, not today, and undo through it, reloading the marks after each tap and not on a timer. The mark cleanup moved from every hour to once a day, and a second lint warning was accepted for loading marks when a hole opens.

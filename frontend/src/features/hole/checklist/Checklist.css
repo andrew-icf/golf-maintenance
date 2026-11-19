@@ -6,16 +6,6 @@
   color: #17341c;
 }
 
-.checklist-preview-banner {
-  margin: 0;
-  padding: 10px 14px;
-  background: #fbf4e2;
-  border: 1px solid #e0b84a;
-  border-radius: 10px;
-  font-size: 14px;
-  color: #5c3b00;
-}
-
 /* Colors for each role: green for greenskeepers, amber for operators, slate for anyone else */
 .tone-greenskeeper {
   --tone: #2f6b3c;
@@ -100,7 +90,7 @@
 .checklist-gutter {
   background: #f8faf6;
   border-top: 1px solid #dce8d7;
-  border-right: 1px solid #dce8d7;
+  border-right: 2px solid #a9c3a6;
 }
 
 .checklist-head {
@@ -142,7 +132,7 @@
   display: grid;
   grid-template-columns: 44px minmax(0, 1fr);
   min-height: 76px;
-  border-top: 1px solid #dce8d7;
+  border-top: 2px solid #a9c3a6;
 }
 
 .checklist-area-label {
@@ -151,7 +141,7 @@
   align-items: center;
   justify-content: center;
   background: #eaf3e6;
-  border-right: 1px solid #dce8d7;
+  border-right: 2px solid #a9c3a6;
 }
 
 .checklist-area-label span {
@@ -333,6 +323,62 @@
 }
 
 .checklist-action:focus-visible {
+  outline: 3px solid #17341c;
+  outline-offset: 2px;
+}
+
+.checklist-action:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+.checklist-row.is-saving .checklist-box {
+  opacity: 0.6;
+  cursor: progress;
+}
+
+.checklist-row.is-saving .checklist-meta {
+  font-style: italic;
+}
+
+.checklist-notice {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 10px;
+  margin-top: 6px;
+  padding: 4px 4px 4px 10px;
+  background: #fbf4e2;
+  border: 1px solid #e0b84a;
+  border-radius: 10px;
+  color: #5c3b00;
+}
+
+.checklist-notice-text {
+  flex: 1;
+  min-width: 0;
+  margin: 0;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.checklist-notice-dismiss {
+  flex: 0 0 auto;
+  min-width: 44px;
+  min-height: 44px;
+  padding: 0 12px;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: #5c3b00;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 700;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.checklist-notice-dismiss:focus-visible {
   outline: 3px solid #17341c;
   outline-offset: 2px;
 }

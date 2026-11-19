@@ -1,5 +1,4 @@
-import { formatShiftTime, parseDateString } from '../../schedule/scheduleDates'
-import { canCheckTask } from './taskPermissions'
+import { formatDateString, formatShiftTime, parseDateString } from '../../schedule/scheduleDates'
 
 export const MARK_STATUS = { DONE: 'done', NOT_TODAY: 'not_today' }
 
@@ -7,42 +6,8 @@ const OPEN = 'open'
 
 // The marks on a checklist are a Map from a task's id to what was done with it: checked off
 // ("done") or set aside ("not_today"), with who did it and when. A task with no mark is open.
-// Every function here returns a new Map, or the very same one when nothing changed, and never
-// changes the one it was given.
 export function statusOf(marks, itemId) {
   return marks?.get(itemId)?.status ?? OPEN
-}
-
-function setMark(marks, item, user, status, nowMs) {
-  if (!item || !canCheckTask(user, item) || statusOf(marks, item.id) !== OPEN) {
-    return marks
-  }
-
-  const updated = new Map(marks)
-  updated.set(item.id, { status, byId: user.id, byName: user.full_name ?? '', at: nowMs })
-  return updated
-}
-
-// Checks a task off, when the person may and the task is still open
-export function checkItem(marks, item, user, nowMs) {
-  return setMark(marks, item, user, MARK_STATUS.DONE, nowMs)
-}
-
-// Sets a task aside for today, when the person may and the task is still open
-export function skipItem(marks, item, user, nowMs) {
-  return setMark(marks, item, user, MARK_STATUS.NOT_TODAY, nowMs)
-}
-
-// Takes back a check or a "not today". Anyone who may check the task may undo it, whoever made
-// the mark.
-export function undoItem(marks, item, user) {
-  if (!item || !canCheckTask(user, item) || statusOf(marks, item.id) === OPEN) {
-    return marks
-  }
-
-  const updated = new Map(marks)
-  updated.delete(item.id)
-  return updated
 }
 
 // How far along a checklist is. A task set aside for today counts as accounted for, and the hole
@@ -101,36 +66,59 @@ export function describeMark(mark, user) {
   return mark?.status === MARK_STATUS.NOT_TODAY ? 'Not today' : ''
 }
 
-function timeOnDay(day, hours, minutes) {
+const DAY_PATTERN = /^\d{4}-\d{2}-\d{2}$/
+
+// 'Tuesday, November 17' for the club's date ('2026-11-17'), or nothing when it can't be read
+export function formatClubDate(day) {
+  if (typeof day !== 'string' || !DAY_PATTERN.test(day)) {
+    return ''
+  }
+
   const date = parseDateString(day)
-  date.setHours(hours, minutes, 0, 0)
-  return date.getTime()
+  // A date that doesn't exist, like 2026-02-30, rolls over into another day
+  if (formatDateString(date) !== day) {
+    return ''
+  }
+
+  return new Intl.DateTimeFormat('en-US', { weekday: 'long', month: 'long', day: 'numeric' }).format(date)
 }
 
-// The marks the preview starts with, all by other people, so the page shows who and when from
-// the first moment. Their ids start with "sample-", so the page can never call one of them "You".
-export function buildSampleMarks(day) {
-  const done = (byId, byName, hours, minutes) => ({
-    status: MARK_STATUS.DONE,
-    byId,
-    byName,
-    at: timeOnDay(day, hours, minutes),
-  })
-  const setAside = (byId, byName) => ({
-    status: MARK_STATUS.NOT_TODAY,
-    byId,
-    byName,
-    at: timeOnDay(day, 5, 30),
-  })
+// Turns the server's marks for a hole into a Map from a task's id on this page to its mark.
+// A mark is matched to a task by its feature and task ids, and one that matches nothing, or
+// isn't a done or not_today mark, is left out.
+export function marksFromServer(items, serverMarks) {
+  const itemIdByPair = new Map()
+  for (const item of items ?? []) {
+    if (item.featureId && item.taskId) {
+      itemIdByPair.set(`${item.featureId}|${item.taskId}`, item.id)
+    }
+  }
 
-  return new Map([
-    ['tee-box-cleared', done('sample-yoda', 'Yoda', 5, 48)],
-    ['par-3-tee-box-cleared', done('sample-yoda', 'Yoda', 5, 50)],
-    ['pin-placement', done('sample-padme', 'Padmé Amidala', 5, 40)],
-    ['fairway-mowed', done('sample-chewbacca', 'Chewbacca', 6, 40)],
-    ['bunker-raked-machine:1', done('sample-chewbacca', 'Chewbacca', 6, 55)],
-    ['fairway-sprayed', setAside('sample-din', 'Din Djarin')],
-    ['green-rolled', setAside('sample-din', 'Din Djarin')],
-    ['green-sprayed', setAside('sample-din', 'Din Djarin')],
-  ])
+  const marks = new Map()
+  if (!Array.isArray(serverMarks)) {
+    return marks
+  }
+
+  for (const serverMark of serverMarks) {
+    if (!serverMark || typeof serverMark !== 'object') {
+      continue
+    }
+    if (serverMark.status !== MARK_STATUS.DONE && serverMark.status !== MARK_STATUS.NOT_TODAY) {
+      continue
+    }
+
+    const itemId = itemIdByPair.get(`${serverMark.feature_id}|${serverMark.task_id}`)
+    if (itemId === undefined || marks.has(itemId)) {
+      continue
+    }
+
+    marks.set(itemId, {
+      status: serverMark.status,
+      byId: typeof serverMark.user_id === 'string' ? serverMark.user_id : '',
+      byName: typeof serverMark.user_name === 'string' ? serverMark.user_name : '',
+      at: typeof serverMark.marked_at === 'string' ? Date.parse(serverMark.marked_at) : NaN,
+    })
+  }
+
+  return marks
 }

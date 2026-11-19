@@ -20,7 +20,7 @@ function contextOf(area, section) {
 // Today's checklist for one hole: a column for each role, an area label down the left, and the
 // sections of tasks inside. It only shows what it is given and reports clicks through onCheck,
 // onSkip, and onUndo, each handed the task. marks is a Map of what has been done so far.
-export function Checklist({ items, marks, user, onCheck, onSkip, onUndo }) {
+export function Checklist({ items, marks, user, pendingIds, notice, onCheck, onSkip, onUndo, onDismissNotice }) {
   const titleId = useId()
   const { columns, areas } = buildChecklistLayout(items, user)
   const summary = summarizeProgress(items, marks)
@@ -71,9 +71,12 @@ export function Checklist({ items, marks, user, onCheck, onSkip, onUndo }) {
                                   mark={ marks?.get(item.id) }
                                   user={ user }
                                   label={ `${contextOf(area, section)}: ${item.name}` }
+                                  isSaving={ Boolean(pendingIds?.has(item.id)) }
+                                  notice={ notice?.itemId === item.id ? notice.message : undefined }
                                   onCheck={ onCheck }
                                   onSkip={ onSkip }
                                   onUndo={ onUndo }
+                                  onDismissNotice={ onDismissNotice }
                                 />
                               ))}
                             </ul>

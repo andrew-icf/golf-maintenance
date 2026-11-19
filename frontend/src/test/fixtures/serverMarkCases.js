@@ -12,14 +12,14 @@ export const MARKED_AT = new Date(atTime(6, 12)).toISOString()
 // A checklist whose items have no task or feature ids, so no server mark can match them
 export const ITEMS_WITHOUT_IDS = [makeChecklistItem({ id: 'no-ids' })]
 
-function itemOf(itemId) {
+export function serverItem(itemId) {
   return SERVER_ITEMS.find((item) => item.id === itemId)
 }
 
 // A mark as the server sends it, for the task and feature of one of the sample items. By default it
 // is Yoda's check at 5:48am.
 export function makeServerMark(itemId, overrides = {}) {
-  const item = itemOf(itemId)
+  const item = serverItem(itemId)
 
   return {
     feature_id: item.featureId,

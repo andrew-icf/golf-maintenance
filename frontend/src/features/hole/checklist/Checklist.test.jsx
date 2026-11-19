@@ -22,7 +22,7 @@ import {
 } from '../../../test/fixtures/checklistViewCases'
 import { AHSOKA, LUKE, MON_MOTHMA } from '../../../test/fixtures/taskPermissionCases'
 import { Checklist } from './Checklist'
-import { buildSampleMarks } from './checklistMarks'
+import { buildSampleMarks } from '../../../test/fixtures/sampleMarks'
 import { buildSampleItems } from '../../../test/fixtures/holeTaskCases'
 
 // Test data

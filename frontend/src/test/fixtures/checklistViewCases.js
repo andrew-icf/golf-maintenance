@@ -75,10 +75,8 @@ export const SET_ASIDE_COUNT = SAMPLE_MARK_DESCRIPTIONS.filter((entry) => entry.
 export const LUKES_OWN_CHECK = { id: 'tee-box-mowed', mark: doneMark(LUKE.id, 'Luke Skywalker', atTime(6, 12)) }
 export const LUKES_OWN_CHECK_TEXT = 'You · 6:12am'
 
-// The text the page shows for the sample marks, and for one more task accounted for
+// The text the page shows for the sample marks
 export const SAMPLE_COUNT_TEXT = '8 of 21 tasks accounted for'
-export const ONE_MORE_COUNT_TEXT = '9 of 21 tasks accounted for'
 export const ALL_DONE_COUNT_TEXT = '21 of 21 tasks accounted for'
 export const ALL_DONE_NOTE = 'Every task is accounted for.'
 export const NO_TASKS_NOTE = 'There are no tasks for this hole today.'
-export const PREVIEW_NOTICE = 'Preview with sample tasks. Checks are not saved.'

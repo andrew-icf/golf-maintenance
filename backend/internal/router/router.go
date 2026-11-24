@@ -50,6 +50,7 @@ func New() http.Handler {
 			r.Get("/api/holes/{holeId}/marks", handlers.GetHoleMarks)
 			r.Put("/api/marks/{featureId}/{taskId}", handlers.SetTaskMark)
 			r.Delete("/api/marks/{featureId}/{taskId}", handlers.ClearTaskMark)
+			r.Get("/api/course-tasks", handlers.GetCourseTasks)
 		})
 	})
 
